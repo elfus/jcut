@@ -68,9 +68,10 @@ TestFunction extractTestFunction(SmallVector<const char *, 16> & Args)
 			}
 		}
 	}
-	
-	while (delete_count--)
-		Args.pop_back();
+
+	if (delete_count > 1)
+		while (delete_count--)
+			Args.pop_back();
 	
 	return std::move(testFunction);
 }
