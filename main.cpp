@@ -33,6 +33,7 @@
 using namespace std;
 using namespace clang;
 using namespace clang::driver;
+using namespace llvm;
 
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -103,6 +104,22 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 		v.IntVal = llvm::APInt(32, arg, 10);
 		Args.push_back(v);
 	}
+
+	cout << "Function arguments" << endl;
+
+	for (Function::arg_iterator it = EntryFn->arg_begin(); it != EntryFn->arg_end(); it++) {
+		Argument& arg = *it;
+		Type * t = arg.getType();
+		if (t->getTypeID() == Type::PointerTyID) {
+			typedef void (*f)(int *x);
+			f ptr = (f) (EE->getPointerToFunction(EntryFn));
+			int x = 5;
+			ptr(&x);
+			cout << "X value is " << x << endl;
+			return x;
+		}
+	}
+	cout << endl;
 	
 	//Args.push_back(Mod->getModuleIdentifier());
 
