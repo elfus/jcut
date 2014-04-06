@@ -88,9 +88,11 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 		return 255;
 	}
 
-	llvm::Function *EntryFn = Mod->getFunction(jitFunc.FunctionName);
+	string functionName = jitFunc.FunctionName.empty() ? "main" : jitFunc.FunctionName;
+
+	llvm::Function *EntryFn = Mod->getFunction(functionName);
 	if (!EntryFn) {
-		llvm::errs() << "'main' function not found in module.\n";
+		llvm::errs() << functionName << " function not found in module.\n";
 		return 255;
 	}
 
