@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 void do_math(int *x) {
   *x += 5;
 }
@@ -12,6 +14,11 @@ int subs(int a, int b) {
 
 int mult(int a, int b) {
 	return a*b;
+}
+
+void hello()
+{
+	printf("Hola mundo!\n");
 }
 
 int do_inc(int *x);
