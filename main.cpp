@@ -19,6 +19,7 @@
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/FileSystem.h"
@@ -58,17 +59,22 @@ static int Execute(llvm::Module *Mod, char * const *envp)
 		return 255;
 	}
 
-	llvm::Function *EntryFn = Mod->getFunction("main");
+	llvm::Function *EntryFn = Mod->getFunction("sum");
 	if (!EntryFn) {
 		llvm::errs() << "'main' function not found in module.\n";
 		return 255;
 	}
 
 	// FIXME: Support passing arguments.
-	std::vector<std::string> Args;
-	Args.push_back(Mod->getModuleIdentifier());
+	std::vector<llvm::GenericValue> Args;
+	llvm::GenericValue v;
+	v.IntVal = llvm::APInt(32, 4);
+	Args.push_back(v);
+	Args.push_back(v);
+	
+	//Args.push_back(Mod->getModuleIdentifier());
 
-	return EE->runFunctionAsMain(EntryFn, Args, envp);
+	return *(EE->runFunction(EntryFn, Args).IntVal.getRawData());
 }
 
 int main(int argc, const char **argv, char * const *envp)
