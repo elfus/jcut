@@ -29,6 +29,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include <iostream>
+#include <utility>
 using namespace std;
 using namespace clang;
 using namespace clang::driver;
@@ -47,7 +48,34 @@ std::string GetExecutablePath(const char *Argv0)
 	return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
 }
 
-static int Execute(llvm::Module *Mod, char * const *envp)
+struct TestFunction {
+	string FunctionName;
+	vector<string> FunctionArguments;
+};
+
+TestFunction extractTestFunction(SmallVector<const char *, 16> & Args)
+{
+	TestFunction testFunction;
+	unsigned delete_count = 1; // remove the flag --test
+
+	for (unsigned i = 0; i < Args.size(); i++) {
+		if (string(Args[i]) == "--test") {
+			++delete_count;
+			testFunction.FunctionName = string(Args[++i]);
+			while (++i < Args.size()) {
+				testFunction.FunctionArguments.push_back(string(Args[i]));
+				++delete_count;
+			}
+		}
+	}
+	
+	while (delete_count--)
+		Args.pop_back();
+	
+	return std::move(testFunction);
+}
+
+static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& jitFunc)
 {
 	llvm::InitializeNativeTarget();
 
@@ -59,7 +87,7 @@ static int Execute(llvm::Module *Mod, char * const *envp)
 		return 255;
 	}
 
-	llvm::Function *EntryFn = Mod->getFunction("sum");
+	llvm::Function *EntryFn = Mod->getFunction(jitFunc.FunctionName);
 	if (!EntryFn) {
 		llvm::errs() << "'main' function not found in module.\n";
 		return 255;
@@ -68,9 +96,10 @@ static int Execute(llvm::Module *Mod, char * const *envp)
 	// FIXME: Support passing arguments.
 	std::vector<llvm::GenericValue> Args;
 	llvm::GenericValue v;
-	v.IntVal = llvm::APInt(32, 4);
-	Args.push_back(v);
-	Args.push_back(v);
+	for (auto arg : jitFunc.FunctionArguments) {
+		v.IntVal = llvm::APInt(32, arg, 10);
+		Args.push_back(v);
+	}
 	
 	//Args.push_back(Mod->getModuleIdentifier());
 
@@ -94,6 +123,7 @@ int main(int argc, const char **argv, char * const *envp)
 	// recognize. We need to extend the driver library to support this use model
 	// (basically, exactly one input, and the operation mode is hard wired).
 	SmallVector<const char *, 16> Args(argv, argv + argc);
+	TestFunction testFunction = extractTestFunction(Args);
 	Args.push_back("-fsyntax-only");
 	OwningPtr<Compilation> C(TheDriver.BuildCompilation(Args));
 	if (!C)
@@ -158,7 +188,7 @@ int main(int argc, const char **argv, char * const *envp)
 
 	int Res = 255;
 	if (llvm::Module * Module = Act->takeModule())
-		Res = Execute(Module, envp);
+		Res = Execute(Module, envp, testFunction);
 
 	// Shutdown.
 
