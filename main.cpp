@@ -21,7 +21,9 @@
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/ExecutionEngine/JIT.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/ManagedStatic.h"
@@ -34,6 +36,8 @@ using namespace std;
 using namespace clang;
 using namespace clang::driver;
 using namespace llvm;
+
+static void createMockFunction(llvm::Module *Mod, llvm::Function *Function);
 
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -77,8 +81,29 @@ TestFunction extractTestFunction(SmallVector<const char *, 16> & Args)
 	return std::move(testFunction);
 }
 
+static vector<llvm::Function*> FindFunctionDeclaration(llvm::Function *f)
+{
+	static vector<llvm::Function*> declarations;
+
+	if (f->isDeclaration())
+		declarations.push_back(f);
+	else {
+		for (Function::iterator i = f->begin(); i != f->end(); i++) {
+			for (BasicBlock::iterator j = i->begin(); j != i->end(); j++) {
+				if (CallInst * call = dyn_cast<CallInst>(&*j)) {
+					Function *tmp = call->getCalledFunction();
+					FindFunctionDeclaration(tmp);
+				}
+			}
+		}
+	}
+	
+	return declarations;
+}
+
 static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& jitFunc)
 {
+	cout << "Creating JIT engine" << endl;
 	llvm::InitializeNativeTarget();
 
 	std::string Error;
@@ -97,6 +122,26 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 		return 255;
 	}
 
+	vector<llvm::Function*> decl = FindFunctionDeclaration(EntryFn);
+
+	// Do we want to provide a mock function?
+	cout << "Declarations found for function " << functionName << endl;
+	// IF yes provide a mockup function
+	for (auto F : decl) {
+		outs() << *F << "\n";
+		// For the moment just create a mockup function for the mult function
+		// which will add rather than multiply
+		if (F->getName().str() == "mult") {
+			cout << "Creating mock function" << endl;
+			createMockFunction(Mod, EntryFn);
+		}
+	}
+	//IF NOT let the program finish with an error about an undefined function
+
+
+	cout << "Is declaration: " << EntryFn->isDeclaration() << endl;
+	cout << "LinkageType: " << EntryFn->getLinkage() << endl;
+
 	// FIXME: Support passing arguments.
 	std::vector<llvm::GenericValue> Args;
 	llvm::GenericValue v;
@@ -104,8 +149,6 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 		v.IntVal = llvm::APInt(32, arg, 10);
 		Args.push_back(v);
 	}
-
-	cout << "Function arguments" << endl;
 
 	for (Function::arg_iterator it = EntryFn->arg_begin(); it != EntryFn->arg_end(); it++) {
 		Argument& arg = *it;
@@ -116,13 +159,14 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 			int x = 5;
 			ptr(&x);
 			cout << "X value is " << x << endl;
+			cout << "Finished JIT Execution" << endl;
 			return x;
 		}
 	}
 	cout << endl;
 	
 	//Args.push_back(Mod->getModuleIdentifier());
-
+	cout << "Finished JIT Execution" << endl;
 	return *(EE->runFunction(EntryFn, Args).IntVal.getRawData());
 }
 
@@ -214,7 +258,43 @@ int main(int argc, const char **argv, char * const *envp)
 
 	llvm::llvm_shutdown();
 
-	cout << "Results: " << Res << endl;
+	cout << "Function call Result: " << Res << endl;
 
 	return Res;
+}
+
+void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
+{
+	// Create the add1 function entry and insert this entry into module M.  The
+	// function will have a return type of "int" and take an argument of "int".
+	// The '0' terminates the list of argument types.
+	//	Function *Add1F =
+	//			cast<Function>(M->getOrInsertFunction("add1", Type::getInt32Ty(Context),
+	//			Type::getInt32Ty(Context),
+	//			(Type *) 0));
+
+	// Add a basic block to the function. As before, it automatically inserts
+	// because of the last argument.
+	BasicBlock *BB = BasicBlock::Create(Mod->getContext(), "EntryBlock", Function);
+
+	// Create a basic block builder with default parameters.  The builder will
+	// automatically append instructions to the basic block `BB'.
+	IRBuilder<> builder(BB);
+
+	// Get pointers to the constant `1'.
+	//	Value *One = builder.getInt32(1);
+
+	// Get pointers to the integer argument of the add1 function...
+	assert(Function->arg_begin() != Function->arg_end()); // Make sure there's an arg
+	Argument *ArgX = Function->arg_begin(); // Get the arg
+	ArgX->setName("AnArg"); // Give it a nice symbolic name for fun
+	Argument *Arg2 = ++(Function->arg_begin());
+
+	// Create the add instruction, inserting it into the end of BB.
+	Value *Add = builder.CreateAdd(ArgX, Arg2);
+	
+	// Create the return instruction and add it to the basic block
+	builder.CreateRet(Add);
+
+	// Now, function add1 is ready.
 }
