@@ -103,7 +103,6 @@ static vector<llvm::Function*> FindFunctionDeclaration(llvm::Function *f)
 
 static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& jitFunc)
 {
-	cout << "Creating JIT engine" << endl;
 	llvm::InitializeNativeTarget();
 
 	std::string Error;
@@ -125,7 +124,6 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 	vector<llvm::Function*> decl = FindFunctionDeclaration(EntryFn);
 
 	// Do we want to provide a mock function?
-	cout << "Declarations found for function " << functionName << endl;
 	// IF yes provide a mockup function
 	for (auto F : decl) {
 		// For the moment just create a mockup function for the mult function
@@ -153,14 +151,11 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 			int x = 5;
 			ptr(&x);
 			cout << "X value is " << x << endl;
-			cout << "Finished JIT Execution" << endl;
 			return x;
 		}
 	}
-	cout << endl;
-	
+
 	//Args.push_back(Mod->getModuleIdentifier());
-	cout << "Finished JIT Execution" << endl;
 	return *(EE->runFunction(EntryFn, Args).IntVal.getRawData());
 }
 
@@ -266,9 +261,7 @@ void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
 	//			cast<Function>(M->getOrInsertFunction("add1", Type::getInt32Ty(Context),
 	//			Type::getInt32Ty(Context),
 	//			(Type *) 0
-	cout << "Creating mock function" << endl;
-	outs() << *Function << "\n";
-	cout << "Number of arguments: " << Function->arg_size() << endl;
+	cout << "Creating mock function...";
 
 	// Add a basic block to the function. As before, it automatically inserts
 	// because of the last argument.
@@ -293,5 +286,8 @@ void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
 	// Create the return instruction and add it to the basic block
 	builder.CreateRet(Add);
 
+	cout << "creation completed." << endl;
+	outs() << *Function << "\n";
+	cout << "Number of arguments: " << Function->arg_size() << endl;
 	// Now, function add1 is ready.
 }
