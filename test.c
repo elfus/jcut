@@ -12,9 +12,7 @@ int subs(int a, int b) {
 	return a-b;
 }
 
-int mult(int a, int b) {
-	return a*b;
-}
+int mult(int a, int b);
 
 void hello()
 {
@@ -27,6 +25,7 @@ int main(void) {
   int result = -1, val = 4;
   do_math(&val);
   do_inc(&val);
+  printf("mult() = %d\n", mult(2,4));
   return result;
 }
 

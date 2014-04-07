@@ -128,19 +128,13 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 	cout << "Declarations found for function " << functionName << endl;
 	// IF yes provide a mockup function
 	for (auto F : decl) {
-		outs() << *F << "\n";
 		// For the moment just create a mockup function for the mult function
 		// which will add rather than multiply
 		if (F->getName().str() == "mult") {
-			cout << "Creating mock function" << endl;
-			createMockFunction(Mod, EntryFn);
+			createMockFunction(Mod, F);
 		}
 	}
 	//IF NOT let the program finish with an error about an undefined function
-
-
-	cout << "Is declaration: " << EntryFn->isDeclaration() << endl;
-	cout << "LinkageType: " << EntryFn->getLinkage() << endl;
 
 	// FIXME: Support passing arguments.
 	std::vector<llvm::GenericValue> Args;
@@ -271,7 +265,10 @@ void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
 	//	Function *Add1F =
 	//			cast<Function>(M->getOrInsertFunction("add1", Type::getInt32Ty(Context),
 	//			Type::getInt32Ty(Context),
-	//			(Type *) 0));
+	//			(Type *) 0
+	cout << "Creating mock function" << endl;
+	outs() << *Function << "\n";
+	cout << "Number of arguments: " << Function->arg_size() << endl;
 
 	// Add a basic block to the function. As before, it automatically inserts
 	// because of the last argument.
