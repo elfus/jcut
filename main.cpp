@@ -53,11 +53,23 @@ std::string GetExecutablePath(const char *Argv0)
 	return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
 }
 
+/**
+ * Represents a function to be unit tested.
+ */
 struct TestFunction {
-	string FunctionName;
-	vector<string> FunctionArguments;
+	string FunctionName; //!< The name of the function as it's spelled in source code.
+	vector<string> FunctionArguments; //!< Arguments to be passed to the function.
 };
 
+
+/**
+ * Reads the arguments from the command to extract the function we want to test.
+ *
+ * @note Args was previously parsed by clang parsing system.
+ *
+ * @param Args Command line arguments.
+ * @return A TestFunction
+ */
 TestFunction extractTestFunction(SmallVector<const char *, 16> & Args)
 {
 	TestFunction testFunction;
@@ -81,6 +93,14 @@ TestFunction extractTestFunction(SmallVector<const char *, 16> & Args)
 	return std::move(testFunction);
 }
 
+/**
+ * Finds all the functions lacking an implementation in the given function.
+ * The search for declaration is made recursively, meaning that that all the
+ * functions called by the given llvm::Function f will be evaluated.
+ *
+ * @param f Function to check if it's a declaration.
+ * @return
+ */
 static vector<llvm::Function*> FindFunctionDeclaration(llvm::Function *f)
 {
 	static vector<llvm::Function*> declarations;
@@ -142,9 +162,12 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 		Args.push_back(v);
 	}
 
+	// Iterate over the arguments of the function to be tested.
 	for (Function::arg_iterator it = EntryFn->arg_begin(); it != EntryFn->arg_end(); it++) {
 		Argument& arg = *it;
 		Type * t = arg.getType();
+		// If the argument to be passed is a pointer handle our specific hardcoded
+		// situation
 		if (t->getTypeID() == Type::PointerTyID) {
 			typedef void (*f)(int *x);
 			f ptr = (f) (EE->getPointerToFunction(EntryFn));
