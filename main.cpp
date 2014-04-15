@@ -333,6 +333,10 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 	LoadInst *load2 = builder.CreateLoad(alloc2, "value2");
 	args.push_back(load2);
 
+	AllocaInst *alloc3 = builder.CreateAlloca(Type::getInt32PtrTy(Mod->getContext()), 0, "Allocation3");
+	alloc3->setAlignment(8);
+	StoreInst *store3 = builder.CreateStore(alloc, alloc3);
+
 	CallInst * wrappedCall = builder.CreateCall(Wrapped, args);
 
 	builder.CreateRet(wrappedCall);

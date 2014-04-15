@@ -23,6 +23,7 @@ int do_inc(int *x);
 
 int main(void) {
   int result = -1, val = 4;
+  int * x = &val;
   do_math(&val);
   do_inc(&val);
   printf("mult() = %d\n", mult(2,val));
