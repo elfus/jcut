@@ -38,7 +38,8 @@ using namespace clang::driver;
 using namespace llvm;
 
 static void createMockFunction(llvm::Module *Mod, llvm::Function *Function);
-static llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped);
+static llvm::Function* createWrapperFunction(llvm::Module *Mod,
+		llvm::Function *Wrapped, const vector<string>& Args);
 
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -160,27 +161,10 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 	llvm::GenericValue v;
 	for (auto arg : jitFunc.FunctionArguments) {
 		v.IntVal = llvm::APInt(32, arg, 10);
-		Args.push_back(v);
+		//Args.push_back(v);
 	}
 
-	Function *wrapper = createWrapperFunction(Mod, EntryFn);
-
-	// TODO: MOVE THIS INSIDE THE WRAPPER FUNCTION
-	// Iterate over the arguments of the function to be tested.
-	for (Function::arg_iterator it = EntryFn->arg_begin(); it != EntryFn->arg_end(); it++) {
-		Argument& arg = *it;
-		Type * t = arg.getType();
-		// If the argument to be passed is a pointer handle our specific hardcoded
-		// situation
-		if (t->getTypeID() == Type::PointerTyID) {
-			typedef void (*f)(int *x);
-			f ptr = (f) (EE->getPointerToFunction(EntryFn));
-			int x = 5;
-			ptr(&x);
-			cout << "X value is " << x << endl;
-			return x;
-		}
-	}
+	Function *wrapper = createWrapperFunction(Mod, EntryFn, jitFunc.FunctionArguments);
 
 	//Args.push_back(Mod->getModuleIdentifier());
 	return *(EE->runFunction(wrapper, Args).IntVal.getRawData());
@@ -319,7 +303,8 @@ void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
 	// Now, function add1 is ready.
 }
 
-llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped)
+llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped,
+		const vector<string>& Args)
 {
 	Function *Wrapper = cast<Function> (Mod->getOrInsertFunction("wrapperFunc",
 			Type::getVoidTy(Mod->getContext()),
@@ -331,7 +316,11 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 
 	IRBuilder<> builder(BB);
 
-	CallInst * wrappedCall = builder.CreateCall(Wrapped);
+	vector<llvm::Value*> args;
+	args.push_back(builder.getInt32(4));
+	args.push_back(builder.getInt32(8));
+
+	CallInst * wrappedCall = builder.CreateCall(Wrapped, args);
 
 	builder.CreateRet(wrappedCall);
 
