@@ -35,3 +35,6 @@ int do_inc(int *x) {
 }
 
 
+int mult(int a, int b) {
+	return a*b;
+}

@@ -38,6 +38,7 @@ using namespace clang::driver;
 using namespace llvm;
 
 static void createMockFunction(llvm::Module *Mod, llvm::Function *Function);
+static llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped);
 
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -154,7 +155,7 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 	}
 	//IF NOT let the program finish with an error about an undefined function
 
-	// FIXME: Support passing arguments.
+	// Arguments from command line
 	std::vector<llvm::GenericValue> Args;
 	llvm::GenericValue v;
 	for (auto arg : jitFunc.FunctionArguments) {
@@ -162,6 +163,9 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 		Args.push_back(v);
 	}
 
+	Function *wrapper = createWrapperFunction(Mod, EntryFn);
+
+	// TODO: MOVE THIS INSIDE THE WRAPPER FUNCTION
 	// Iterate over the arguments of the function to be tested.
 	for (Function::arg_iterator it = EntryFn->arg_begin(); it != EntryFn->arg_end(); it++) {
 		Argument& arg = *it;
@@ -179,7 +183,7 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 	}
 
 	//Args.push_back(Mod->getModuleIdentifier());
-	return *(EE->runFunction(EntryFn, Args).IntVal.getRawData());
+	return *(EE->runFunction(wrapper, Args).IntVal.getRawData());
 }
 
 int main(int argc, const char **argv, char * const *envp)
@@ -313,4 +317,26 @@ void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
 	outs() << *Function << "\n";
 	cout << "Number of arguments: " << Function->arg_size() << endl;
 	// Now, function add1 is ready.
+}
+
+llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped)
+{
+	Function *Wrapper = cast<Function> (Mod->getOrInsertFunction("wrapperFunc",
+			Type::getVoidTy(Mod->getContext()),
+			(Type*) 0));
+
+	// Add a basic block to the function. As before, it automatically inserts
+	// because of the last argument.
+	BasicBlock *BB = BasicBlock::Create(Mod->getContext(), "wrapperBlock", Wrapper);
+
+	IRBuilder<> builder(BB);
+
+	CallInst * wrappedCall = builder.CreateCall(Wrapped);
+
+	builder.CreateRet(wrappedCall);
+
+	outs() << "Wrapper Function\n";
+	Wrapper->dump();
+
+	return Wrapper;
 }
