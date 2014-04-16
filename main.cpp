@@ -330,8 +330,12 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 		errs() << "Argument type: " << arg.getType()->getTypeID() << "\n";
 		outs() << "ValueName: " << arg.getValueName()->getKey() << "\n";
 		if (arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
-			AllocaInst *alloc = builder.CreateAlloca(arg.getType()->getPointerElementType(), 0, "tmp" + Twine(j));
+			// When we are handling a pointer the Args[j] represents the size of the array
+			AllocaInst *alloc = builder.CreateAlloca(arg.getType()->getPointerElementType(),
+					builder.getInt(APInt(32, Args[j], 10)), "tmp" + Twine(j));
 			alloc->setAlignment(4);
+			// Args[j] represents the size of the array, but we just use it as dummy value,
+			// it could be 0 or anything
 			Value * v = createValue(builder, arg.getType()->getPointerElementType(), Args[j]);
 			builder.CreateStore(v, alloc);
 			
