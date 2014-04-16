@@ -319,7 +319,10 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 	vector<llvm::Value*> args;
 
 	//	Argument &arg = *(Wrapped->arg_begin());
-	// Allocate first argument
+	// Make sure that the function Wrapped we are calling has the same number of arguments
+	// we are going to pass it on.
+	assert(Wrapped->arg_size() == Args.size() && "Wrong number of arguments!");
+	
 	AllocaInst *alloc = builder.CreateAlloca(Type::getInt32Ty(Mod->getContext()), 0, "Allocation1");
 	alloc->setAlignment(4);
 	StoreInst *store = builder.CreateStore(builder.getInt32(2), alloc);
