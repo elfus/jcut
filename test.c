@@ -1,9 +1,21 @@
 #include <stdio.h>
 
+void do_cmath(char *x) {
+  printf("%s: X before: %d\n",__func__,*x);
+  *x += 5;
+  printf("%s: X after: %d\n",__func__,*x);
+}
+
 void do_math(int *x) {
   printf("%s: X before: %d\n",__func__,*x);
   *x += 5;
   printf("%s: X after: %d\n",__func__,*x);
+}
+
+void do_ucmath(unsigned char *x) {
+  printf("%s: X before: %u\n",__func__,*x);
+  *x += 5;
+  printf("%s: X after: %u\n",__func__,*x);
 }
 
 void do_short_math(short int *x) {
@@ -72,6 +84,18 @@ int do_inc(int *x) {
 
 int mult(int a, int b) {
 	return a*b;
+}
+
+char t0s(char a, char b) {
+	printf("%s: a: %d\n",__func__,a);
+	printf("%s: b: %d\n",__func__,b);
+	return a + b;	
+}
+
+unsigned char t0u(unsigned char a, unsigned char b) {
+	printf("%s: a: %u\n",__func__,a);
+	printf("%s: b: %u\n",__func__,b);
+	return a + b;	
 }
 
 int t1(int a, int *b, int c, int * d) {
