@@ -333,10 +333,10 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 	LoadInst *load2 = builder.CreateLoad(alloc2, "value2");
 	//	args.push_back(load2);
 
-	AllocaInst *alloc3 = builder.CreateAlloca(Type::getInt32PtrTy(Mod->getContext()), 0, "Allocation3");
+	AllocaInst *alloc3 = builder.CreateAlloca(Type::getInt32PtrTy(Mod->getContext()), 0, "Allocation3");// Allocate a pointer type
 	alloc3->setAlignment(8);
-	StoreInst *store3 = builder.CreateStore(alloc, alloc3);
-	LoadInst *load3 = builder.CreateLoad(alloc3, "value3");
+	StoreInst *store3 = builder.CreateStore(alloc, alloc3);// Store an already allocated variable address to our pointer
+	LoadInst *load3 = builder.CreateLoad(alloc3, "value3");// Load whatever address is in alloc3 into load3 'value3'
 	args.push_back(load3);
 
 	CallInst * wrappedCall = builder.CreateCall(Wrapped, args);
