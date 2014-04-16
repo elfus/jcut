@@ -318,24 +318,26 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 
 	vector<llvm::Value*> args;
 
-	Argument &arg = *(Wrapped->arg_begin());
+	//	Argument &arg = *(Wrapped->arg_begin());
 	// Allocate first argument
-	AllocaInst *alloc = builder.CreateAlloca(arg.getType(), 0, "Allocation1");
+	AllocaInst *alloc = builder.CreateAlloca(Type::getInt32Ty(Mod->getContext()), 0, "Allocation1");
 	alloc->setAlignment(4);
 	StoreInst *store = builder.CreateStore(builder.getInt32(2), alloc);
 	LoadInst *load1 = builder.CreateLoad(alloc, "value1");
-	args.push_back(load1);
+	//	args.push_back(load1);
 
 	// Allocate second argument
-	AllocaInst *alloc2 = builder.CreateAlloca(arg.getType(), 0, "Allocation2");
+	AllocaInst *alloc2 = builder.CreateAlloca(Type::getInt32Ty(Mod->getContext()), 0, "Allocation2");
 	alloc2->setAlignment(4);
 	StoreInst *store2 = builder.CreateStore(builder.getInt32(6), alloc2);
 	LoadInst *load2 = builder.CreateLoad(alloc2, "value2");
-	args.push_back(load2);
+	//	args.push_back(load2);
 
 	AllocaInst *alloc3 = builder.CreateAlloca(Type::getInt32PtrTy(Mod->getContext()), 0, "Allocation3");
 	alloc3->setAlignment(8);
 	StoreInst *store3 = builder.CreateStore(alloc, alloc3);
+	LoadInst *load3 = builder.CreateLoad(alloc3, "value3");
+	args.push_back(load3);
 
 	CallInst * wrappedCall = builder.CreateCall(Wrapped, args);
 

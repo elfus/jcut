@@ -1,7 +1,9 @@
 #include <stdio.h>
 
 void do_math(int *x) {
+  printf("X before: %d\n",*x);
   *x += 5;
+  printf("X after: %d\n",*x);
 }
 
 int sum(int a, int b) {
