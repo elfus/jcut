@@ -6,6 +6,36 @@ void do_math(int *x) {
   printf("%s: X after: %d\n",__func__,*x);
 }
 
+void do_short_math(short int *x) {
+  printf("%s: X before: %d\n",__func__,*x);
+  *x += 5;
+  printf("%s: X after: %d\n",__func__,*x);
+}
+
+void do_long_math(long int *x) {
+  printf("%s: X before: %d\n",__func__,*x);
+  *x += 5;
+  printf("%s: X after: %d\n",__func__,*x);
+}
+
+void do_umath(unsigned int *x) {
+  printf("%s: X before: %d\n",__func__,*x);
+  *x += 5;
+  printf("%s: X after: %d\n",__func__,*x);
+}
+
+void do_ushort_math(unsigned short int *x) {
+  printf("%s: X before: %d\n",__func__,*x);
+  *x += 5;
+  printf("%s: X after: %d\n",__func__,*x);
+}
+
+void do_ulong_math(unsigned long int *x) {
+  printf("%s: X before: %d\n",__func__,*x);
+  *x += 5;
+  printf("%s: X after: %d\n",__func__,*x);
+}
+
 int sum(int a, int b) {
 	return a+b;
 }
