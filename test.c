@@ -49,3 +49,46 @@ int t1(int a, int *b, int c, int * d) {
 	*d += 1;
 	return a + *b + c + *d;
 }
+
+unsigned t2(unsigned a, unsigned b) {
+	printf("%s: a: %u\n",__func__,a);
+	printf("%s: b: %u\n",__func__,b);
+	return a + b;
+}
+
+short t3(short a,short b) {
+	printf("%s: a: %d\n",__func__,a);
+	printf("%s: b: %d\n",__func__,b);
+	return a + b;
+}
+
+unsigned short t4(unsigned short a, unsigned short b) {
+	printf("%s: a: %u\n",__func__,a);
+	printf("%s: b: %u\n",__func__,b);
+	return a + b;
+}
+
+long t5(long a, long b) {
+	printf("%s: a: %d\n",__func__,a);
+	printf("%s: b: %d\n",__func__,b);
+	return a + b;
+}
+
+unsigned long t6(unsigned long a, unsigned long b) {
+	printf("%s: a: %u\n",__func__,a);
+	printf("%s: b: %u\n",__func__,b);
+	return a + b;
+}
+
+long long t7(long long a, long long b) {
+	printf("%s: a: %d\n",__func__,a);
+	printf("%s: b: %d\n",__func__,b);
+	return a + b;
+}
+
+unsigned long long t8(unsigned long long a, unsigned long long b) {
+	printf("%s: a: %u\n",__func__,a);
+	printf("%s: b: %u\n",__func__,b);
+	return a + b;
+}
+
