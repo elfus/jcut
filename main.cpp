@@ -333,11 +333,11 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 			AllocaInst *alloc = builder.CreateAlloca(arg.getType()->getPointerElementType(), 0, "tmp" + Twine(j));
 			alloc->setAlignment(4);
 			Value * v = createValue(builder, arg.getType()->getPointerElementType(), Args[j]);
-			StoreInst *store = builder.CreateStore(v, alloc);
+			builder.CreateStore(v, alloc);
 			
 			AllocaInst *alloc3 = builder.CreateAlloca(arg.getType(), 0, "Allocation3"); // Allocate a pointer type
 			alloc3->setAlignment(8);
-			StoreInst *store3 = builder.CreateStore(alloc, alloc3); // Store an already allocated variable address to our pointer
+			builder.CreateStore(alloc, alloc3); // Store an already allocated variable address to our pointer
 			LoadInst *load3 = builder.CreateLoad(alloc3, "value3"); // Load whatever address is in alloc3 into load3 'value3'
 			args_vector.push_back(load3);			
 		} else {
@@ -347,7 +347,7 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 			alloc->setAlignment(4);
 			outs() << "Creating store instruction\n";
 			Value * v = createValue(builder, arg.getType(), Args[j]);
-			StoreInst *store = builder.CreateStore(v, alloc);
+			builder.CreateStore(v, alloc);
 			outs() << "Creating load instruction\n";
 			LoadInst *load = builder.CreateLoad(alloc, "value" + Twine(j));
 			args_vector.push_back(load);
@@ -387,4 +387,5 @@ llvm::Value* createValue(IRBuilder<>& builder, llvm::Type* type, const string& r
 	default:
 		return nullptr;
 	}
+	return nullptr;
 }
