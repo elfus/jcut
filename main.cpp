@@ -316,33 +316,34 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 
 	IRBuilder<> builder(BB);
 
-	vector<llvm::Value*> args;
+	vector<llvm::Value*> args_vector;
 
 	//	Argument &arg = *(Wrapped->arg_begin());
 	// Make sure that the function Wrapped we are calling has the same number of arguments
 	// we are going to pass it on.
 	assert(Wrapped->arg_size() == Args.size() && "Wrong number of arguments!");
-	
-	AllocaInst *alloc = builder.CreateAlloca(Type::getInt32Ty(Mod->getContext()), 0, "Allocation1");
-	alloc->setAlignment(4);
-	StoreInst *store = builder.CreateStore(builder.getInt32(2), alloc);
-	LoadInst *load1 = builder.CreateLoad(alloc, "value1");
-	//	args.push_back(load1);
 
-	// Allocate second argument
-	AllocaInst *alloc2 = builder.CreateAlloca(Type::getInt32Ty(Mod->getContext()), 0, "Allocation2");
-	alloc2->setAlignment(4);
-	StoreInst *store2 = builder.CreateStore(builder.getInt32(6), alloc2);
-	LoadInst *load2 = builder.CreateLoad(alloc2, "value2");
-	//	args.push_back(load2);
+	unsigned j = 0;
+	for (auto it = Wrapped->arg_begin(); it != Wrapped->arg_end(); ++it) {
+		Argument& arg = *it;
+		// This code works for functions NOT using pointers
+		AllocaInst *alloc = builder.CreateAlloca(arg.getType(), 0, "Allocation" + Twine(j));
+		alloc->setAlignment(4);
+		// @bug We are calling getInt32 for now, but the actual Value type
+		// will be different on evey call.
+		StoreInst *store = builder.CreateStore(builder.getInt32(atoi(Args[j].c_str())), alloc);
+		LoadInst *load = builder.CreateLoad(alloc, "value" + Twine(j));
+		j++;
+		args_vector.push_back(load);
+	}
 
-	AllocaInst *alloc3 = builder.CreateAlloca(Type::getInt32PtrTy(Mod->getContext()), 0, "Allocation3");// Allocate a pointer type
-	alloc3->setAlignment(8);
-	StoreInst *store3 = builder.CreateStore(alloc, alloc3);// Store an already allocated variable address to our pointer
-	LoadInst *load3 = builder.CreateLoad(alloc3, "value3");// Load whatever address is in alloc3 into load3 'value3'
-	args.push_back(load3);
+	//	AllocaInst *alloc3 = builder.CreateAlloca(Type::getInt32PtrTy(Mod->getContext()), 0, "Allocation3");// Allocate a pointer type
+	//	alloc3->setAlignment(8);
+	//	StoreInst *store3 = builder.CreateStore(alloc, alloc3);// Store an already allocated variable address to our pointer
+	//	LoadInst *load3 = builder.CreateLoad(alloc3, "value3");// Load whatever address is in alloc3 into load3 'value3'
+	//	args.push_back(load3);
 
-	CallInst * wrappedCall = builder.CreateCall(Wrapped, args);
+	CallInst * wrappedCall = builder.CreateCall(Wrapped, args_vector);
 
 	builder.CreateRet(wrappedCall);
 
