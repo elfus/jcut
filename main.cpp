@@ -332,25 +332,19 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 		if (arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
 			AllocaInst *alloc = builder.CreateAlloca(arg.getType()->getPointerElementType(), 0, "tmp" + Twine(j));
 			alloc->setAlignment(4);
-			// @bug We are calling getInt32 for now, but the actual Value type
-			// will be different on evey call.
-			StoreInst *store = builder.CreateStore(builder.getInt32(atoi(Args[j].c_str())), alloc);
+			Value * v = createValue(builder, arg.getType()->getPointerElementType(), Args[j]);
+			StoreInst *store = builder.CreateStore(v, alloc);
 			
-			// @bug There is a bug in the PointerType being allocated here, it depends on the
-			// data type of the argument,
 			AllocaInst *alloc3 = builder.CreateAlloca(arg.getType(), 0, "Allocation3"); // Allocate a pointer type
 			alloc3->setAlignment(8);
 			StoreInst *store3 = builder.CreateStore(alloc, alloc3); // Store an already allocated variable address to our pointer
 			LoadInst *load3 = builder.CreateLoad(alloc3, "value3"); // Load whatever address is in alloc3 into load3 'value3'
-			args_vector.push_back(load3);
-			
+			args_vector.push_back(load3);			
 		} else {
 			// This code works for functions NOT using pointers
 			outs() << "Creating allocation instruction\n";
 			AllocaInst *alloc = builder.CreateAlloca(arg.getType(), 0, "Allocation" + Twine(j));
 			alloc->setAlignment(4);
-			// @bug We are calling getInt32 for now, but the actual Value type
-			// will be different on evey call.
 			outs() << "Creating store instruction\n";
 			Value * v = createValue(builder, arg.getType(), Args[j]);
 			StoreInst *store = builder.CreateStore(v, alloc);
