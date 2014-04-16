@@ -40,6 +40,7 @@ using namespace llvm;
 static void createMockFunction(llvm::Module *Mod, llvm::Function *Function);
 static llvm::Function* createWrapperFunction(llvm::Module *Mod,
 		llvm::Function *Wrapped, const vector<string>& Args);
+static llvm::Value* createValue(IRBuilder<>& builder, llvm::Type* type, const string& real_value);
 
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -345,11 +346,15 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 			
 		} else {
 			// This code works for functions NOT using pointers
+			outs() << "Creating allocation instruction\n";
 			AllocaInst *alloc = builder.CreateAlloca(arg.getType(), 0, "Allocation" + Twine(j));
 			alloc->setAlignment(4);
 			// @bug We are calling getInt32 for now, but the actual Value type
 			// will be different on evey call.
-			StoreInst *store = builder.CreateStore(builder.getInt32(atoi(Args[j].c_str())), alloc);
+			outs() << "Creating store instruction\n";
+			Value * v = createValue(builder, arg.getType(), Args[j]);
+			StoreInst *store = builder.CreateStore(v, alloc);
+			outs() << "Creating load instruction\n";
 			LoadInst *load = builder.CreateLoad(alloc, "value" + Twine(j));
 			args_vector.push_back(load);
 		}
@@ -370,4 +375,22 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 	Wrapper->dump();
 
 	return Wrapper;
+}
+
+/**
+ * Creates a new Value of the same Type as type with real_value
+ */
+llvm::Value* createValue(IRBuilder<>& builder, llvm::Type* type, const string& real_value)
+{
+	switch (type->getTypeID()) {
+	case Type::TypeID::IntegerTyID:
+		if (IntegerType * intType = dyn_cast<IntegerType>(type))
+			// Watch for the radix, right now we use radix 10 only
+			return cast<Value>(builder.getInt(APInt(intType->getBitWidth(), real_value, 10)));
+		break;
+	case Type::TypeID::FloatTyID:
+		break;
+	default:
+		return nullptr;
+	}
 }
