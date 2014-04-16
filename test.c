@@ -1,9 +1,9 @@
 #include <stdio.h>
 
 void do_math(int *x) {
-  printf("X before: %d\n",*x);
+  printf("%s: X before: %d\n",__func__,*x);
   *x += 5;
-  printf("X after: %d\n",*x);
+  printf("%s: X after: %d\n",__func__,*x);
 }
 
 int sum(int a, int b) {
@@ -33,11 +33,19 @@ int main(void) {
 }
 
 int do_inc(int *x) {
+	printf("%s: X before: %d\n",__func__,*x);
   *x += 1;
+  printf("%s: X after: %d\n",__func__,*x);
   return 1;
 }
 
 
 int mult(int a, int b) {
 	return a*b;
+}
+
+int t1(int a, int *b, int c, int * d) {
+	*b += 1;
+	*d += 1;
+	return a + *b + c + *d;
 }
