@@ -341,7 +341,7 @@ TestDefinitionExpr* TestParser::ParseTestDefinition()
 {
 	TestExpr *mockup = ParseTestMockup();
 	TestExpr *setup = ParseTestSetup();
-	TestExpr *FunctionCall = ParseFunctionCall();
+	FunctionCallExpr *FunctionCall = ParseFunctionCall();
 	TestExpr *teardown = nullptr;
 
 	// Means the user skipped the expected result part but provided an after keyword

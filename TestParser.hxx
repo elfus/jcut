@@ -136,53 +136,6 @@ public:
     }
 };
 
-class TestDefinitionExpr : public TestExpr {
-private:
-    TestExpr *FunctionCall, *ExpectedResult, *TestSetup, *TestTeardown, *TestMockup;
-public:
-
-    TestDefinitionExpr(TestExpr *function, TestExpr *expected = nullptr,
-            TestExpr *setup = nullptr, TestExpr *teardown = nullptr,
-            TestExpr *mockup = nullptr) :
-    FunctionCall(function), ExpectedResult(expected), TestSetup(setup),
-    TestTeardown(teardown), TestMockup(mockup) {
-    }
-
-    virtual ~TestDefinitionExpr() {
-        if (FunctionCall) delete FunctionCall;
-        if (ExpectedResult) delete ExpectedResult;
-        if (TestSetup) delete TestSetup;
-        if (TestTeardown) delete TestTeardown;
-        if (TestMockup) delete TestMockup;
-    }
-
-    void dump() {
-        if (TestMockup) {
-            TestMockup->dump();
-        }
-        if (TestSetup) {
-            TestSetup->dump();
-        }
-        FunctionCall->dump();
-        if (ExpectedResult)
-            ExpectedResult->dump();
-        cout << endl;
-        if (TestTeardown) {
-            TestTeardown->dump();
-        }
-    }
-    
-    void accept(Visitor *v) {
-        if(v->VisitTestDefinitionExpr(this)) {
-            if(TestMockup) TestMockup->accept(v);
-            if(TestSetup) TestSetup->accept(v);
-            FunctionCall->accept(v);
-            if(ExpectedResult) ExpectedResult->accept(v);
-            if(TestTeardown) TestTeardown->accept(v);
-        }
-    }
-};
-
 class Argument : public TestExpr {
 protected:
     string StringRepresentation;
@@ -261,6 +214,58 @@ public:
         }
     }
 };
+
+class TestDefinitionExpr : public TestExpr {
+private:
+    FunctionCallExpr *FunctionCall;
+    TestExpr *ExpectedResult, *TestSetup, *TestTeardown, *TestMockup;
+    
+public:
+
+    TestDefinitionExpr(FunctionCallExpr *function, TestExpr *expected = nullptr,
+            TestExpr *setup = nullptr, TestExpr *teardown = nullptr,
+            TestExpr *mockup = nullptr) :
+    FunctionCall(function), ExpectedResult(expected), TestSetup(setup),
+    TestTeardown(teardown), TestMockup(mockup) {
+    }
+    
+    FunctionCallExpr* getFunctionCall() const {return FunctionCall;}
+
+    virtual ~TestDefinitionExpr() {
+        if (FunctionCall) delete FunctionCall;
+        if (ExpectedResult) delete ExpectedResult;
+        if (TestSetup) delete TestSetup;
+        if (TestTeardown) delete TestTeardown;
+        if (TestMockup) delete TestMockup;
+    }
+
+    void dump() {
+        if (TestMockup) {
+            TestMockup->dump();
+        }
+        if (TestSetup) {
+            TestSetup->dump();
+        }
+        FunctionCall->dump();
+        if (ExpectedResult)
+            ExpectedResult->dump();
+        cout << endl;
+        if (TestTeardown) {
+            TestTeardown->dump();
+        }
+    }
+    
+    void accept(Visitor *v) {
+        if(v->VisitTestDefinitionExpr(this)) {
+            if(TestMockup) TestMockup->accept(v);
+            if(TestSetup) TestSetup->accept(v);
+            FunctionCall->accept(v);
+            if(ExpectedResult) ExpectedResult->accept(v);
+            if(TestTeardown) TestTeardown->accept(v);
+        }
+    }
+};
+
 
 class VariableAssignmentExpr : public TestExpr {
 private:
