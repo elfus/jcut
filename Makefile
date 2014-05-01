@@ -11,12 +11,12 @@ CLANG_LEVEL := ../..
 
 TOOLNAME = jit-testing
 
-SOURCES = main.cpp
+SOURCES = main.cpp Visitor.cpp TestParser.cpp
 
 # No plugins, optimize startup time.
 TOOL_NO_EXPORTS = 1
 
-CXXFLAGS = -std=c++11 -g
+CXXFLAGS = -std=c++11 -g -fexceptions -frtti
 CFLAGS = -g
 
 include $(CLANG_LEVEL)/../../Makefile.config
