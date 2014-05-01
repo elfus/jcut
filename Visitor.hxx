@@ -59,5 +59,26 @@ public:
     virtual ~Visitor() {}
 };
 
+namespace llvm {
+    class Function;
+    class Module;
+}
+
+class TestGeneratorVisitor : public Visitor {
+private:
+    llvm::Function *mCurrentFunction;
+    llvm::Module *mModule;
+public:
+    TestGeneratorVisitor(llvm::Module *mod) : mCurrentFunction(nullptr),
+        mModule(mod){}
+    TestGeneratorVisitor() = delete;
+    TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
+    ~TestGeneratorVisitor() {}
+    
+    llvm::Function* nextFunction() const {
+        return mCurrentFunction;
+    }
+};
+
 #endif	/* VISITOR_HXX */
 
