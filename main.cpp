@@ -30,6 +30,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
+#include "TestParser.hxx"
 #include <iostream>
 #include <utility>
 using namespace std;
@@ -94,6 +95,33 @@ TestFunction extractTestFunction(SmallVector<const char *, 16> & Args)
 			Args.pop_back();
 	
 	return std::move(testFunction);
+}
+
+/**
+ * Reads the arguments from the command to extract the function we want to test.
+ *
+ * @note Args was previously parsed by clang parsing system.
+ *
+ * @param Args Command line arguments.
+ * @return A TestFunction
+ */
+string extractTestFile(SmallVector<const char *, 16> & Args)
+{
+	string fileName;
+	unsigned delete_count = 1; // remove the flag --test
+
+	for (unsigned i = 0; i < Args.size(); i++) {
+		if (string(Args[i]) == "--test-file") {
+			++delete_count;
+			fileName = string(Args[++i]);
+		}
+	}
+
+	if (delete_count > 1)
+		while (delete_count--)
+			Args.pop_back();
+
+	return fileName;
 }
 
 /**
@@ -171,6 +199,24 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& ji
 	return *(EE->runFunction(wrapper, Args).IntVal.getRawData());
 }
 
+static int Execute(llvm::Module *Mod, llvm::Function *F)
+{
+	llvm::InitializeNativeTarget();
+
+	std::string Error;
+	OwningPtr<llvm::ExecutionEngine> EE(
+			llvm::ExecutionEngine::createJIT(Mod, &Error));
+	if (!EE) {
+		llvm::errs() << "unable to make execution engine: " << Error << "\n";
+		return 255;
+	}
+	const std::vector<GenericValue> Args;
+
+
+	//Args.push_back(Mod->getModuleIdentifier());
+	return *(EE->runFunction(F, Args).IntVal.getRawData());
+}
+
 int main(int argc, const char **argv, char * const *envp)
 {
 	void *MainAddr = (void*) (intptr_t) GetExecutablePath;
@@ -189,6 +235,7 @@ int main(int argc, const char **argv, char * const *envp)
 	// (basically, exactly one input, and the operation mode is hard wired).
 	SmallVector<const char *, 16> Args(argv, argv + argc);
 	TestFunction testFunction = extractTestFunction(Args);
+	string file_name = extractTestFile(Args);
 	Args.push_back("-fsyntax-only");
 	OwningPtr<Compilation> C(TheDriver.BuildCompilation(Args));
 	if (!C)
@@ -252,9 +299,19 @@ int main(int argc, const char **argv, char * const *envp)
 		return 1;
 
 	int Res = 255;
-	if (llvm::Module * Module = Act->takeModule())
-		Res = Execute(Module, envp, testFunction);
+	if (llvm::Module * Module = Act->takeModule()) {
+		if (file_name.empty() == false) {
+			TestParser parser(file_name);
+			TestExpr *tests = parser.ParseTestExpr();
+			TestGeneratorVisitor visitor(Module);
+			tests->accept(&visitor);
 
+			llvm::Function * f = visitor.nextFunction();
+			Res = Execute(Module, f);
+		} else {
+			Res = Execute(Module, envp, testFunction);
+		}
+	}
 	// Shutdown.
 
 	llvm::llvm_shutdown();
@@ -288,9 +345,9 @@ void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
 
 	// Get pointers to the integer argument of the add1 function...
 	assert(Function->arg_begin() != Function->arg_end()); // Make sure there's an arg
-	Argument *ArgX = Function->arg_begin(); // Get the arg
+	llvm::Argument *ArgX = Function->arg_begin(); // Get the arg
 	ArgX->setName("AnArg"); // Give it a nice symbolic name for fun
-	Argument *Arg2 = ++(Function->arg_begin());
+	llvm::Argument *Arg2 = ++(Function->arg_begin());
 
 	// Create the add instruction, inserting it into the end of BB.
 	Value *Add = builder.CreateAdd(ArgX, Arg2);
@@ -326,7 +383,7 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 
 	unsigned j = 0;
 	for (auto it = Wrapped->arg_begin(); it != Wrapped->arg_end(); ++it) {
-		Argument& arg = *it;
+		llvm::Argument& arg = *it;
 		errs() << "Argument type: " << arg.getType()->getTypeID() << "\n";
 		outs() << "ValueName: " << arg.getValueName()->getKey() << "\n";
 		if (arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
