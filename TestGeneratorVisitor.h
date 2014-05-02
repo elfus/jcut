@@ -18,6 +18,8 @@ namespace llvm {
 
 #include "llvm/IR/IRBuilder.h"
 
+using namespace tp;
+
 class TestGeneratorVisitor : public Visitor {
 private:
     llvm::Function *mCurrentFunction;

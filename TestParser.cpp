@@ -3,6 +3,7 @@
 #include <exception>
 
 using namespace std;
+using namespace tp;
 
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
 mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mDouble(0.0),
@@ -55,7 +56,7 @@ int Tokenizer::nextToken()
 			mCurrentToken = TOK_ASCII_CHAR;
 			return mLastChar;
 		}
-		
+
 		while ((mLastChar = mInput.get()) != '}') {
 			mTokStrValue += mLastChar;
 		}
@@ -138,21 +139,21 @@ int Tokenizer::nextToken()
 
 int TestExpr::leaks = 0;
 
-Argument* TestParser::ParseArgument()
+Argument* TestDriver::ParseArgument()
 {
 	Argument *Number = new Argument(mTokenizer.getTokenStringValue(), (Tokenizer::Token)mCurrentToken);
 	mCurrentToken = mTokenizer.nextToken(); // eat current argument, move to next
 	return Number;
 }
 
-BufferAlloc* TestParser::ParseBufferAlloc()
+BufferAlloc* TestDriver::ParseBufferAlloc()
 {
 	BufferAlloc *Number = new BufferAlloc(mTokenizer.getTokenStringValue());
 	mCurrentToken = mTokenizer.nextToken(); // eat current argument, move to next
 	return Number;
 }
 
-Identifier* TestParser::ParseIdentifier()
+Identifier* TestDriver::ParseIdentifier()
 {
 	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER)
 		throw Exception("Expected an identifier but received " + mTokenizer.getTokenStringValue());
@@ -161,7 +162,7 @@ Identifier* TestParser::ParseIdentifier()
 	return id;
 }
 
-TestExpr* TestParser::ParseFunctionArgument()
+TestExpr* TestDriver::ParseFunctionArgument()
 {
 	if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC)
 		return ParseBufferAlloc();
@@ -170,29 +171,29 @@ TestExpr* TestParser::ParseFunctionArgument()
 	throw Exception("Expected a valid Argument but received: " + mTokenizer.getTokenStringValue());
 }
 
-VariableAssignmentExpr* TestParser::ParseVariableAssignment()
+VariableAssignmentExpr* TestDriver::ParseVariableAssignment()
 {
-	TestExpr *identifier = ParseIdentifier();
+	Identifier *identifier = ParseIdentifier();
 
 	if (mCurrentToken != '=') {
 		delete identifier;
 		throw Exception("Expected = but received " + mTokenizer.getTokenStringValue());
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '='
-	
-	TestExpr *arg = ParseArgument();
+
+	Argument *arg = ParseArgument();
 
 	return new VariableAssignmentExpr(identifier, arg);
 }
 
-Identifier* TestParser::ParseFunctionName()
+Identifier* TestDriver::ParseFunctionName()
 {
 	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER)
 		throw Exception("Expected an identifier name but received " + mTokenizer.getTokenStringValue());
 	return ParseIdentifier(); // Missing a 'FunctionName' class that wraps an Identifier
 }
 
-FunctionCallExpr* TestParser::ParseFunctionCall()
+FunctionCallExpr* TestDriver::ParseFunctionCall()
 {
 	Identifier* functionName = ParseFunctionName();
 
@@ -222,7 +223,7 @@ FunctionCallExpr* TestParser::ParseFunctionCall()
 	return new FunctionCallExpr(functionName, Args);
 }
 
-TestTeardowExpr* TestParser::ParseTestTearDown()
+TestTeardownExpr* TestDriver::ParseTestTearDown()
 {
 	if (mCurrentToken != Tokenizer::TOK_AFTER)
 		return nullptr;
@@ -232,13 +233,19 @@ TestTeardowExpr* TestParser::ParseTestTearDown()
 	if (mCurrentToken == '{') {
 		mCurrentToken = mTokenizer.nextToken(); // eat the '{'
 		TestFixtureExpr* testFixture = ParseTestFixture();
-		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'		
-		return new TestTeardowExpr(testFixture);
+		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'
+		return new TestTeardownExpr(testFixture);
 	}
 	throw Exception("Expected { but received " + mTokenizer.getTokenStringValue() + " after keyword 'after'");
 }
 
-TestSetupExpr* TestParser::ParseTestSetup()
+TestFunction* TestDriver::ParseTestFunction()
+{
+	FunctionCallExpr *FunctionCall = ParseFunctionCall();
+	return new TestFunction(FunctionCall);
+}
+
+TestSetupExpr* TestDriver::ParseTestSetup()
 {
 	if (mCurrentToken != Tokenizer::TOK_BEFORE)
 		return nullptr;
@@ -254,7 +261,7 @@ TestSetupExpr* TestParser::ParseTestSetup()
 	throw Exception("Expected { but received " + mTokenizer.getTokenStringValue() + " after keyword 'before'");
 }
 
-TestFixtureExpr* TestParser::ParseTestFixture()
+TestFixtureExpr* TestDriver::ParseTestFixture()
 {
 	vector<VariableAssignmentExpr*> assignments;
 	vector<FunctionCallExpr*> functions;
@@ -277,15 +284,15 @@ TestFixtureExpr* TestParser::ParseTestFixture()
 	return new TestFixtureExpr(functions, assignments);
 }
 
-MockupVariableExpr* TestParser::ParseMockupVariable()
+MockupVariableExpr* TestDriver::ParseMockupVariable()
 {
-	TestExpr *varAssign = ParseVariableAssignment();
+	VariableAssignmentExpr *varAssign = ParseVariableAssignment();
 	return new MockupVariableExpr(varAssign);
 }
 
-MockupFunctionExpr* TestParser::ParseMockupFunction()
+MockupFunctionExpr* TestDriver::ParseMockupFunction()
 {
-	TestExpr *func = ParseFunctionCall();
+	FunctionCallExpr *func = ParseFunctionCall();
 
 	if (mCurrentToken != '=') {
 		delete func;
@@ -293,12 +300,12 @@ MockupFunctionExpr* TestParser::ParseMockupFunction()
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat the '='
 
-	TestExpr *argument = ParseArgument();
+	Argument *argument = ParseArgument();
 
 	return new MockupFunctionExpr(func, argument);
 }
 
-MockupFixtureExpr* TestParser::ParseMockupFixture()
+MockupFixtureExpr* TestDriver::ParseMockupFixture()
 {
 	vector<MockupFunctionExpr*> MockupFunctions;
 	vector<MockupVariableExpr*> MockupVariables;
@@ -321,7 +328,7 @@ MockupFixtureExpr* TestParser::ParseMockupFixture()
 	return new MockupFixtureExpr(MockupFunctions, MockupVariables);
 }
 
-TestMockupExpr* TestParser::ParseTestMockup()
+TestMockupExpr* TestDriver::ParseTestMockup()
 {
 	if (mCurrentToken != Tokenizer::TOK_MOCKUP)
 		return nullptr;
@@ -337,12 +344,12 @@ TestMockupExpr* TestParser::ParseTestMockup()
 	throw Exception("Excpected { but received " + mTokenizer.getTokenStringValue());
 }
 
-TestDefinitionExpr* TestParser::ParseTestDefinition()
+TestDefinitionExpr* TestDriver::ParseTestDefinition()
 {
-	TestExpr *mockup = ParseTestMockup();
-	TestExpr *setup = ParseTestSetup();
-	FunctionCallExpr *FunctionCall = ParseFunctionCall();
-	TestExpr *teardown = nullptr;
+	TestMockupExpr *mockup = ParseTestMockup();
+	TestSetupExpr *setup = ParseTestSetup();
+	TestFunction *testFunction = ParseTestFunction();
+	TestTeardownExpr *teardown = nullptr;
 
 	// Means the user skipped the expected result part but provided an after keyword
 	if (mCurrentToken == Tokenizer::TOK_AFTER)
@@ -353,10 +360,10 @@ TestDefinitionExpr* TestParser::ParseTestDefinition()
 			mCurrentToken == Tokenizer::TOK_BEFORE or
 			mCurrentToken == Tokenizer::TOK_MOCKUP or
 			mCurrentToken == Tokenizer::TOK_EOF)
-		return new TestDefinitionExpr(FunctionCall, nullptr, setup, teardown, mockup);
+		return new TestDefinitionExpr(testFunction, nullptr, setup, teardown, mockup);
 
 	if (mCurrentToken != '=') { // we expect an assignment at this point
-		if (FunctionCall) delete FunctionCall;
+		if (testFunction) delete testFunction;
 		if (setup) delete setup;
 		if (mockup) delete mockup;
 		throw Exception("Expected = but received " + mTokenizer.getTokenStringValue());
@@ -365,23 +372,23 @@ TestDefinitionExpr* TestParser::ParseTestDefinition()
 
 	// The only allowed after an '=' is an Argument
 	if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
-		if (FunctionCall) delete FunctionCall;
+		if (testFunction) delete testFunction;
 		if (setup) delete setup;
 		if (mockup) delete mockup;
 		throw Exception("Expected an Argument but received a BufferAlloc");
 	}
-	TestExpr *ExpectedResult = ParseArgument();
+	Argument *ExpectedResult = ParseArgument();
 
 	// User provided an expected result and also an after part
 	if (mCurrentToken == Tokenizer::TOK_AFTER)
 		teardown = ParseTestTearDown();
 
-	return new TestDefinitionExpr(FunctionCall, ExpectedResult, setup, teardown, mockup);
+	return new TestDefinitionExpr(testFunction, ExpectedResult, setup, teardown, mockup);
 }
 
-UnitTestExpr* TestParser::ParseUnitTestExpr()
+UnitTestExpr* TestDriver::ParseUnitTestExpr()
 {
-	vector<TestExpr*> definitions;
+	vector<TestDefinitionExpr*> definitions;
 
 	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER &&
 			mCurrentToken != Tokenizer::TOK_BEFORE &&
@@ -393,7 +400,7 @@ UnitTestExpr* TestParser::ParseUnitTestExpr()
 			mCurrentToken == Tokenizer::TOK_MOCKUP) {
 		while (true) {
 			try {
-				TestExpr *TestDefinition = ParseTestDefinition();
+				TestDefinitionExpr *TestDefinition = ParseTestDefinition();
 				definitions.push_back(TestDefinition);
 				if (mCurrentToken == Tokenizer::TOK_EOF)
 					break;
@@ -408,7 +415,7 @@ UnitTestExpr* TestParser::ParseUnitTestExpr()
 	return new UnitTestExpr(definitions);
 }
 
-GlobalMockupExpr* TestParser::ParseGlobalMockupExpr()
+GlobalMockupExpr* TestDriver::ParseGlobalMockupExpr()
 {
 	if (mCurrentToken == Tokenizer::TOK_MOCKUP_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
@@ -423,7 +430,7 @@ GlobalMockupExpr* TestParser::ParseGlobalMockupExpr()
 	return nullptr;
 }
 
-GlobalSetupExpr* TestParser::ParseGlobalSetupExpr()
+GlobalSetupExpr* TestDriver::ParseGlobalSetupExpr()
 {
 	if (mCurrentToken == Tokenizer::TOK_BEFORE_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
@@ -438,7 +445,7 @@ GlobalSetupExpr* TestParser::ParseGlobalSetupExpr()
 	return nullptr;
 }
 
-GlobalTeardownExpr* TestParser::ParseGlobalTeardownExpr()
+GlobalTeardownExpr* TestDriver::ParseGlobalTeardownExpr()
 {
 	if (mCurrentToken == Tokenizer::TOK_AFTER_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
@@ -453,8 +460,7 @@ GlobalTeardownExpr* TestParser::ParseGlobalTeardownExpr()
 	return nullptr;
 }
 
-
-TestFile* TestParser::ParseTestFile()
+TestFile* TestDriver::ParseTestFile()
 {
 	GlobalMockupExpr *gm = ParseGlobalMockupExpr();
 	GlobalSetupExpr *gs = ParseGlobalSetupExpr();
@@ -463,7 +469,7 @@ TestFile* TestParser::ParseTestFile()
 	return new TestFile(test, gm, gs, gt);
 }
 
-TestExpr* TestParser::ParseTestExpr()
+TestExpr* TestDriver::ParseTestExpr()
 {
 	// Position on the first token
 	mCurrentToken = mTokenizer.nextToken();

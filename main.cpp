@@ -57,11 +57,10 @@ std::string GetExecutablePath(const char *Argv0)
 	void *MainAddr = (void*) (intptr_t) GetExecutablePath;
 	return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
 }
-
 /**
  * Represents a function to be unit tested.
  */
-struct TestFunction {
+struct TestFunctionArgs {
 	string FunctionName; //!< The name of the function as it's spelled in source code.
 	vector<string> FunctionArguments; //!< Arguments to be passed to the function.
 };
@@ -75,9 +74,9 @@ struct TestFunction {
  * @param Args Command line arguments.
  * @return A TestFunction
  */
-TestFunction extractTestFunction(SmallVector<const char *, 16> & Args)
+TestFunctionArgs extractTestFunction(SmallVector<const char *, 16> & Args)
 {
-	TestFunction testFunction;
+	TestFunctionArgs testFunction;
 	unsigned delete_count = 1; // remove the flag --test
 
 	for (unsigned i = 0; i < Args.size(); i++) {
@@ -153,7 +152,7 @@ static vector<llvm::Function*> FindFunctionDeclaration(llvm::Function *f)
 	return declarations;
 }
 
-static int Execute(llvm::Module *Mod, char * const *envp, const TestFunction& jitFunc)
+static int Execute(llvm::Module *Mod, char * const *envp, const TestFunctionArgs& jitFunc)
 {
 	llvm::InitializeNativeTarget();
 
@@ -235,7 +234,7 @@ int main(int argc, const char **argv, char * const *envp)
 	// recognize. We need to extend the driver library to support this use model
 	// (basically, exactly one input, and the operation mode is hard wired).
 	SmallVector<const char *, 16> Args(argv, argv + argc);
-	TestFunction testFunction = extractTestFunction(Args);
+	TestFunctionArgs testFunction = extractTestFunction(Args);
 	string file_name = extractTestFile(Args);
 	Args.push_back("-fsyntax-only");
 	OwningPtr<Compilation> C(TheDriver.BuildCompilation(Args));
@@ -302,8 +301,8 @@ int main(int argc, const char **argv, char * const *envp)
 	int Res = 255;
 	if (llvm::Module * Module = Act->takeModule()) {
 		if (file_name.empty() == false) {
-			TestParser parser(file_name);
-			TestExpr *tests = parser.ParseTestExpr();
+			TestDriver driver(file_name);
+			TestExpr *tests = driver.ParseTestExpr();
 			TestGeneratorVisitor visitor(Module);
 			tests->accept(&visitor);
 

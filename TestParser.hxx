@@ -31,6 +31,8 @@ private:
     string mMsg;
 };
 
+namespace tp { // tp stands for test parser
+    
 class Tokenizer {
 public:
     enum Token {
@@ -107,33 +109,6 @@ public:
     virtual ~TestExpr() {--leaks;}
 
     static int leaks;
-};
-
-class UnitTestExpr : public TestExpr {
-private:
-    vector<TestExpr*> TestDefinitions;
-public:
-
-    UnitTestExpr(const vector<TestExpr*>& def) : TestDefinitions(def) { }
-
-    virtual ~UnitTestExpr() {
-        for (auto*& ptr : TestDefinitions)
-            delete ptr;
-    }
-
-    void dump() {
-        for (auto*& ptr : TestDefinitions) {
-            ptr->dump();
-            cout << endl;
-        }
-    }
-    
-    void accept(Visitor *v) {
-        if(v->VisitUnitTestExpr(this))
-            for (auto*& ptr : TestDefinitions) {
-                ptr->accept(v);
-            }
-    }
 };
 
 class Argument : public TestExpr {
@@ -215,65 +190,13 @@ public:
     }
 };
 
-class TestDefinitionExpr : public TestExpr {
-private:
-    FunctionCallExpr *FunctionCall;
-    TestExpr *ExpectedResult, *TestSetup, *TestTeardown, *TestMockup;
-    
-public:
-
-    TestDefinitionExpr(FunctionCallExpr *function, TestExpr *expected = nullptr,
-            TestExpr *setup = nullptr, TestExpr *teardown = nullptr,
-            TestExpr *mockup = nullptr) :
-    FunctionCall(function), ExpectedResult(expected), TestSetup(setup),
-    TestTeardown(teardown), TestMockup(mockup) {
-    }
-    
-    FunctionCallExpr* getFunctionCall() const {return FunctionCall;}
-
-    virtual ~TestDefinitionExpr() {
-        if (FunctionCall) delete FunctionCall;
-        if (ExpectedResult) delete ExpectedResult;
-        if (TestSetup) delete TestSetup;
-        if (TestTeardown) delete TestTeardown;
-        if (TestMockup) delete TestMockup;
-    }
-
-    void dump() {
-        if (TestMockup) {
-            TestMockup->dump();
-        }
-        if (TestSetup) {
-            TestSetup->dump();
-        }
-        FunctionCall->dump();
-        if (ExpectedResult)
-            ExpectedResult->dump();
-        cout << endl;
-        if (TestTeardown) {
-            TestTeardown->dump();
-        }
-    }
-    
-    void accept(Visitor *v) {
-        if(v->VisitTestDefinitionExpr(this)) {
-            if(TestMockup) TestMockup->accept(v);
-            if(TestSetup) TestSetup->accept(v);
-            FunctionCall->accept(v);
-            if(ExpectedResult) ExpectedResult->accept(v);
-            if(TestTeardown) TestTeardown->accept(v);
-        }
-    }
-};
-
-
 class VariableAssignmentExpr : public TestExpr {
 private:
     Identifier *mIdentifier;
     Argument *mArgument;
 public:
 
-    VariableAssignmentExpr(TestExpr *id, TestExpr *arg) :
+    VariableAssignmentExpr(Identifier *id, Argument *arg) :
     mIdentifier(nullptr), mArgument(nullptr) {
         mIdentifier = dynamic_cast<Identifier*> (id);
         if (mIdentifier == nullptr)
@@ -308,7 +231,7 @@ private:
     VariableAssignmentExpr *mVariableAssignment;
 public:
 
-    MockupVariableExpr(TestExpr *var) : mVariableAssignment(nullptr) {
+    MockupVariableExpr(VariableAssignmentExpr *var) : mVariableAssignment(nullptr) {
         mVariableAssignment = dynamic_cast<VariableAssignmentExpr*> (var);
         if (mVariableAssignment == nullptr)
             throw Exception("Invalid Variable Assignment Expression type");
@@ -335,7 +258,7 @@ private:
     Argument *mArgument;
 public:
 
-    MockupFunctionExpr(TestExpr *call, TestExpr *arg) :
+    MockupFunctionExpr(FunctionCallExpr *call, Argument *arg) :
     mFunctionCall(nullptr), mArgument(nullptr) {
         mFunctionCall = dynamic_cast<FunctionCallExpr*> (call);
         if (mFunctionCall == nullptr)
@@ -510,15 +433,36 @@ public:
     }
 };
 
-class TestTeardowExpr : public TestExpr {
+class TestFunction : public TestExpr {
+private:
+    FunctionCallExpr* mFunctionCall;
+public:
+    TestFunction(FunctionCallExpr *F) : mFunctionCall(F) {}
+    ~TestFunction() {
+        if(mFunctionCall) delete mFunctionCall;
+    }
+    
+    FunctionCallExpr* getFunctionCall() const {return mFunctionCall; }
+    
+    void dump() {
+        mFunctionCall->dump();
+    }
+    
+    void accept(Visitor *v) {
+        if(v->VisitTestFunction(this))
+            mFunctionCall->accept(v);
+    }
+};
+
+class TestTeardownExpr : public TestExpr {
 private:
     TestFixtureExpr* mTestFixture;
 public:
 
-    TestTeardowExpr(TestFixtureExpr* fixture) : mTestFixture(fixture) {
+    TestTeardownExpr(TestFixtureExpr* fixture) : mTestFixture(fixture) {
     }
 
-    ~TestTeardowExpr() {
+    ~TestTeardownExpr() {
         if (mTestFixture) delete mTestFixture;
     }
 
@@ -531,6 +475,89 @@ public:
     void accept(Visitor *v) {
         if(v->VisitTestTeardowExpr(this))
             mTestFixture->accept(v);
+    }
+};
+
+class TestDefinitionExpr : public TestExpr {
+private:
+    TestFunction *FunctionCall;
+    Argument *ExpectedResult;
+    TestSetupExpr *TestSetup;
+    TestTeardownExpr *TestTeardown;
+    TestMockupExpr *TestMockup;
+
+public:
+
+    TestDefinitionExpr(TestFunction *function,
+            Argument *expected = nullptr,
+            TestSetupExpr *setup = nullptr,
+            TestTeardownExpr *teardown = nullptr,
+            TestMockupExpr *mockup = nullptr) :
+    FunctionCall(function), ExpectedResult(expected), TestSetup(setup),
+    TestTeardown(teardown), TestMockup(mockup) {
+    }
+    
+    TestFunction * getTestFunction() const {return FunctionCall;}
+
+    virtual ~TestDefinitionExpr() {
+        if (FunctionCall) delete FunctionCall;
+        if (ExpectedResult) delete ExpectedResult;
+        if (TestSetup) delete TestSetup;
+        if (TestTeardown) delete TestTeardown;
+        if (TestMockup) delete TestMockup;
+    }
+
+    void dump() {
+        if (TestMockup) {
+            TestMockup->dump();
+        }
+        if (TestSetup) {
+            TestSetup->dump();
+        }
+        FunctionCall->dump();
+        if (ExpectedResult)
+            ExpectedResult->dump();
+        cout << endl;
+        if (TestTeardown) {
+            TestTeardown->dump();
+        }
+    }
+    
+    void accept(Visitor *v) {
+        if(v->VisitTestDefinitionExpr(this)) {
+            if(TestMockup) TestMockup->accept(v);
+            if(TestSetup) TestSetup->accept(v);
+            FunctionCall->accept(v);
+            if(ExpectedResult) ExpectedResult->accept(v);
+            if(TestTeardown) TestTeardown->accept(v);
+        }
+    }
+};
+
+class UnitTestExpr : public TestExpr {
+private:
+    vector<TestDefinitionExpr*> TestDefinitions;
+public:
+
+    UnitTestExpr(const vector<TestDefinitionExpr*>& def) : TestDefinitions(def) { }
+
+    virtual ~UnitTestExpr() {
+        for (auto*& ptr : TestDefinitions)
+            delete ptr;
+    }
+
+    void dump() {
+        for (auto*& ptr : TestDefinitions) {
+            ptr->dump();
+            cout << endl;
+        }
+    }
+    
+    void accept(Visitor *v) {
+        if(v->VisitUnitTestExpr(this))
+            for (auto*& ptr : TestDefinitions) {
+                ptr->accept(v);
+            }
     }
 };
 
@@ -661,18 +688,18 @@ public:
     }
 };
 
-class TestParser {
+class TestDriver {
 private:
     Tokenizer mTokenizer;
     int mCurrentToken;
 public:
 
-    TestParser() = delete;
-    TestParser(const TestParser&) = delete;
+    TestDriver() = delete;
+    TestDriver(const TestDriver&) = delete;
 
-    TestParser(const string& file) : mTokenizer(file) { }
+    TestDriver(const string& file) : mTokenizer(file) { }
 
-    ~TestParser() {
+    ~TestDriver() {
     }
 
     TestExpr* ParseTestExpr();
@@ -685,7 +712,8 @@ private:
     TestExpr* ParseFunctionArgument();
     Identifier* ParseFunctionName(); // We may want to have a FunctionName class
     FunctionCallExpr* ParseFunctionCall();
-    TestTeardowExpr* ParseTestTearDown();
+    TestTeardownExpr* ParseTestTearDown();
+    TestFunction* ParseTestFunction();
     TestSetupExpr* ParseTestSetup();
     TestFixtureExpr* ParseTestFixture();
     MockupVariableExpr* ParseMockupVariable();
@@ -700,6 +728,6 @@ private:
     TestFile* ParseTestFile();
 };
 
-
+} // namespace tp
 #endif	/* TESTPARSER_HXX */
 

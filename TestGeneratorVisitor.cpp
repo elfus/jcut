@@ -15,7 +15,7 @@ using namespace llvm;
 
 bool TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 {
-	string test_name = "test_" + TD->getFunctionCall()->getIdentifier()->getIdentifierStr();
+	string test_name = "test_" + TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
 	mCurrentFunction = cast<Function> (mModule->getOrInsertFunction(test_name,
 			Type::getInt32Ty(mModule->getContext()), // Return type
 			(Type*) 0)); // Arguments

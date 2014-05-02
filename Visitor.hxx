@@ -8,6 +8,8 @@
 #ifndef VISITOR_HXX
 #define	VISITOR_HXX
 
+namespace tp { // tp stands for test parser
+    
 // Forward declarations
 class FunctionCallExpr;
 class Argument;
@@ -15,7 +17,8 @@ class VariableAssignmentExpr;
 class BufferAlloc;
 class Identifier;
 class FunctionCallExpr;
-class TestTeardowExpr;
+class TestTeardownExpr;
+class TestFunction;
 class TestSetupExpr;
 class TestFixtureExpr;
 class MockupVariableExpr;
@@ -43,7 +46,8 @@ public:
     virtual bool VisitBufferAlloc(BufferAlloc *) {return true;}
     virtual bool VisitIdentifier(Identifier *) {return true;}
     virtual bool VisitFunctionCallExpr(FunctionCallExpr *) {return true;}
-    virtual bool VisitTestTeardowExpr(TestTeardowExpr *) {return true;}
+    virtual bool VisitTestTeardowExpr(TestTeardownExpr *) {return true;}
+    virtual bool VisitTestFunction(TestFunction *){ return true; }
     virtual bool VisitTestSetupExpr(TestSetupExpr *) {return true;}
     virtual bool VisitTestFixtureExpr(TestFixtureExpr *) {return true;}
     virtual bool VisitMockupVariableExpr(MockupVariableExpr *) {return true;}
@@ -58,6 +62,8 @@ public:
     virtual bool VisitTestFile(TestFile *) {return true;}
     virtual ~Visitor() {}
 };
+
+} // namespace tp
 
 #endif	/* VISITOR_HXX */
 
