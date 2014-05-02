@@ -5,7 +5,7 @@
  * Created on May 1, 2014, 9:19 AM
  */
 
-#include "Visitor.hxx"
+#include "TestGeneratorVisitor.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Instructions.h"
@@ -23,5 +23,15 @@ bool TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	mCurrentBB = BasicBlock::Create(mModule->getContext(), "wrapperBlock", mCurrentFunction);
 
 	mCurrentBuilder = new IRBuilder<>(mCurrentBB);
+	return true;
+}
+
+bool TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr* FC)
+{
+	// Get llvm::Function
+	// Get the arguments to be passed to that call
+	// Create Call instruction
+	// Add it to the block
+	cout << "Function to be called: " << FC->getIdentifier()->getIdentifierStr() << endl;
 	return true;
 }

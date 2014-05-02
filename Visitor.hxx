@@ -59,34 +59,5 @@ public:
     virtual ~Visitor() {}
 };
 
-namespace llvm {
-    class Function;
-    class Module;
-    class BasicBlock;
-}
-
-#include "llvm/IR/IRBuilder.h"
-
-class TestGeneratorVisitor : public Visitor {
-private:
-    llvm::Function *mCurrentFunction;
-    llvm::BasicBlock *mCurrentBB;
-    llvm::IRBuilder<> *mCurrentBuilder;
-    llvm::Module *mModule;
-    unsigned mTestCount;
-public:
-    TestGeneratorVisitor(llvm::Module *mod) : mCurrentFunction(nullptr),
-        mModule(mod), mTestCount(0){}
-    TestGeneratorVisitor() = delete;
-    TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
-    ~TestGeneratorVisitor() {}
-    
-    bool VisitTestDefinitionExpr(TestDefinitionExpr *);
-    
-    llvm::Function* nextFunction() const {
-        return mCurrentFunction;
-    }
-};
-
 #endif	/* VISITOR_HXX */
 
