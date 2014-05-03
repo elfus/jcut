@@ -198,5 +198,13 @@ void reverse_buffer(void *buf, unsigned size) {
 }
 
 void print_state() {
-	printf("%x\n",GLOBAL_VARIABLE);
+	printf("GLOBAL_VARIABLE = 0x%x\n",GLOBAL_VARIABLE);
+}
+
+void pre_test() {
+	printf("[PRE TEST]\n");
+}
+
+void post_test() {
+	printf("[PRE TEST]\n");
 }
