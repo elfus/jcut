@@ -301,13 +301,18 @@ int main(int argc, const char **argv, char * const *envp)
 	int Res = 255;
 	if (llvm::Module * Module = Act->takeModule()) {
 		if (file_name.empty() == false) {
-			TestDriver driver(file_name);
-			TestExpr *tests = driver.ParseTestExpr();
-			TestGeneratorVisitor visitor(Module);
-			tests->accept(&visitor);
+			try {
+				TestDriver driver(file_name);
+				TestExpr *tests = driver.ParseTestExpr();
+				TestGeneratorVisitor visitor(Module);
+				tests->accept(&visitor);
 
-			llvm::Function * f = visitor.nextFunction();
-			Res = Execute(Module, f);
+				llvm::Function * f = visitor.nextFunction();
+				if (f != nullptr)
+					Res = Execute(Module, f);
+			} catch (const Exception& e) {
+				errs() << e.what() << "\n";
+			}
 		} else {
 			Res = Execute(Module, envp, testFunction);
 		}

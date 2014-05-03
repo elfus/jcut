@@ -9,6 +9,8 @@
 #define	TESTGENERATORVISITOR_H
 
 #include "Visitor.hxx"
+#include <string>
+#include <vector>
 
 namespace llvm {
     class Function;
@@ -17,25 +19,35 @@ namespace llvm {
 }
 
 #include "llvm/IR/IRBuilder.h"
+#include "TestParser.hxx"
 
 using namespace tp;
 
 class TestGeneratorVisitor : public Visitor {
 private:
+    llvm::Module *mModule;
+    llvm::IRBuilder<> mBuilder;
     llvm::Function *mCurrentFunction;
     llvm::BasicBlock *mCurrentBB;
-    llvm::IRBuilder<> *mCurrentBuilder;
-    llvm::Module *mModule;
+    std::vector<llvm::Instruction*> mInstructions;
+    std::vector<llvm::Value*> mArgs;
+    
     unsigned mTestCount;
+    
+    /**
+ * Creates a new Value of the same Type as type with real_value
+ */
+    llvm::Value* createValue(llvm::Type* type,
+                             const std::string& real_value);
 public:
-    TestGeneratorVisitor(llvm::Module *mod) : mCurrentFunction(nullptr),
-        mModule(mod), mTestCount(0){}
+    TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor() = delete;
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
     ~TestGeneratorVisitor() {}
     
-    bool VisitTestDefinitionExpr(TestDefinitionExpr *);
-    bool VisitFunctionCallExpr(FunctionCallExpr*);
+    bool VisitFunctionArgument(FunctionArgument *);
+    bool VisitFunctionCallExpr(FunctionCallExpr *);
+
     
     llvm::Function* nextFunction() const {
         return mCurrentFunction;
