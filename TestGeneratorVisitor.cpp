@@ -44,6 +44,30 @@ bool TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 		if (i == arg->getIndex()) {
 			llvm::Argument& llvm_arg = *arg_it;
 
+			if (llvm_arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
+				AllocaInst *alloc1 = mBuilder.CreateAlloca(
+						llvm_arg.getType()->getPointerElementType(),
+						mBuilder.getInt(APInt(32, 1, 10))
+						); // Allocate memory for the element type pointed to
+
+				Value *v = createValue(llvm_arg.getType()->getPointerElementType(), "5");
+				StoreInst *store1 = mBuilder.CreateStore(v, alloc1);
+
+				// Allocate memory for a pointer type
+				AllocaInst *alloc2 = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "AllocPtr" + Twine(i)); // Allocate a pointer type
+				alloc2->setAlignment(8);
+				StoreInst *store2 = mBuilder.CreateStore(alloc1, alloc2); // Store an already allocated variable address to our pointer
+				LoadInst *load = mBuilder.CreateLoad(alloc2, "value3"); // Load whatever address is in alloc3 into load3 'value3'
+
+				mInstructions.push_back(alloc1);
+				mInstructions.push_back(store1);
+				mInstructions.push_back(alloc2);
+				mInstructions.push_back(store2);
+				mInstructions.push_back(load);
+				mArgs.push_back(load);
+				break;
+			}
+			// Code for non-pointer types
 			llvm::AllocaInst *alloc = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "Allocation" + Twine(i));
 			alloc->setAlignment(4);
 
@@ -59,10 +83,6 @@ bool TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 		}
 		++i;
 		++arg_it;
-	}
-
-	if (tokenType == Tokenizer::TOK_BUFF_ALLOC) {
-		return true;
 	}
 	return true;
 }
@@ -107,6 +127,9 @@ bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
 
 /**
  * Creates a new Value of the same Type as type with real_value
+ *
+ * @TODO Improve the way this method works and its documentation
+ * @BUG This method only works with IntegerTyID types
  */
 llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		const string& real_value)
