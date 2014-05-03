@@ -111,7 +111,11 @@ bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
 			"wrapper_block_" + func_name, testFunction);
 	Function *funcToBeCalled = mModule->getFunction(FC->getIdentifier()->getIdentifierStr());
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
-	ReturnInst *ret = mBuilder.CreateRet(call);
+	ReturnInst *ret = nullptr;
+	if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
+		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
+	else
+		ret = mBuilder.CreateRet(call);
 
 	mInstructions.push_back(call);
 	mInstructions.push_back(ret);
