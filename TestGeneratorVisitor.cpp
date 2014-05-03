@@ -26,7 +26,8 @@ mTestCount(0)
 /**
  * Create the appropriate instructions for each argument type
  *
- * @TODO Add support for pointers
+ * @TODO Improve implementation and code readability
+ * @TODO Add support for pointers to pointers and more complex types
  * 
  * @param arg
  * @return
