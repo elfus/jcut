@@ -199,24 +199,6 @@ static int Execute(llvm::Module *Mod, char * const *envp, const TestFunctionArgs
 	return *(EE->runFunction(wrapper, Args).IntVal.getRawData());
 }
 
-static int Execute(llvm::Module *Mod, llvm::Function *F)
-{
-	llvm::InitializeNativeTarget();
-
-	std::string Error;
-	OwningPtr<llvm::ExecutionEngine> EE(
-			llvm::ExecutionEngine::createJIT(Mod, &Error));
-	if (!EE) {
-		llvm::errs() << "unable to make execution engine: " << Error << "\n";
-		return 255;
-	}
-	const std::vector<GenericValue> Args;
-
-
-	//Args.push_back(Mod->getModuleIdentifier());
-	return *(EE->runFunction(F, Args).IntVal.getRawData());
-}
-
 int main(int argc, const char **argv, char * const *envp)
 {
 	void *MainAddr = (void*) (intptr_t) GetExecutablePath;
@@ -303,13 +285,27 @@ int main(int argc, const char **argv, char * const *envp)
 		if (file_name.empty() == false) {
 			try {
 				TestDriver driver(file_name);
-				TestExpr *tests = driver.ParseTestExpr();
+				TestExpr *tests = driver.ParseTestExpr(); // Parse file
 				TestGeneratorVisitor visitor(Module);
-				tests->accept(&visitor);
+				tests->accept(&visitor); // Generate object structure tree
 
-				llvm::Function * f = visitor.nextFunction();
-				if (f != nullptr)
-					Res = Execute(Module, f);
+				// Initialize the JIT Engine only once
+				llvm::InitializeNativeTarget();
+				std::string Error;
+				OwningPtr<llvm::ExecutionEngine> EE(
+						llvm::ExecutionEngine::createJIT(Module, &Error));
+				if (!EE) {
+					llvm::errs() << "unable to make execution engine: " << Error << "\n";
+					return 255;
+				}
+				std::vector<llvm::GenericValue> Args;
+
+				// execute many
+				while (llvm::Function * f = visitor.nextTest()) {
+					// TODO Evaluate function output
+					Res = *(EE->runFunction(f, Args).IntVal.getRawData());
+					cout << "Function call Result: " << Res << endl;
+				}
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";
 			}
@@ -320,8 +316,6 @@ int main(int argc, const char **argv, char * const *envp)
 	// Shutdown.
 
 	llvm::llvm_shutdown();
-
-	cout << "Function call Result: " << Res << endl;
 
 	return Res;
 }

@@ -18,6 +18,7 @@ mModule(mod),
 mBuilder(mod->getContext()),
 mCurrentFunction(nullptr),
 mCurrentBB(nullptr),
+mCurrentTest(0),
 mTestCount(0)
 {
 }
@@ -100,9 +101,7 @@ bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
 	mArgs.clear();
 	mBuilder.ClearInsertionPoint();
 
-	testFunction->dump();
-
-	mCurrentFunction = testFunction;
+	mTests.push_back(testFunction);
 	return true;
 }
 

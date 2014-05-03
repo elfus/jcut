@@ -31,7 +31,8 @@ private:
     llvm::BasicBlock *mCurrentBB;
     std::vector<llvm::Instruction*> mInstructions;
     std::vector<llvm::Value*> mArgs;
-    
+    std::vector<llvm::Function*> mTests;
+    unsigned mCurrentTest;
     unsigned mTestCount;
     
     /**
@@ -49,8 +50,10 @@ public:
     bool VisitFunctionCallExpr(FunctionCallExpr *);
 
     
-    llvm::Function* nextFunction() const {
-        return mCurrentFunction;
+    llvm::Function* nextTest() {
+        if(mCurrentTest == mTests.size())
+            return nullptr;
+        return mTests[mCurrentTest++];
     }
 };
 
