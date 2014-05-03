@@ -45,12 +45,14 @@ bool TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			llvm::Argument& llvm_arg = *arg_it;
 
 			if (llvm_arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
+				BufferAlloc *ba = arg->getBufferAlloc();
+				assert(ba != nullptr && "Invalid BufferAlloc pointer");
 				AllocaInst *alloc1 = mBuilder.CreateAlloca(
 						llvm_arg.getType()->getPointerElementType(),
-						mBuilder.getInt(APInt(32, 1, 10))
+						mBuilder.getInt(APInt(32, ba->getBufferSize(), 10))
 						); // Allocate memory for the element type pointed to
 
-				Value *v = createValue(llvm_arg.getType()->getPointerElementType(), "5");
+				Value *v = createValue(llvm_arg.getType()->getPointerElementType(), ba->getDefaultValue());
 				StoreInst *store1 = mBuilder.CreateStore(v, alloc1);
 
 				// Allocate memory for a pointer type
