@@ -653,12 +653,32 @@ public:
 class BufferAlloc : public TestExpr {
 private:
     string StringRepresentation;
+    string BufferSize;
+    string DefaultValue;
 public:
 
-    BufferAlloc(const string& str) : StringRepresentation(str) { }
+    BufferAlloc(const string& str) : StringRepresentation(str) , 
+            BufferSize("1"), DefaultValue("0"){
+        if(StringRepresentation[0] != '[' or StringRepresentation.back() != ']')
+            throw Exception("Malformed buffer allocation");
+        
+        size_t pos = StringRepresentation.find(":");
+        if(pos == string::npos) {
+            pos = StringRepresentation.find("]");
+            BufferSize = StringRepresentation.substr(1,pos-1);
+        } else {
+            BufferSize = StringRepresentation.substr(1,pos-1);
+            size_t pos2 = StringRepresentation.find("]");
+            DefaultValue = StringRepresentation.substr(pos+1,pos2-pos-1);
+        }
+    }
 
     ~BufferAlloc() { }
-
+    
+    
+    string getBufferSize() const { return BufferSize; }
+    string getDefaultValue() const { return DefaultValue; }
+    
     void dump() {
         cout << StringRepresentation;
     }
@@ -692,6 +712,8 @@ public:
     const string& getStringRepresentation() const { 
         return argArgument->getStringRepresentation();
     }
+    
+    BufferAlloc* getBufferAlloc() const { return argBuffAlloc; }
     
     void dump() {
         cout<<Parent->getIdentifier()->getIdentifierStr()<<"(";
