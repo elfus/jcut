@@ -70,8 +70,17 @@ bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
 {
 	// Complete the function calL
 	string func_name = FC->getIdentifier()->getIdentifierStr();
+	string test_name = "test_" + func_name + "_0";
+	unsigned i = 0;
+
+	do {
+		test_name.pop_back();
+		test_name = test_name + ((char) (((int) '0') + i));
+		++i;
+	} while (mModule->getFunction(test_name));
+	
 	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
-			"test_" + func_name,
+			test_name,
 			Type::getInt32Ty(mModule->getContext()),
 			(Type*) 0));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
@@ -92,6 +101,8 @@ bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
 	mBuilder.ClearInsertionPoint();
 
 	testFunction->dump();
+
+	mCurrentFunction = testFunction;
 	return true;
 }
 
