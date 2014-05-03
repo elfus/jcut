@@ -68,11 +68,14 @@ bool TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 
 bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
 {
-	// Complete the function call	
-	Function *testFunction = cast<Function> (mModule->getOrInsertFunction("name",
+	// Complete the function calL
+	string func_name = FC->getIdentifier()->getIdentifierStr();
+	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
+			"test_" + func_name,
 			Type::getInt32Ty(mModule->getContext()),
 			(Type*) 0));
-	BasicBlock *BB = BasicBlock::Create(mModule->getContext(), "wrapperBlock", testFunction);
+	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
+			"wrapper_block_" + func_name, testFunction);
 	Function *funcToBeCalled = mModule->getFunction(FC->getIdentifier()->getIdentifierStr());
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 	ReturnInst *ret = mBuilder.CreateRet(call);
