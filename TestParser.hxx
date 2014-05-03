@@ -121,6 +121,9 @@ public:
     StringRepresentation(str), TokenType(token) { }
 
     ~Argument() {}
+    
+    const string& getStringRepresentation() const { return StringRepresentation; }
+    Tokenizer::Token getTokenType() const { return TokenType; }
 
     void dump() {
         cout << StringRepresentation;
@@ -151,42 +154,23 @@ public:
     string getIdentifierStr() const {return mIdentifierString;}
 };
 
+class FunctionArgument;
+
 class FunctionCallExpr : public TestExpr {
 private:
     Identifier *FunctionName;
-    vector<TestExpr*> FunctionArguments;
+    vector<FunctionArgument*> FunctionArguments;
 public:
     
     Identifier *getIdentifier() const {return FunctionName;}
 
-    FunctionCallExpr(Identifier* name, const vector<TestExpr*>& arg) :
-    FunctionName(name), FunctionArguments(arg) {
-    }
+    FunctionCallExpr(Identifier* name, const vector<FunctionArgument*>& arg);
 
-    virtual ~FunctionCallExpr() {
-        delete FunctionName;
-        for (TestExpr*& ptr : FunctionArguments) {
-            delete ptr;
-            ptr = nullptr;
-        }
-    }
+    virtual ~FunctionCallExpr();
 
-    void dump() {
-        FunctionName->dump();
-        cout << "(";
-        for (auto arg : FunctionArguments) {
-            arg->dump();
-            cout << ",";
-        }
-        cout << ")";
-    }
+    void dump();
     
-    void accept(Visitor *v) {
-        for (TestExpr*& ptr : FunctionArguments) {
-            ptr->accept(v);
-        }
-        v->VisitFunctionCallExpr(this);
-    }
+    void accept(Visitor *v);
 };
 
 class VariableAssignmentExpr : public TestExpr {
@@ -684,6 +668,51 @@ public:
     }
 };
 
+class FunctionArgument : public TestExpr{
+protected:
+    Argument *argArgument;
+    BufferAlloc *argBuffAlloc;
+    unsigned    ArgIndx;
+    FunctionCallExpr *Parent;// Pointer to its parent
+public:
+    explicit FunctionArgument(Argument *arg) : 
+        argArgument(arg), argBuffAlloc(nullptr), ArgIndx(0), Parent(nullptr) { }
+    explicit FunctionArgument(BufferAlloc *arg) : 
+        argArgument(nullptr), argBuffAlloc(arg), ArgIndx(0), Parent(nullptr) { }
+    ~FunctionArgument() {}
+    
+    Tokenizer::Token getTokenType() const { 
+        if(argArgument) return argArgument->getTokenType();
+        return Tokenizer::TOK_BUFF_ALLOC;
+    }
+    unsigned getIndex() const { return ArgIndx; }
+    FunctionCallExpr* getParent() const { return Parent; }
+    void setIndex(unsigned ndx) {ArgIndx = ndx; }
+    void setParent(FunctionCallExpr *ptr) {Parent = ptr; }
+    const string& getStringRepresentation() const { 
+        return argArgument->getStringRepresentation();
+    }
+    
+    void dump() {
+        cout<<Parent->getIdentifier()->getIdentifierStr()<<"(";
+        cout<<ArgIndx<<":";
+        if(argArgument)
+            argArgument->dump();
+        if(argBuffAlloc)
+            argBuffAlloc->dump();
+        cout<<")";
+    }
+    
+    void accept(Visitor *v) {
+        if(argArgument)
+            argArgument->accept(v);
+        if(argBuffAlloc)
+            argBuffAlloc->accept(v);
+        
+        v->VisitFunctionArgument(this);// TODO IMplement
+    }
+};
+
 class TestDriver {
 private:
     Tokenizer mTokenizer;
@@ -705,7 +734,7 @@ private:
     Argument* ParseArgument();
     VariableAssignmentExpr* ParseVariableAssignment();
     BufferAlloc* ParseBufferAlloc();
-    TestExpr* ParseFunctionArgument();
+    FunctionArgument* ParseFunctionArgument();
     Identifier* ParseFunctionName(); // We may want to have a FunctionName class
     FunctionCallExpr* ParseFunctionCall();
     TestTeardownExpr* ParseTestTearDown();

@@ -15,6 +15,7 @@ class FunctionCallExpr;
 class Argument;
 class VariableAssignmentExpr;
 class BufferAlloc;
+class FunctionArgument;
 class Identifier;
 class FunctionCallExpr;
 class TestTeardownExpr;
@@ -45,6 +46,7 @@ public:
     virtual bool VisitVariableAssignmentExpr(VariableAssignmentExpr *) {return true;}
     virtual bool VisitBufferAlloc(BufferAlloc *) {return true;}
     virtual bool VisitIdentifier(Identifier *) {return true;}
+    virtual bool VisitFunctionArgument(FunctionArgument *) {return true;}
     virtual bool VisitFunctionCallExpr(FunctionCallExpr *) {return true;}
     virtual bool VisitTestTeardowExpr(TestTeardownExpr *) {return true;}
     virtual bool VisitTestFunction(TestFunction *){ return true; }

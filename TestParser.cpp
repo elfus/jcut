@@ -162,12 +162,12 @@ Identifier* TestDriver::ParseIdentifier()
 	return id;
 }
 
-TestExpr* TestDriver::ParseFunctionArgument()
+FunctionArgument* TestDriver::ParseFunctionArgument()
 {
 	if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC)
-		return ParseBufferAlloc();
+		return new FunctionArgument(ParseBufferAlloc());
 	else
-		return ParseArgument();
+		return new FunctionArgument(ParseArgument());
 	throw Exception("Expected a valid Argument but received: " + mTokenizer.getTokenStringValue());
 }
 
@@ -201,9 +201,9 @@ FunctionCallExpr* TestDriver::ParseFunctionCall()
 		throw Exception("Expected ( but received " + mTokenizer.getTokenStringValue());
 
 	mCurrentToken = mTokenizer.nextToken(); // eat the (
-	vector<TestExpr*> Args;
+	vector<FunctionArgument*> Args;
 	while (mCurrentToken != ')') {
-		TestExpr *arg = ParseFunctionArgument();
+		FunctionArgument *arg = ParseFunctionArgument();
 		Args.push_back(arg);
 
 		if (mCurrentToken == ')')
@@ -474,4 +474,46 @@ TestExpr* TestDriver::ParseTestExpr()
 	// Position on the first token
 	mCurrentToken = mTokenizer.nextToken();
 	return ParseTestFile();
+}
+
+// Definitions due to conflicts with the forward declarations
+FunctionCallExpr::FunctionCallExpr(Identifier* name, const vector<FunctionArgument*>& arg) :
+FunctionName(name), FunctionArguments(arg)
+{
+	unsigned i = 0;
+	for (auto*& ptr : FunctionArguments) {
+		if (FunctionArgument * arg = dynamic_cast<FunctionArgument*> (ptr)) {
+			arg->setParent(this);
+			arg->setIndex(i);
+		}
+		++i;
+	}
+}
+
+FunctionCallExpr::~FunctionCallExpr()
+{
+	delete FunctionName;
+	for (FunctionArgument*& ptr : FunctionArguments) {
+		delete ptr;
+		ptr = nullptr;
+	}
+}
+
+void FunctionCallExpr::dump()
+{
+	FunctionName->dump();
+	cout << "(";
+	for (auto arg : FunctionArguments) {
+		arg->dump();
+		cout << ",";
+	}
+	cout << ")";
+}
+
+void FunctionCallExpr::accept(Visitor *v)
+{
+	for (FunctionArgument*& ptr : FunctionArguments) {
+		ptr->accept(v);
+	}
+	v->VisitFunctionCallExpr(this);
 }
