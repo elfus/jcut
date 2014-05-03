@@ -182,11 +182,10 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitFunctionCallExpr(this)) {
-            for (TestExpr*& ptr : FunctionArguments) {
-                ptr->accept(v);
-            }
+        for (TestExpr*& ptr : FunctionArguments) {
+            ptr->accept(v);
         }
+        v->VisitFunctionCallExpr(this);
     }
 };
 
@@ -219,10 +218,9 @@ public:
     }
     
     void accept(Visitor *v){
-        if(v->VisitVariableAssignmentExpr(this)) {
-            mIdentifier->accept(v);
-            mArgument->accept(v);
-        }
+        mIdentifier->accept(v);
+        mArgument->accept(v);
+        v->VisitVariableAssignmentExpr(this);
     }
 };
 
@@ -247,8 +245,8 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitMockupVariableExpr(this))
-                mVariableAssignment->accept(v);
+        mVariableAssignment->accept(v);
+        v->VisitMockupVariableExpr(this);
     }
 };
 
@@ -284,8 +282,8 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitMockupFunctionExpr(this))
-                mFunctionCall->accept(v);
+        mFunctionCall->accept(v);
+        v->VisitMockupFunctionExpr(this);
     }
 };
 
@@ -324,13 +322,13 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitMockupFixtureExpr(this)) {
-            for (auto*& ptr : mMockupVariables)
-                ptr->accept(v);
+        for (auto*& ptr : mMockupVariables)
+            ptr->accept(v);
 
-            for (auto*& ptr : mMockupFunctions)
-                ptr->accept(v);
-        }
+        for (auto*& ptr : mMockupFunctions)
+            ptr->accept(v);
+        
+        v->VisitMockupFixtureExpr(this);
     }
 };
 
@@ -353,8 +351,8 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitTestMockupExpr(this))
-                mMockupFixture->accept(v);
+        mMockupFixture->accept(v);
+        v->VisitTestMockupExpr(this);
     }
 };
 
@@ -399,13 +397,13 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitTestFixtureExpr(this)) {
-            for (auto*& ptr : mFunctionCalls)
-                ptr->accept(v);
+        for (auto*& ptr : mFunctionCalls)
+            ptr->accept(v);
 
-            for (auto*& ptr : mVarAssign)
-                ptr->accept(v);
-        }
+        for (auto*& ptr : mVarAssign)
+            ptr->accept(v);
+
+        v->VisitTestFixtureExpr(this);
     }
 };
 
@@ -429,7 +427,7 @@ public:
     
     void accept(Visitor *v) {
         mTestFixtureExpr->accept(v);
-        // TODO v->VisitTestSetupExpr(this)
+        v->VisitTestSetupExpr(this);
     }
 };
 
@@ -449,8 +447,8 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitTestFunction(this))
-            mFunctionCall->accept(v);
+        mFunctionCall->accept(v);
+        v->VisitTestFunction(this);
     }
 };
 
@@ -473,8 +471,8 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitTestTeardowExpr(this))
-            mTestFixture->accept(v);
+        mTestFixture->accept(v);
+        v->VisitTestTeardowExpr(this);
     }
 };
 
@@ -524,13 +522,12 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitTestDefinitionExpr(this)) {
-            if(TestMockup) TestMockup->accept(v);
-            if(TestSetup) TestSetup->accept(v);
-            FunctionCall->accept(v);
-            if(ExpectedResult) ExpectedResult->accept(v);
-            if(TestTeardown) TestTeardown->accept(v);
-        }
+        if(TestMockup) TestMockup->accept(v);
+        if(TestSetup) TestSetup->accept(v);
+        FunctionCall->accept(v);
+        if(ExpectedResult) ExpectedResult->accept(v);
+        if(TestTeardown) TestTeardown->accept(v);
+        v->VisitTestDefinitionExpr(this);
     }
 };
 
@@ -554,10 +551,10 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitUnitTestExpr(this))
-            for (auto*& ptr : TestDefinitions) {
-                ptr->accept(v);
-            }
+        for (auto*& ptr : TestDefinitions) {
+            ptr->accept(v);
+        }
+        v->VisitUnitTestExpr(this);
     }
 };
 
@@ -579,8 +576,8 @@ public:
     }
 
     void accept(Visitor *v) {
-        if(v->VisitGlobalMockupExpr(this))
-            mMockupFixture->accept(v);
+        mMockupFixture->accept(v);
+        v->VisitGlobalMockupExpr(this);
     }
 };
 
@@ -602,8 +599,8 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitGlobalSetupExpr(this))
-            mTestFixture->accept(v);
+        mTestFixture->accept(v);
+        v->VisitGlobalSetupExpr(this);
     }
 };
 
@@ -626,8 +623,8 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitGlobalTeardownExpr(this))
-            mTestFixture->accept(v);
+        mTestFixture->accept(v);
+        v->VisitGlobalTeardownExpr(this);
     }
 };
 
@@ -661,12 +658,11 @@ public:
     }
     
     void accept(Visitor *v) {
-        if(v->VisitTestFile(this)) {
-            if(mGlobalMockup) mGlobalMockup->accept(v);
-            if(mGlobalSetup) mGlobalSetup->accept(v);
-            mUnitTest->accept(v);
-            if(mGlobalTeardown)mGlobalTeardown->accept(v);
-        }
+        if(mGlobalMockup) mGlobalMockup->accept(v);
+        if(mGlobalSetup) mGlobalSetup->accept(v);
+        mUnitTest->accept(v);
+        if(mGlobalTeardown)mGlobalTeardown->accept(v);
+        v->VisitTestFile(this);
     }
 };
 
