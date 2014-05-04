@@ -99,6 +99,34 @@ void TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr *FC)
 	mArgs.clear();
 }
 
+/**
+ * Creates LLVM IR code for a single global variable assignment.
+ * 
+ * @todo Support the rest of assignment types
+ * @param VA
+ */
+void TestGeneratorVisitor::VisitVariableAssignmentExpr(VariableAssignmentExpr *VA)
+{
+	string variable_name = VA->getIdentifier()->getIdentifierStr();
+	GlobalVariable* global_variable = mModule->getGlobalVariable(variable_name);
+	assert(global_variable && "Variable not found!");
+	Tokenizer::Token tokenType = VA->getArgument()->getTokenType();
+	string real_value = VA->getArgument()->getStringRepresentation();
+
+	switch (tokenType) {
+	case Tokenizer::TOK_INT:
+	{
+		Value * v = createValue(global_variable->getType(), real_value);
+		StoreInst *store = mBuilder.CreateStore(v, global_variable);
+		mInstructions.push_back(store);
+	}
+		break;
+	default:
+		assert(false && "Unhandled case! FIX ME");
+		break;
+	}
+}
+
 void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 {
 	string func_name = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
@@ -150,7 +178,8 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		const string& real_value)
 {
-	switch (type->getTypeID()) {
+	Type::TypeID typeID = type->getTypeID();
+	switch (typeID) {
 	case Type::TypeID::IntegerTyID:
 		if (IntegerType * intType = dyn_cast<IntegerType>(type))
 			// Watch for the radix, right now we use radix 10 only
@@ -158,6 +187,8 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		break;
 	case Type::TypeID::FloatTyID:
 		break;
+	case Type::TypeID::PointerTyID:
+		return createValue(type->getPointerElementType(), real_value);
 	default:
 		return nullptr;
 	}
