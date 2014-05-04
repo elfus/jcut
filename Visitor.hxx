@@ -42,26 +42,26 @@ public:
     /* All these methods return true when we want to keep visiting children
      * elements in the object structure, false to not visit children
      */
-    virtual bool VisitArgument(Argument *) {return true;}
-    virtual bool VisitVariableAssignmentExpr(VariableAssignmentExpr *) {return true;}
-    virtual bool VisitBufferAlloc(BufferAlloc *) {return true;}
-    virtual bool VisitIdentifier(Identifier *) {return true;}
-    virtual bool VisitFunctionArgument(FunctionArgument *) {return true;}
-    virtual bool VisitFunctionCallExpr(FunctionCallExpr *) {return true;}
-    virtual bool VisitTestTeardowExpr(TestTeardownExpr *) {return true;}
-    virtual bool VisitTestFunction(TestFunction *){ return true; }
-    virtual bool VisitTestSetupExpr(TestSetupExpr *) {return true;}
-    virtual bool VisitTestFixtureExpr(TestFixtureExpr *) {return true;}
-    virtual bool VisitMockupVariableExpr(MockupVariableExpr *) {return true;}
-    virtual bool VisitMockupFunctionExpr(MockupFunctionExpr *) {return true;}
-    virtual bool VisitMockupFixtureExpr(MockupFixtureExpr *) {return true;}
-    virtual bool VisitTestMockupExpr(TestMockupExpr *) {return true;}
-    virtual bool VisitTestDefinitionExpr(TestDefinitionExpr *) {return true;}
-    virtual bool VisitUnitTestExpr(UnitTestExpr *) {return true;}
-    virtual bool VisitGlobalMockupExpr(GlobalMockupExpr *) {return true;}
-    virtual bool VisitGlobalSetupExpr(GlobalSetupExpr *) {return true;}
-    virtual bool VisitGlobalTeardownExpr(GlobalTeardownExpr *) {return true;}
-    virtual bool VisitTestFile(TestFile *) {return true;}
+    virtual void VisitArgument(Argument *) {}
+    virtual void VisitVariableAssignmentExpr(VariableAssignmentExpr *) {}
+    virtual void VisitBufferAlloc(BufferAlloc *) {}
+    virtual void VisitIdentifier(Identifier *) {}
+    virtual void VisitFunctionArgument(FunctionArgument *) {}
+    virtual void VisitFunctionCallExpr(FunctionCallExpr *) {}
+    virtual void VisitTestTeardowExpr(TestTeardownExpr *) {}
+    virtual void VisitTestFunction(TestFunction *) {}
+    virtual void VisitTestSetupExpr(TestSetupExpr *) {}
+    virtual void VisitTestFixtureExpr(TestFixtureExpr *) {}
+    virtual void VisitMockupVariableExpr(MockupVariableExpr *) {}
+    virtual void VisitMockupFunctionExpr(MockupFunctionExpr *) {}
+    virtual void VisitMockupFixtureExpr(MockupFixtureExpr *) {}
+    virtual void VisitTestMockupExpr(TestMockupExpr *) {}
+    virtual void VisitTestDefinitionExpr(TestDefinitionExpr *) {}
+    virtual void VisitUnitTestExpr(UnitTestExpr *) {}
+    virtual void VisitGlobalMockupExpr(GlobalMockupExpr *) {}
+    virtual void VisitGlobalSetupExpr(GlobalSetupExpr *) {}
+    virtual void VisitGlobalTeardownExpr(GlobalTeardownExpr *) {}
+    virtual void VisitTestFile(TestFile *) {}
     virtual ~Visitor() {}
 };
 
