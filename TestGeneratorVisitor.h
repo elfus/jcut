@@ -45,9 +45,9 @@ public:
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
     ~TestGeneratorVisitor() {}
     
-    bool VisitFunctionArgument(FunctionArgument *);
-    bool VisitTestFunction(TestFunction *);
-    bool VisitTestDefinitionExpr(TestDefinitionExpr *);
+    void VisitFunctionArgument(FunctionArgument *);
+    void VisitTestFunction(TestFunction *);
+    void VisitTestDefinitionExpr(TestDefinitionExpr *);
 
     
     llvm::Function* nextTest() {

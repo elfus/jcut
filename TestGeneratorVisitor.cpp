@@ -32,9 +32,8 @@ mTestCount(0)
  * @param arg
  * @return
  */
-bool TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
+void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 {
-	const Tokenizer::Token &tokenType = arg->getTokenType();
 	FunctionCallExpr* parent = arg->getParent();
 	string func_name = parent->getIdentifier()->getIdentifierStr();
 	llvm::Function *currentFunction = mModule->getFunction(func_name);
@@ -87,10 +86,9 @@ bool TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 		++i;
 		++arg_it;
 	}
-	return true;
 }
 
-bool TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
+void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
 	string func_name = TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
 	Function *funcToBeCalled = mModule->getFunction(func_name);
@@ -101,7 +99,7 @@ bool TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 	// May be clear mArgs here?
 }
 
-bool TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
+void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 {
 	string func_name = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
 	string test_name = "test_" + func_name + "_0";
@@ -141,7 +139,6 @@ bool TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	mBuilder.ClearInsertionPoint();
 
 	mTests.push_back(testFunction);
-	return true;
 }
 
 /**
