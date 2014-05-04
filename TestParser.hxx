@@ -194,6 +194,9 @@ public:
         delete mIdentifier;
         delete mArgument;
     }
+    
+    Identifier* getIdentifier() const { return mIdentifier; }
+    Argument* getArgument() const { return mArgument; }
 
     void dump() {
         mIdentifier->dump();
@@ -381,11 +384,11 @@ public:
     }
     
     void accept(Visitor *v) {
-        for (auto*& ptr : mFunctionCalls)
-            ptr->accept(v);
-
         for (auto*& ptr : mVarAssign)
             ptr->accept(v);
+        
+        for (auto*& ptr : mFunctionCalls)
+            ptr->accept(v);        
 
         v->VisitTestFixtureExpr(this);
     }
