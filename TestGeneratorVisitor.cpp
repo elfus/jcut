@@ -113,6 +113,7 @@ void TestGeneratorVisitor::VisitVariableAssignmentExpr(VariableAssignmentExpr *V
 	Tokenizer::Token tokenType = VA->getArgument()->getTokenType();
 	string real_value = VA->getArgument()->getStringRepresentation();
 
+	// TODO: Handle the rest of token types
 	switch (tokenType) {
 	case Tokenizer::TOK_INT:
 	{
