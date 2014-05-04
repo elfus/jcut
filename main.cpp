@@ -303,7 +303,10 @@ int main(int argc, const char **argv, char * const *envp)
 				// execute many
 				while (llvm::Function * f = visitor.nextTest()) {
 					// TODO Evaluate function output
-					Res = *(EE->runFunction(f, Args).IntVal.getRawData());
+					//f->dump();
+					typedef int (* ptr_func) ();
+					ptr_func func = (ptr_func) EE->getPointerToFunction(f);
+					Res = func();
 					cout << "Function call Result: " << Res << endl;
 				}
 			} catch (const Exception& e) {
