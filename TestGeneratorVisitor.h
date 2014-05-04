@@ -34,6 +34,7 @@ private:
     std::vector<llvm::Value*> mArgs;
     std::vector<llvm::Function*> mTests;
     llvm::Function *mGlobalSetup;
+    llvm::Function *mGlobalTeardown;
     unsigned mCurrentTest;
     unsigned mTestCount;
     
@@ -53,6 +54,7 @@ public:
     void VisitVariableAssignmentExpr(VariableAssignmentExpr *);
     void VisitTestDefinitionExpr(TestDefinitionExpr *);
     void VisitGlobalSetupExpr(GlobalSetupExpr *);
+    void VisitGlobalTeardownExpr(GlobalTeardownExpr *);
 
     
     llvm::Function* nextTest() {
@@ -62,6 +64,7 @@ public:
     }
     
     llvm::Function* getGlobalSetup() const { return mGlobalSetup; }
+    llvm::Function* getGlobalTeardown() const { return mGlobalTeardown; }
 };
 
 #endif	/* TESTGENERATORVISITOR_H */

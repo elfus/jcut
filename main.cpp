@@ -315,6 +315,13 @@ int main(int argc, const char **argv, char * const *envp)
 					Res = func();
 					cout << "Function call Result: " << Res << endl;
 				}
+
+				llvm::Function* globalTeardown = visitor.getGlobalTeardown();
+				if (globalTeardown) {
+					globalTeardown->dump();
+					ptr_func gt = (ptr_func) EE->getPointerToFunction(globalTeardown);
+					gt();
+				}
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";
 			}
