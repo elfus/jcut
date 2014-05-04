@@ -206,5 +206,13 @@ void pre_test() {
 }
 
 void post_test() {
-	printf("[PRE TEST]\n");
+	printf("[POST TEST]\n");
+}
+
+void global_pre_test() {
+	printf("[GLOBAL PRE TEST]\n");
+}
+
+void global_post_test() {
+	printf("[GLOBAL POST TEST]\n");
 }

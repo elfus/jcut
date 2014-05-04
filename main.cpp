@@ -299,12 +299,18 @@ int main(int argc, const char **argv, char * const *envp)
 					return 255;
 				}
 				std::vector<llvm::GenericValue> Args;
-
+				typedef int (* ptr_func) ();
+				llvm::Function* globalSetup = visitor.getGlobalSetup();
+				if (globalSetup) {
+					globalSetup->dump();
+					ptr_func gs = (ptr_func) EE->getPointerToFunction(globalSetup);
+					gs();
+				}
 				// execute many
 				while (llvm::Function * f = visitor.nextTest()) {
 					// TODO Evaluate function output
-					//f->dump();
-					typedef int (* ptr_func) ();
+					f->dump();
+					
 					ptr_func func = (ptr_func) EE->getPointerToFunction(f);
 					Res = func();
 					cout << "Function call Result: " << Res << endl;
