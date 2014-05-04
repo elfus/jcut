@@ -33,10 +33,12 @@ private:
     std::vector<llvm::Instruction*> mInstructions;
     std::vector<llvm::Value*> mArgs;
     std::vector<llvm::Function*> mTests;
+    std::vector<Argument*> mExpectedResults;
     llvm::Function *mGlobalSetup;
     llvm::Function *mGlobalTeardown;
     unsigned mCurrentTest;
     unsigned mTestCount;
+    unsigned mCurrentExpectedResult;
     
     /**
  * Creates a new Value of the same Type as type with real_value
@@ -61,6 +63,12 @@ public:
         if(mCurrentTest == mTests.size())
             return nullptr;
         return mTests[mCurrentTest++];
+    }
+    
+    Argument* nextExpectedResult() {
+        if(mCurrentExpectedResult == mExpectedResults.size())
+            return nullptr;
+        return mExpectedResults[mCurrentExpectedResult++];
     }
     
     llvm::Function* getGlobalSetup() const { return mGlobalSetup; }

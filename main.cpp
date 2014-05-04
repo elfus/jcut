@@ -302,23 +302,35 @@ int main(int argc, const char **argv, char * const *envp)
 				typedef int (* ptr_func) ();
 				llvm::Function* globalSetup = visitor.getGlobalSetup();
 				if (globalSetup) {
-					globalSetup->dump();
+					//globalSetup->dump();
 					ptr_func gs = (ptr_func) EE->getPointerToFunction(globalSetup);
 					gs();
 				}
 				// execute many
 				while (llvm::Function * f = visitor.nextTest()) {
-					// TODO Evaluate function output
-					f->dump();
+					// For the moment this will work only with integers
+					// I need to work out the syntax for different data types
+					tp::Argument* exp = visitor.nextExpectedResult();
+					int expected = 0;
+
+					if (exp)
+						expected = atoi(exp->getStringRepresentation().c_str());
+					
+					//f->dump();
 					
 					ptr_func func = (ptr_func) EE->getPointerToFunction(f);
 					Res = func();
-					cout << "Function call Result: " << Res << endl;
+					if (Res == expected) {
+						outs() << "[TEST...PASSED]\n";
+					} else {
+						errs() << "[TEST...FAILED!] ";
+						outs() << "Received: " << Res << ", but expected: " << expected << "\n";
+					}
 				}
 
 				llvm::Function* globalTeardown = visitor.getGlobalTeardown();
 				if (globalTeardown) {
-					globalTeardown->dump();
+					//globalTeardown->dump();
 					ptr_func gt = (ptr_func) EE->getPointerToFunction(globalTeardown);
 					gt();
 				}
