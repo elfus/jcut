@@ -88,15 +88,15 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 	}
 }
 
-void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
+void TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr *FC)
 {
-	string func_name = TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
+	string func_name = FC->getIdentifier()->getIdentifierStr();
 	Function *funcToBeCalled = mModule->getFunction(func_name);
 	assert(funcToBeCalled != nullptr && "Function not found!");
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
 	mInstructions.push_back(call);
-	// May be clear mArgs here?
+	mArgs.clear();
 }
 
 void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)

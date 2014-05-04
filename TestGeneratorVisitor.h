@@ -46,7 +46,7 @@ public:
     ~TestGeneratorVisitor() {}
     
     void VisitFunctionArgument(FunctionArgument *);
-    void VisitTestFunction(TestFunction *);
+    void VisitFunctionCallExpr(FunctionCallExpr *);
     void VisitTestDefinitionExpr(TestDefinitionExpr *);
 
     
