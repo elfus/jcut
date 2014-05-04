@@ -42,12 +42,12 @@ private:
                              const std::string& real_value);
 public:
     TestGeneratorVisitor(llvm::Module *mod);
-    TestGeneratorVisitor() = delete;
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
     ~TestGeneratorVisitor() {}
     
     bool VisitFunctionArgument(FunctionArgument *);
-    bool VisitFunctionCallExpr(FunctionCallExpr *);
+    bool VisitTestFunction(TestFunction *);
+    bool VisitTestDefinitionExpr(TestDefinitionExpr *);
 
     
     llvm::Function* nextTest() {

@@ -90,10 +90,20 @@ bool TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 	return true;
 }
 
-bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
+bool TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
-	// Complete the function calL
-	string func_name = FC->getIdentifier()->getIdentifierStr();
+	string func_name = TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
+	Function *funcToBeCalled = mModule->getFunction(func_name);
+	assert(funcToBeCalled != nullptr && "Function not found!");
+	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
+
+	mInstructions.push_back(call);
+	// May be clear mArgs here?
+}
+
+bool TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
+{
+	string func_name = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
 	string test_name = "test_" + func_name + "_0";
 	unsigned i = 0;
 
@@ -102,22 +112,24 @@ bool TestGeneratorVisitor::VisitFunctionCallExpr(tp::FunctionCallExpr* FC)
 		test_name = test_name + ((char) (((int) '0') + i));
 		++i;
 	} while (mModule->getFunction(test_name));
-	
+
 	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
 			test_name,
 			Type::getInt32Ty(mModule->getContext()),
 			(Type*) 0));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
 			"wrapper_block_" + func_name, testFunction);
-	Function *funcToBeCalled = mModule->getFunction(FC->getIdentifier()->getIdentifierStr());
-	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
+
+	// at this moment we assume the last instruction pushed is the call instruction
+	CallInst *call = dyn_cast<CallInst>(mInstructions.back());
+	Function *funcToBeCalled = call->getCalledFunction();
+
 	ReturnInst *ret = nullptr;
 	if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
 		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
 	else
 		ret = mBuilder.CreateRet(call);
 
-	mInstructions.push_back(call);
 	mInstructions.push_back(ret);
 
 	mBuilder.SetInsertPoint(BB);
