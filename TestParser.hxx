@@ -483,6 +483,7 @@ public:
     }
     
     TestFunction * getTestFunction() const {return FunctionCall;}
+    Argument* getExpectedResult() const { return ExpectedResult; }
 
     virtual ~TestDefinitionExpr() {
         if (FunctionCall) delete FunctionCall;
