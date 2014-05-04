@@ -28,6 +28,7 @@ private:
     llvm::Module *mModule;
     llvm::IRBuilder<> mBuilder;
     llvm::Function *mCurrentFunction;
+    llvm::CallInst *mTestFunctionCall;
     llvm::BasicBlock *mCurrentBB;
     std::vector<llvm::Instruction*> mInstructions;
     std::vector<llvm::Value*> mArgs;
@@ -47,6 +48,7 @@ public:
     
     void VisitFunctionArgument(FunctionArgument *);
     void VisitFunctionCallExpr(FunctionCallExpr *);
+    void VisitTestFunction(TestFunction *);
     void VisitVariableAssignmentExpr(VariableAssignmentExpr *);
     void VisitTestDefinitionExpr(TestDefinitionExpr *);
 

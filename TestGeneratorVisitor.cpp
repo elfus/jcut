@@ -17,6 +17,7 @@ TestGeneratorVisitor::TestGeneratorVisitor(llvm::Module *mod) :
 mModule(mod),
 mBuilder(mod->getContext()),
 mCurrentFunction(nullptr),
+mTestFunctionCall(nullptr),
 mCurrentBB(nullptr),
 mCurrentTest(0),
 mTestCount(0)
@@ -99,6 +100,11 @@ void TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr *FC)
 	mArgs.clear();
 }
 
+void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
+{
+	mTestFunctionCall = dyn_cast<CallInst>(mInstructions.back());
+}
+
 /**
  * Creates LLVM IR code for a single global variable assignment.
  * 
@@ -148,7 +154,7 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 			"wrapper_block_" + func_name, testFunction);
 
 	// at this moment we assume the last instruction pushed is the call instruction
-	CallInst *call = dyn_cast<CallInst>(mInstructions.back());
+	CallInst *call = mTestFunctionCall;
 	Function *funcToBeCalled = call->getCalledFunction();
 
 	ReturnInst *ret = nullptr;
