@@ -21,7 +21,8 @@ CFLAGS = -g
 
 include $(CLANG_LEVEL)/../../Makefile.config
 
-LINK_COMPONENTS := $(TARGETS_TO_BUILD) asmparser bitreader support mc option
+LINK_COMPONENTS := $(TARGETS_TO_BUILD) jit interpreter nativecodegen bitreader bitwriter irreader \
+	ipo linker selectiondag asmparser instrumentation option
 
 USEDLIBS = clangTooling.a clangDriver.a clangFrontend.a clangSerialization.a \
 	   clangCodeGen.a clangParse.a clangSema.a \
