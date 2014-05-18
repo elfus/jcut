@@ -245,7 +245,8 @@ ExpectedResult* TestDriver::ParseExpectedResult()
 	if (mCurrentToken == Tokenizer::TOK_AFTER or
 			mCurrentToken == Tokenizer::TOK_MOCKUP or
 			mCurrentToken == Tokenizer::TOK_BEFORE or
-			mCurrentToken == Tokenizer::TOK_IDENTIFIER)
+			mCurrentToken == Tokenizer::TOK_IDENTIFIER or
+			mCurrentToken == Tokenizer::TOK_EOF)
 		return nullptr;
 	throw Exception("Expected '==' but received token " + mTokenizer.getTokenStringValue());
 }
