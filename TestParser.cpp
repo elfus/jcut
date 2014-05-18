@@ -113,6 +113,13 @@ int Tokenizer::nextToken()
 		return mCurrentToken = TOK_INT;
 	}
 
+	if (mLastChar == '=' && mInput.peek() == '=') {
+		tokenStream << mLastChar;
+		tokenStream << (mLastChar = mInput.get());
+		mTokStrValue = tokenStream.str();
+		return mCurrentToken = TOK_EQUALS;
+	}
+
 	if (mLastChar == '#') {
 		mLastChar = mInput.get();
 		while (mLastChar != '\n' && mLastChar != EOF && mLastChar != '\r') {
@@ -244,7 +251,7 @@ TestFunction* TestDriver::ParseTestFunction()
 {
 	FunctionCallExpr *FunctionCall = ParseFunctionCall();
 
-	if (mCurrentToken == '=') {
+	if (mCurrentToken == Tokenizer::TOK_EQUALS) {
 		mCurrentToken = mTokenizer.nextToken(); // consume '='
 		// The only allowed after an '=' is an Argument
 		if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
@@ -253,7 +260,12 @@ TestFunction* TestDriver::ParseTestFunction()
 		Argument *ExpectedResult = ParseArgument();
 		return new TestFunction(FunctionCall, ExpectedResult);
 	}
-	return new TestFunction(FunctionCall);
+	if (mCurrentToken == Tokenizer::TOK_AFTER or
+			mCurrentToken == Tokenizer::TOK_MOCKUP or
+			mCurrentToken == Tokenizer::TOK_BEFORE or
+			mCurrentToken == Tokenizer::TOK_IDENTIFIER)
+		return new TestFunction(FunctionCall);
+	throw Exception("Unexpected token " + mTokenizer.getTokenStringValue());
 }
 
 TestSetupExpr* TestDriver::ParseTestSetup()
@@ -379,14 +391,15 @@ UnitTestExpr* TestDriver::ParseUnitTestExpr()
 			mCurrentToken == Tokenizer::TOK_MOCKUP) {
 		while (true) {
 			try {
-				TestDefinitionExpr *TestDefinition = ParseTestDefinition();
-				definitions.push_back(TestDefinition);
 				if (mCurrentToken == Tokenizer::TOK_EOF)
 					break;
+				TestDefinitionExpr *TestDefinition = ParseTestDefinition();
+				definitions.push_back(TestDefinition);
 			} catch (const exception& e) {
 				cerr << e.what() << endl;
 				// Let's try to recover until the next test
-				while (mCurrentToken != Tokenizer::TOK_IDENTIFIER)
+				while (mCurrentToken != Tokenizer::TOK_IDENTIFIER and
+						mCurrentToken != Tokenizer::TOK_EOF)
 					mCurrentToken = mTokenizer.nextToken();
 			}
 		}
