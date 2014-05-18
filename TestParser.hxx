@@ -174,6 +174,26 @@ public:
     void accept(Visitor *v);
 };
 
+class ExpectedResult : public TestExpr {
+private:
+    Argument* mArgument;
+public:
+    ExpectedResult(Argument* Arg) : mArgument(Arg) {}
+    ~ExpectedResult() {
+        delete mArgument;
+    }
+    void dump() {
+        mArgument->dump();
+    }
+    
+    void accept(Visitor *v) {
+        mArgument->accept(v);
+        v->VisitExpectedResult(this);
+    }
+    
+    Argument* getArgument() const { return mArgument; }
+};
+
 class VariableAssignmentExpr : public TestExpr {
 private:
     Identifier *mIdentifier;
@@ -422,9 +442,9 @@ public:
 class TestFunction : public TestExpr {
 private:
     FunctionCallExpr* mFunctionCall;
-    Argument* mExpectedResult;
+    ExpectedResult* mExpectedResult;
 public:
-    TestFunction(FunctionCallExpr *F, Argument* E=nullptr) : mFunctionCall(F),
+    TestFunction(FunctionCallExpr *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
             mExpectedResult(E) {}
     ~TestFunction() {
         if(mFunctionCall) delete mFunctionCall;
@@ -432,7 +452,7 @@ public:
     }
     
     FunctionCallExpr* getFunctionCall() const {return mFunctionCall; }
-    Argument* getExpectedResult() const {return mExpectedResult; }
+    ExpectedResult* getExpectedResult() const {return mExpectedResult; }
     
     void dump() {
         mFunctionCall->dump();
@@ -764,6 +784,7 @@ private:
     FunctionArgument* ParseFunctionArgument();
     Identifier* ParseFunctionName(); // We may want to have a FunctionName class
     FunctionCallExpr* ParseFunctionCall();
+    ExpectedResult* ParseExpectedResult();
     TestTeardownExpr* ParseTestTearDown();
     TestFunction* ParseTestFunction();
     TestSetupExpr* ParseTestSetup();

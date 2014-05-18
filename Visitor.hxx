@@ -18,6 +18,7 @@ class BufferAlloc;
 class FunctionArgument;
 class Identifier;
 class FunctionCallExpr;
+class ExpectedResult;
 class TestTeardownExpr;
 class TestFunction;
 class TestSetupExpr;
@@ -48,6 +49,7 @@ public:
     virtual void VisitIdentifier(Identifier *) {}
     virtual void VisitFunctionArgument(FunctionArgument *) {}
     virtual void VisitFunctionCallExpr(FunctionCallExpr *) {}
+    virtual void VisitExpectedResult(ExpectedResult *) {}
     virtual void VisitTestTeardowExpr(TestTeardownExpr *) {}
     virtual void VisitTestFunction(TestFunction *) {}
     virtual void VisitTestSetupExpr(TestSetupExpr *) {}

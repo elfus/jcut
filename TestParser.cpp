@@ -231,6 +231,25 @@ FunctionCallExpr* TestDriver::ParseFunctionCall()
 	return new FunctionCallExpr(functionName, Args);
 }
 
+ExpectedResult* TestDriver::ParseExpectedResult()
+{
+	if (mCurrentToken == Tokenizer::TOK_EQUALS) {
+		mCurrentToken = mTokenizer.nextToken(); // consume '='
+		// The only allowed after an '=' is an Argument
+		if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
+			throw Exception("Expected an Argument but received a BufferAlloc");
+		}
+		Argument *AR = ParseArgument();
+		return new ExpectedResult(AR);
+	}
+	if (mCurrentToken == Tokenizer::TOK_AFTER or
+			mCurrentToken == Tokenizer::TOK_MOCKUP or
+			mCurrentToken == Tokenizer::TOK_BEFORE or
+			mCurrentToken == Tokenizer::TOK_IDENTIFIER)
+		return nullptr;
+	throw Exception("Expected '==' but received token " + mTokenizer.getTokenStringValue());
+}
+
 TestTeardownExpr* TestDriver::ParseTestTearDown()
 {
 	if (mCurrentToken != Tokenizer::TOK_AFTER)
@@ -250,22 +269,8 @@ TestTeardownExpr* TestDriver::ParseTestTearDown()
 TestFunction* TestDriver::ParseTestFunction()
 {
 	FunctionCallExpr *FunctionCall = ParseFunctionCall();
-
-	if (mCurrentToken == Tokenizer::TOK_EQUALS) {
-		mCurrentToken = mTokenizer.nextToken(); // consume '='
-		// The only allowed after an '=' is an Argument
-		if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
-			throw Exception("Expected an Argument but received a BufferAlloc");
-		}
-		Argument *ExpectedResult = ParseArgument();
-		return new TestFunction(FunctionCall, ExpectedResult);
-	}
-	if (mCurrentToken == Tokenizer::TOK_AFTER or
-			mCurrentToken == Tokenizer::TOK_MOCKUP or
-			mCurrentToken == Tokenizer::TOK_BEFORE or
-			mCurrentToken == Tokenizer::TOK_IDENTIFIER)
-		return new TestFunction(FunctionCall);
-	throw Exception("Unexpected token " + mTokenizer.getTokenStringValue());
+	ExpectedResult* ER = ParseExpectedResult();
+	return new TestFunction(FunctionCall, ER);
 }
 
 TestSetupExpr* TestDriver::ParseTestSetup()

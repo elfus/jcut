@@ -32,7 +32,9 @@ private:
     llvm::BasicBlock *mCurrentBB;
     std::vector<llvm::Instruction*> mInstructions;
     std::vector<llvm::Value*> mArgs;
+    // llvm::Function's created by this Visitor
     std::vector<llvm::Function*> mTests;
+    // The expected results for each of the previous functions created
     std::vector<Argument*> mExpectedResults;
     llvm::Function *mGlobalSetup;
     llvm::Function *mGlobalTeardown;
