@@ -16,17 +16,18 @@ SOURCES = main.cpp TestGeneratorVisitor.cpp TestParser.cpp
 # No plugins, optimize startup time.
 TOOL_NO_EXPORTS = 1
 
-CXXFLAGS = -std=c++11 -g -fexceptions -frtti
-CFLAGS = -g
-
-include $(CLANG_LEVEL)/../../Makefile.config
-
-LINK_COMPONENTS := $(TARGETS_TO_BUILD) jit interpreter nativecodegen bitreader bitwriter irreader \
-	ipo linker selectiondag asmparser instrumentation option
-
 USEDLIBS = clangTooling.a clangDriver.a clangFrontend.a clangSerialization.a \
 	   clangCodeGen.a clangParse.a clangSema.a \
            clangAnalysis.a clangRewriteFrontend.a clangRewriteCore.a \
 	   clangEdit.a clangAST.a clangLex.a clangBasic.a
 
+LINK_COMPONENTS := $(TARGETS_TO_BUILD) jit interpreter nativecodegen bitreader bitwriter irreader \
+	ipo linker selectiondag asmparser instrumentation option
+
+
+include $(CLANG_LEVEL)/../../Makefile.config
+
 include $(CLANG_LEVEL)/Makefile
+
+CXXFLAGS = -std=c++11 -g -fexceptions -frtti
+CFLAGS = -g
