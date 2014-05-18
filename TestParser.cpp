@@ -19,6 +19,7 @@ mBuffAlloc(""), mTokStrValue(""), mLastChar('\0')
 bool Tokenizer::isCharIgnored(char c)
 {
 	switch (c) {
+	case ';':
 		return true;
 	default: return false;
 	}
