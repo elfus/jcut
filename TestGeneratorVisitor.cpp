@@ -16,7 +16,6 @@ using namespace llvm;
 TestGeneratorVisitor::TestGeneratorVisitor(llvm::Module *mod) :
 mModule(mod),
 mBuilder(mod->getContext()),
-mCurrentFunction(nullptr),
 mTestFunctionCall(nullptr),
 mCurrentBB(nullptr),
 mGlobalSetup(nullptr),

@@ -27,10 +27,13 @@ class TestGeneratorVisitor : public Visitor {
 private:
     llvm::Module *mModule;
     llvm::IRBuilder<> mBuilder;
-    llvm::Function *mCurrentFunction;
+    /// Used as a temp variable to the instruction that calls the function to be tested.
     llvm::CallInst *mTestFunctionCall;
+    /// Every time we visit a TestDefinitionExpr a new BasicBlock is created.
     llvm::BasicBlock *mCurrentBB;
+    /// Instructions generated for each TestDefinitionExpr
     std::vector<llvm::Instruction*> mInstructions;
+    /// Used to hold the arguments for each FunctionCallExpr
     std::vector<llvm::Value*> mArgs;
     // llvm::Function's created by this Visitor
     std::vector<llvm::Function*> mTests;
