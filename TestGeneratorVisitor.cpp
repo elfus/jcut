@@ -125,7 +125,8 @@ void TestGeneratorVisitor::VisitVariableAssignmentExpr(VariableAssignmentExpr *V
 	switch (tokenType) {
 	case Tokenizer::TOK_INT:
 	{
-		Value * v = createValue(global_variable->getType(), real_value);
+		// Watch for the real type of a global variable, there might be a @bug
+		Value * v = createValue(global_variable->getType()->getPointerElementType(), real_value);
 		StoreInst *store = mBuilder.CreateStore(v, global_variable);
 		mInstructions.push_back(store);
 	}
@@ -251,7 +252,9 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	case Type::TypeID::FloatTyID:
 		break;
 	case Type::TypeID::PointerTyID:
-		return createValue(type->getPointerElementType(), real_value);
+		if (PointerType * ptrType = dyn_cast<PointerType>(type)) {
+			return ConstantPointerNull::get(ptrType);
+		}
 	default:
 		return nullptr;
 	}

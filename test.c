@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 int GLOBAL_VARIABLE = 10;
 
@@ -215,4 +216,11 @@ void global_pre_test() {
 
 void global_post_test() {
 	printf("[GLOBAL POST TEST]\n");
+}
+
+int alloc_int(int ** x) {
+	*x = (int*) malloc(sizeof(int));
+	if ( *x == NULL)
+		return -1;
+	return 0;
 }
