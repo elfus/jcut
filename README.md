@@ -24,13 +24,13 @@ Test File Grammar
 
 <unit-test-expr> := <test-definition>+
 
-<test-definition> := [ <test-mockup> | <test-setup>] <test-function>  [ "=" <argument> ] [<test-teardown>]
+<test-definition> := [ <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
 
 <test-mockup> := mockup "{" <mockup-fixture> "}"
 
 <test-setup> :=  before "{"  <test-fixture> "}"
 
-<test-function> := <function-call>
+<test-function> := <function-call> [ "=" <argument> ]
 
 <test-teardown> := after "{" <test-fixture> "}"
 
@@ -38,7 +38,7 @@ Test File Grammar
 
 <mockup-fixture> := <mockup-function>*  <mockup-variable>*
 
-<mockup-function> :=  <function-call> = <argument>  
+<mockup-function> :=  <function-call> = <argument>
 
 <mockup-variable> := <var-assignment> 
 

@@ -176,7 +176,7 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	mBuilder.ClearInsertionPoint();
 
 	mTests.push_back(testFunction);
-	mExpectedResults.push_back(TD->getExpectedResult());
+	mExpectedResults.push_back(TD->getTestFunction()->getExpectedResult());
 }
 
 void TestGeneratorVisitor::VisitGlobalSetupExpr(GlobalSetupExpr *GS)

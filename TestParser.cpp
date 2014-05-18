@@ -243,6 +243,16 @@ TestTeardownExpr* TestDriver::ParseTestTearDown()
 TestFunction* TestDriver::ParseTestFunction()
 {
 	FunctionCallExpr *FunctionCall = ParseFunctionCall();
+
+	if (mCurrentToken == '=') {
+		mCurrentToken = mTokenizer.nextToken(); // consume '='
+		// The only allowed after an '=' is an Argument
+		if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
+			throw Exception("Expected an Argument but received a BufferAlloc");
+		}
+		Argument *ExpectedResult = ParseArgument();
+		return new TestFunction(FunctionCall, ExpectedResult);
+	}
 	return new TestFunction(FunctionCall);
 }
 
@@ -350,41 +360,9 @@ TestDefinitionExpr* TestDriver::ParseTestDefinition()
 	TestMockupExpr *mockup = ParseTestMockup();
 	TestSetupExpr *setup = ParseTestSetup();
 	TestFunction *testFunction = ParseTestFunction();
-	TestTeardownExpr *teardown = nullptr;
+	TestTeardownExpr *teardown = ParseTestTearDown();
 
-	// Means the user skipped the expected result part but provided an after keyword
-	if (mCurrentToken == Tokenizer::TOK_AFTER)
-		teardown = ParseTestTearDown();
-
-	// The assignment part is optional, entering this if means the user skipped it
-	if (mCurrentToken == Tokenizer::TOK_IDENTIFIER or
-			mCurrentToken == Tokenizer::TOK_BEFORE or
-			mCurrentToken == Tokenizer::TOK_MOCKUP or
-			mCurrentToken == Tokenizer::TOK_EOF)
-		return new TestDefinitionExpr(testFunction, nullptr, setup, teardown, mockup);
-
-	if (mCurrentToken != '=') { // we expect an assignment at this point
-		if (testFunction) delete testFunction;
-		if (setup) delete setup;
-		if (mockup) delete mockup;
-		throw Exception("Expected = but received " + mTokenizer.getTokenStringValue());
-	}
-	mCurrentToken = mTokenizer.nextToken(); // consume '='
-
-	// The only allowed after an '=' is an Argument
-	if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
-		if (testFunction) delete testFunction;
-		if (setup) delete setup;
-		if (mockup) delete mockup;
-		throw Exception("Expected an Argument but received a BufferAlloc");
-	}
-	Argument *ExpectedResult = ParseArgument();
-
-	// User provided an expected result and also an after part
-	if (mCurrentToken == Tokenizer::TOK_AFTER)
-		teardown = ParseTestTearDown();
-
-	return new TestDefinitionExpr(testFunction, ExpectedResult, setup, teardown, mockup);
+	return new TestDefinitionExpr(testFunction, setup, teardown, mockup);
 }
 
 UnitTestExpr* TestDriver::ParseUnitTestExpr()

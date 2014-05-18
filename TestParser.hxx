@@ -421,20 +421,27 @@ public:
 class TestFunction : public TestExpr {
 private:
     FunctionCallExpr* mFunctionCall;
+    Argument* mExpectedResult;
 public:
-    TestFunction(FunctionCallExpr *F) : mFunctionCall(F) {}
+    TestFunction(FunctionCallExpr *F, Argument* E=nullptr) : mFunctionCall(F),
+            mExpectedResult(E) {}
     ~TestFunction() {
         if(mFunctionCall) delete mFunctionCall;
+        if(mExpectedResult) delete mExpectedResult;
     }
     
     FunctionCallExpr* getFunctionCall() const {return mFunctionCall; }
+    Argument* getExpectedResult() const {return mExpectedResult; }
     
     void dump() {
         mFunctionCall->dump();
+        mExpectedResult->dump();
     }
     
     void accept(Visitor *v) {
         mFunctionCall->accept(v);
+        if (mExpectedResult)
+            mExpectedResult->accept(v);
         v->VisitTestFunction(this);
     }
 };
@@ -466,7 +473,6 @@ public:
 class TestDefinitionExpr : public TestExpr {
 private:
     TestFunction *FunctionCall;
-    Argument *ExpectedResult;
     TestSetupExpr *TestSetup;
     TestTeardownExpr *TestTeardown;
     TestMockupExpr *TestMockup;
@@ -474,20 +480,17 @@ private:
 public:
 
     TestDefinitionExpr(TestFunction *function,
-            Argument *expected = nullptr,
             TestSetupExpr *setup = nullptr,
             TestTeardownExpr *teardown = nullptr,
             TestMockupExpr *mockup = nullptr) :
-    FunctionCall(function), ExpectedResult(expected), TestSetup(setup),
+    FunctionCall(function), TestSetup(setup),
     TestTeardown(teardown), TestMockup(mockup) {
     }
     
     TestFunction * getTestFunction() const {return FunctionCall;}
-    Argument* getExpectedResult() const { return ExpectedResult; }
 
     virtual ~TestDefinitionExpr() {
         if (FunctionCall) delete FunctionCall;
-        if (ExpectedResult) delete ExpectedResult;
         if (TestSetup) delete TestSetup;
         if (TestTeardown) delete TestTeardown;
         if (TestMockup) delete TestMockup;
@@ -501,8 +504,6 @@ public:
             TestSetup->dump();
         }
         FunctionCall->dump();
-        if (ExpectedResult)
-            ExpectedResult->dump();
         cout << endl;
         if (TestTeardown) {
             TestTeardown->dump();
@@ -513,7 +514,6 @@ public:
         if(TestMockup) TestMockup->accept(v);
         if(TestSetup) TestSetup->accept(v);
         FunctionCall->accept(v);
-        if(ExpectedResult) ExpectedResult->accept(v);
         if(TestTeardown) TestTeardown->accept(v);
         v->VisitTestDefinitionExpr(this);
     }
