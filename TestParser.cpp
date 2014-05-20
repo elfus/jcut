@@ -119,40 +119,40 @@ int Tokenizer::nextToken()
 		tokenStream << mLastChar;
 		tokenStream << (mLastChar = mInput.get());
 		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_BOOLEAN_OP;
+		return mCurrentToken = TOK_COMPARISON_OP;
 	}
 
 	if (mLastChar == '!' && mInput.peek() == '=') {
 		tokenStream << mLastChar;
 		tokenStream << (mLastChar = mInput.get());
 		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_BOOLEAN_OP;
+		return mCurrentToken = TOK_COMPARISON_OP;
 	}
 
 	if (mLastChar == '>' && mInput.peek() == '=') {
 		tokenStream << mLastChar;
 		tokenStream << (mLastChar = mInput.get());
 		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_BOOLEAN_OP;
+		return mCurrentToken = TOK_COMPARISON_OP;
 	}
 
 	if (mLastChar == '<' && mInput.peek() == '=') {
 		tokenStream << mLastChar;
 		tokenStream << (mLastChar = mInput.get());
 		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_BOOLEAN_OP;
+		return mCurrentToken = TOK_COMPARISON_OP;
 	}
 
 	if (mLastChar == '<') {
 		tokenStream << mLastChar;
 		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_BOOLEAN_OP;
+		return mCurrentToken = TOK_COMPARISON_OP;
 	}
 
 	if (mLastChar == '>') {
 		tokenStream << mLastChar;
 		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_BOOLEAN_OP;
+		return mCurrentToken = TOK_COMPARISON_OP;
 	}
 	// End of boolean operators
 	//////
@@ -269,7 +269,7 @@ FunctionCallExpr* TestDriver::ParseFunctionCall()
 
 ExpectedResult* TestDriver::ParseExpectedResult()
 {
-	if (mCurrentToken == Tokenizer::TOK_BOOLEAN_OP) {
+	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP) {
 		mCurrentToken = mTokenizer.nextToken(); // consume TOK_BOOL_OP
 		// The only allowed after an '=' is an Argument
 		if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {

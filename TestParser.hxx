@@ -47,7 +47,7 @@ public:
         TOK_STRING = -9,
         TOK_BUFF_ALLOC = -10,
         TOK_ARRAY_INIT = -11,
-        TOK_BOOLEAN_OP = -12,
+        TOK_COMPARISON_OP = -12,
         // keywords
         TOK_BEFORE = -100,
         TOK_AFTER = -101,
