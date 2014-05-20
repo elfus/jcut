@@ -30,7 +30,9 @@ Test File Grammar
 
 <test-setup> :=  before "{"  <test-fixture> "}"
 
-<test-function> := <function-call> [ "=" <argument> ]
+# I changed this
+<test-function> := <function-call> [<expected-result>]
+# Until here
 
 <test-teardown> := after "{" <test-fixture> "}"
 
@@ -40,8 +42,23 @@ Test File Grammar
 
 <mockup-function> :=  <function-call> = <argument>
 
-<mockup-variable> := <var-assignment> 
+<mockup-variable> := <var-assignment>
+# New stuff from here
+<expected-result> :=  <comparison-operator> [ <expected-constant> | [<expected-constant>] <expected-expr>+ ] 
 
+<expected-constant> := <constant>
+<constant> := <numeric-constant> | <string-constant>| <char-constant>
+<numeric-constant> := [-][<integer>|<float>] 
+<string-constant> := string (the usual enclosed string with quotes like this "string" )
+<char-constant> := char ( a single character with single quote like this 'a' )
+
+<expected-expr> := <lhs-operand> <comparison-operator> <rhs-operand>
+<lhs-operand> := <constant> | <identifier>
+<rhs-operand> := <constant> | <identifier>
+
+<comparison-operator> := "==" | "!=" | ">=" | "<=" | "<" | ">"
+
+# Until here
 <var-assignment> := <identifier> = <argument>
 
 <function-call> := <function-name>"(" <function-argument>* ")"
