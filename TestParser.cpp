@@ -113,6 +113,8 @@ int Tokenizer::nextToken()
 		return mCurrentToken = TOK_INT;
 	}
 
+	//////
+	// Conditions for boolean operators
 	if (mLastChar == '=' && mInput.peek() == '=') {
 		tokenStream << mLastChar;
 		tokenStream << (mLastChar = mInput.get());
@@ -120,6 +122,40 @@ int Tokenizer::nextToken()
 		return mCurrentToken = TOK_BOOLEAN_OP;
 	}
 
+	if (mLastChar == '!' && mInput.peek() == '=') {
+		tokenStream << mLastChar;
+		tokenStream << (mLastChar = mInput.get());
+		mTokStrValue = tokenStream.str();
+		return mCurrentToken = TOK_BOOLEAN_OP;
+	}
+
+	if (mLastChar == '>' && mInput.peek() == '=') {
+		tokenStream << mLastChar;
+		tokenStream << (mLastChar = mInput.get());
+		mTokStrValue = tokenStream.str();
+		return mCurrentToken = TOK_BOOLEAN_OP;
+	}
+
+	if (mLastChar == '<' && mInput.peek() == '=') {
+		tokenStream << mLastChar;
+		tokenStream << (mLastChar = mInput.get());
+		mTokStrValue = tokenStream.str();
+		return mCurrentToken = TOK_BOOLEAN_OP;
+	}
+
+	if (mLastChar == '<') {
+		tokenStream << mLastChar;
+		mTokStrValue = tokenStream.str();
+		return mCurrentToken = TOK_BOOLEAN_OP;
+	}
+
+	if (mLastChar == '>') {
+		tokenStream << mLastChar;
+		mTokStrValue = tokenStream.str();
+		return mCurrentToken = TOK_BOOLEAN_OP;
+	}
+	// End of boolean operators
+	//////
 	if (mLastChar == '#') {
 		mLastChar = mInput.get();
 		while (mLastChar != '\n' && mLastChar != EOF && mLastChar != '\r') {
