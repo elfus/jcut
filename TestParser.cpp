@@ -269,22 +269,19 @@ FunctionCallExpr* TestDriver::ParseFunctionCall()
 
 ExpectedResult* TestDriver::ParseExpectedResult()
 {
+	ComparisonOperator* cmp = ParseComparisonOperator();
+	Argument *AR = ParseArgument();
+	return new ExpectedResult(cmp, AR);
+}
+
+ComparisonOperator* TestDriver::ParseComparisonOperator()
+{
 	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP) {
-		mCurrentToken = mTokenizer.nextToken(); // consume TOK_BOOL_OP
-		// The only allowed after an '=' is an Argument
-		if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
-			throw Exception("Expected an Argument but received a BufferAlloc");
-		}
-		Argument *AR = ParseArgument();
-		return new ExpectedResult(AR);
+		ComparisonOperator* cmp = new ComparisonOperator(mTokenizer.getTokenStringValue());
+		mCurrentToken = mTokenizer.nextToken(); // consume TOK_COMPARISON_OP
+		return cmp;
 	}
-	if (mCurrentToken == Tokenizer::TOK_AFTER or
-			mCurrentToken == Tokenizer::TOK_MOCKUP or
-			mCurrentToken == Tokenizer::TOK_BEFORE or
-			mCurrentToken == Tokenizer::TOK_IDENTIFIER or
-			mCurrentToken == Tokenizer::TOK_EOF)
-		return nullptr;
-	throw Exception("Expected '==' but received token " + mTokenizer.getTokenStringValue());
+	throw Exception("Expected 'ComparisonOperator' but received token " + mTokenizer.getTokenStringValue());
 }
 
 TestTeardownExpr* TestDriver::ParseTestTearDown()
@@ -306,7 +303,9 @@ TestTeardownExpr* TestDriver::ParseTestTearDown()
 TestFunction* TestDriver::ParseTestFunction()
 {
 	FunctionCallExpr *FunctionCall = ParseFunctionCall();
-	ExpectedResult* ER = ParseExpectedResult();
+	ExpectedResult* ER = nullptr;
+	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP)
+		ER = ParseExpectedResult();
 	return new TestFunction(FunctionCall, ER);
 }
 

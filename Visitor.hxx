@@ -19,6 +19,7 @@ class FunctionArgument;
 class Identifier;
 class FunctionCallExpr;
 class ExpectedResult;
+class ComparisonOperator;
 class TestTeardownExpr;
 class TestFunction;
 class TestSetupExpr;
@@ -50,6 +51,7 @@ public:
     virtual void VisitFunctionArgument(FunctionArgument *) {}
     virtual void VisitFunctionCallExpr(FunctionCallExpr *) {}
     virtual void VisitExpectedResult(ExpectedResult *) {}
+    virtual void VisitComparisonOperator(ComparisonOperator *) {}
     virtual void VisitTestTeardowExpr(TestTeardownExpr *) {}
     virtual void VisitTestFunction(TestFunction *) {}
     virtual void VisitTestSetupExpr(TestSetupExpr *) {}

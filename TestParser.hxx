@@ -120,10 +120,12 @@ public:
         GREATER_OR_EQUAL,
         LESS_OR_EQUAL,
         GREATER,
-        LESS        
+        LESS,
+        INVALID
     };
 
-    ComparisonOperator(const string& str) : mStringRepresentation(str) {
+    ComparisonOperator(const string& str) : mStringRepresentation(str),
+    mType(INVALID) {
         if (mStringRepresentation == "==")
             mType = EQUAL_TO;
         else if (mStringRepresentation == "!=")
@@ -136,6 +138,14 @@ public:
             mType = GREATER;
         else if (mStringRepresentation == "<")
             mType = LESS;
+    }
+    
+    void dump() {
+        cout << mStringRepresentation;
+    }
+    
+    void accept(Visitor* v) {
+        v->VisitComparisonOperator(this);
     }
 private:
     string mStringRepresentation;
@@ -206,21 +216,27 @@ public:
 
 class ExpectedResult : public TestExpr {
 private:
+    ComparisonOperator* mCompOp;
     Argument* mArgument;
 public:
-    ExpectedResult(Argument* Arg) : mArgument(Arg) {}
+    ExpectedResult(ComparisonOperator* cmp, Argument* Arg) :
+    mCompOp(cmp), mArgument(Arg) {}
     ~ExpectedResult() {
         delete mArgument;
+        delete mCompOp;
     }
     void dump() {
+        mCompOp->dump();
         mArgument->dump();
     }
     
     void accept(Visitor *v) {
+        mCompOp->accept(v);
         mArgument->accept(v);
         v->VisitExpectedResult(this);
     }
     
+    ComparisonOperator* getComparisonOperator() const { return mCompOp; }
     Argument* getArgument() const { return mArgument; }
 };
 
@@ -815,6 +831,7 @@ private:
     Identifier* ParseFunctionName(); // We may want to have a FunctionName class
     FunctionCallExpr* ParseFunctionCall();
     ExpectedResult* ParseExpectedResult();
+    ComparisonOperator* ParseComparisonOperator();
     TestTeardownExpr* ParseTestTearDown();
     TestFunction* ParseTestFunction();
     TestSetupExpr* ParseTestSetup();
