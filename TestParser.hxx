@@ -112,6 +112,36 @@ public:
     static int leaks;
 };
 
+class ComparisonOperator : public TestExpr {
+public:
+    enum Type {
+        EQUAL_TO,
+        NOT_EQUAL_TO,
+        GREATER_OR_EQUAL,
+        LESS_OR_EQUAL,
+        GREATER,
+        LESS        
+    };
+
+    ComparisonOperator(const string& str) : mStringRepresentation(str) {
+        if (mStringRepresentation == "==")
+            mType = EQUAL_TO;
+        else if (mStringRepresentation == "!=")
+            mType = NOT_EQUAL_TO;
+        else if (mStringRepresentation == ">=")
+            mType = GREATER_OR_EQUAL;
+        else if (mStringRepresentation == "<=")
+            mType = LESS_OR_EQUAL;
+        else if (mStringRepresentation == ">")
+            mType = GREATER;
+        else if (mStringRepresentation == "<")
+            mType = LESS;
+    }
+private:
+    string mStringRepresentation;
+    Type mType;
+};
+
 class Argument : public TestExpr {
 protected:
     string StringRepresentation;
