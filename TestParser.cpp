@@ -117,7 +117,7 @@ int Tokenizer::nextToken()
 		tokenStream << mLastChar;
 		tokenStream << (mLastChar = mInput.get());
 		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_EQUALS;
+		return mCurrentToken = TOK_BOOLEAN_OP;
 	}
 
 	if (mLastChar == '#') {
@@ -233,8 +233,8 @@ FunctionCallExpr* TestDriver::ParseFunctionCall()
 
 ExpectedResult* TestDriver::ParseExpectedResult()
 {
-	if (mCurrentToken == Tokenizer::TOK_EQUALS) {
-		mCurrentToken = mTokenizer.nextToken(); // consume '='
+	if (mCurrentToken == Tokenizer::TOK_BOOLEAN_OP) {
+		mCurrentToken = mTokenizer.nextToken(); // consume TOK_BOOL_OP
 		// The only allowed after an '=' is an Argument
 		if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
 			throw Exception("Expected an Argument but received a BufferAlloc");

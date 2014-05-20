@@ -39,7 +39,7 @@ public:
         TOK_ERR = -1,
         TOK_EOF = -2,
         TOK_ASCII_CHAR = -3,
-        TOK_IDENTIFIER = -4,
+        TOK_IDENTIFIER = -4, // An identifier is a string representing a function or variable name
         TOK_EQ_OP = -5,
         TOK_INT = -6,
         TOK_DOUBLE = -7, // Will handle floats too
@@ -47,7 +47,7 @@ public:
         TOK_STRING = -9,
         TOK_BUFF_ALLOC = -10,
         TOK_ARRAY_INIT = -11,
-        TOK_EQUALS = -12,
+        TOK_BOOLEAN_OP = -12,
         // keywords
         TOK_BEFORE = -100,
         TOK_AFTER = -101,
