@@ -117,7 +117,29 @@ void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
         throw Exception("Invalid CallInst!");
 
     Constant* c = mBuilder.getInt32(0);// Give it a name so we can modify it later
-    Value* i = mBuilder.CreateICmpEQ(call, c);
+    Value* i = nullptr;
+    switch(CO->getType()) {
+        case ComparisonOperator::EQUAL_TO:
+            i = mBuilder.CreateICmpEQ(call, c);
+            break;
+        case ComparisonOperator::NOT_EQUAL_TO:
+            i = mBuilder.CreateICmpNE(call, c);
+            break;
+        case ComparisonOperator::GREATER_OR_EQUAL:
+            i = mBuilder.CreateICmpSGE(call, c);
+            break;
+        case ComparisonOperator::LESS_OR_EQUAL:
+            i = mBuilder.CreateICmpSLE(call, c);
+            break;
+        case ComparisonOperator::GREATER:
+            i = mBuilder.CreateICmpSGT(call, c);
+            break;
+        case ComparisonOperator::LESS:
+            i = mBuilder.CreateICmpSLT(call, c);
+            break;
+        case ComparisonOperator::INVALID:
+            break;
+    }
 
     mInstructions.push_back((llvm::Instruction*)i);
 

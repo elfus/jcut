@@ -147,6 +147,8 @@ public:
     void accept(Visitor* v) {
         v->VisitComparisonOperator(this);
     }
+
+    Type getType() const { return mType; }
 private:
     string mStringRepresentation;
     Type mType;
