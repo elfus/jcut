@@ -1,7 +1,7 @@
 /**
  * @file Visitor.cpp
  * @author Adrian Ortega
- * 
+ *
  * Created on May 1, 2014, 9:19 AM
  */
 
@@ -22,7 +22,8 @@ mGlobalSetup(nullptr),
 mGlobalTeardown(nullptr),
 mCurrentTest(0),
 mTestCount(0),
-mCurrentExpectedResult(0)
+mCurrentExpectedResult(0),
+mReturnValue(nullptr)
 {
 }
 
@@ -31,7 +32,7 @@ mCurrentExpectedResult(0)
  *
  * @TODO Improve implementation and code readability
  * @TODO Add support for pointers to pointers and more complex types
- * 
+ *
  * @param arg
  * @return
  */
@@ -98,18 +99,40 @@ void TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr *FC)
 	assert(funcToBeCalled != nullptr && "Function not found!");
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
+        if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
+               mReturnValue = mBuilder.getInt32(0);
+        else
+               mReturnValue = call;
+
+        mTestFunctionCall = call;
 	mInstructions.push_back(call);
 	mArgs.clear();
 }
 
+// ComparisonOperator will be visited after FunctionCallExpr
+void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
+{
+    // Get the call instruction pushed by VisitFunctionCallExpr
+    CallInst *call = dyn_cast<CallInst>(mInstructions.back());
+    if(call == nullptr)
+        throw Exception("Invalid CallInst!");
+
+    Constant* c = mBuilder.getInt32(0);// Give it a name so we can modify it later
+    Value* i = mBuilder.CreateICmpEQ(call, c);
+
+    mInstructions.push_back((llvm::Instruction*)i);
+
+    mReturnValue = i;
+}
+
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
-	mTestFunctionCall = dyn_cast<CallInst>(mInstructions.back());
+
 }
 
 /**
  * Creates LLVM IR code for a single global variable assignment.
- * 
+ *
  * @todo Support the rest of assignment types
  * @param VA
  */
@@ -156,17 +179,8 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
 			"wrapper_block_" + func_name, testFunction);
 
-	// at this moment we assume the last instruction pushed is the call instruction
-	CallInst *call = mTestFunctionCall;
-	Function *funcToBeCalled = call->getCalledFunction();
-
-	ReturnInst *ret = nullptr;
-	if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
-		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
-	else
-		ret = mBuilder.CreateRet(call);
-
-	mInstructions.push_back(ret);
+        ReturnInst *ret = mBuilder.CreateRet(mReturnValue);
+        mInstructions.push_back(ret);
 
 	mBuilder.SetInsertPoint(BB);
 	for (auto*& inst : mInstructions)

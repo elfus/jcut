@@ -44,6 +44,7 @@ private:
     unsigned mCurrentTest;
     unsigned mTestCount;
     unsigned mCurrentExpectedResult;
+    llvm::Value *mReturnValue;
     
     /**
  * Creates a new Value of the same Type as type with real_value
@@ -57,6 +58,7 @@ public:
     
     void VisitFunctionArgument(FunctionArgument *);
     void VisitFunctionCallExpr(FunctionCallExpr *);
+    void VisitComparisonOperator(ComparisonOperator *);
     void VisitTestFunction(TestFunction *);
     void VisitVariableAssignmentExpr(VariableAssignmentExpr *);
     void VisitTestDefinitionExpr(TestDefinitionExpr *);

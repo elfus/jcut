@@ -93,7 +93,7 @@ TestFunctionArgs extractTestFunction(SmallVector<const char *, 16> & Args)
 	if (delete_count > 1)
 		while (delete_count--)
 			Args.pop_back();
-	
+
 	return std::move(testFunction);
 }
 
@@ -148,7 +148,7 @@ static vector<llvm::Function*> FindFunctionDeclaration(llvm::Function *f)
 			}
 		}
 	}
-	
+
 	return declarations;
 }
 
@@ -315,12 +315,12 @@ int main(int argc, const char **argv, char * const *envp)
 
 					if (exp)
 						expected = atoi(exp->getStringRepresentation().c_str());
-					
-					//f->dump();
-					
+
+					f->dump();
+
 					ptr_func func = (ptr_func) EE->getPointerToFunction(f);
 					Res = func();
-					if (Res == expected) {
+					if (Res) {
 						outs() << "[TEST...PASSED]\n";
 					} else {
 						errs() << "[TEST...FAILED!] ";
@@ -378,7 +378,7 @@ void createMockFunction(llvm::Module *Mod, llvm::Function *Function)
 
 	// Create the add instruction, inserting it into the end of BB.
 	Value *Add = builder.CreateAdd(ArgX, Arg2);
-	
+
 	// Create the return instruction and add it to the basic block
 	builder.CreateRet(Add);
 
@@ -422,12 +422,12 @@ llvm::Function* createWrapperFunction(llvm::Module *Mod, llvm::Function *Wrapped
 			// it could be 0 or anything
 			Value * v = createValue(builder, arg.getType()->getPointerElementType(), Args[j]);
 			builder.CreateStore(v, alloc);
-			
+
 			AllocaInst *alloc3 = builder.CreateAlloca(arg.getType(), 0, "Allocation3"); // Allocate a pointer type
 			alloc3->setAlignment(8);
 			builder.CreateStore(alloc, alloc3); // Store an already allocated variable address to our pointer
 			LoadInst *load3 = builder.CreateLoad(alloc3, "value3"); // Load whatever address is in alloc3 into load3 'value3'
-			args_vector.push_back(load3);			
+			args_vector.push_back(load3);
 		} else {
 			// This code works for functions NOT using pointers
 			outs() << "Creating allocation instruction\n";
