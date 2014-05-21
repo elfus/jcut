@@ -308,14 +308,6 @@ int main(int argc, const char **argv, char * const *envp)
 				}
 				// execute many
 				while (llvm::Function * f = visitor.nextTest()) {
-					// For the moment this will work only with integers
-					// I need to work out the syntax for different data types
-					tp::Argument* exp = visitor.nextExpectedResult();
-					int expected = 0;
-
-					if (exp)
-						expected = atoi(exp->getStringRepresentation().c_str());
-
 					f->dump();
 
 					ptr_func func = (ptr_func) EE->getPointerToFunction(f);
@@ -324,7 +316,6 @@ int main(int argc, const char **argv, char * const *envp)
 						outs() << "[TEST...PASSED]\n";
 					} else {
 						errs() << "[TEST...FAILED!] ";
-						outs() << "Received: " << Res << ", but expected: " << expected << "\n";
 					}
 				}
 

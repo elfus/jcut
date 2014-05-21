@@ -37,13 +37,10 @@ private:
     std::vector<llvm::Value*> mArgs;
     // llvm::Function's created by this Visitor
     std::vector<llvm::Function*> mTests;
-    // The expected results for each of the previous functions created
-    std::vector<Argument*> mExpectedResults;
     llvm::Function *mGlobalSetup;
     llvm::Function *mGlobalTeardown;
     unsigned mCurrentTest;
     unsigned mTestCount;
-    unsigned mCurrentExpectedResult;
     llvm::Value *mReturnValue;
     
     /**
@@ -72,11 +69,6 @@ public:
         return mTests[mCurrentTest++];
     }
     
-    Argument* nextExpectedResult() {
-        if(mCurrentExpectedResult == mExpectedResults.size())
-            return nullptr;
-        return mExpectedResults[mCurrentExpectedResult++];
-    }
     
     llvm::Function* getGlobalSetup() const { return mGlobalSetup; }
     llvm::Function* getGlobalTeardown() const { return mGlobalTeardown; }

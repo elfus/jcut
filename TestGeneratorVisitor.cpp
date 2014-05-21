@@ -22,7 +22,6 @@ mGlobalSetup(nullptr),
 mGlobalTeardown(nullptr),
 mCurrentTest(0),
 mTestCount(0),
-mCurrentExpectedResult(0),
 mReturnValue(nullptr)
 {
 }
@@ -190,11 +189,6 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	mBuilder.ClearInsertionPoint();
 
 	mTests.push_back(testFunction);
-	ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
-	if (ER != nullptr)
-		mExpectedResults.push_back(ER->getArgument());
-	else
-		mExpectedResults.push_back(nullptr);
 }
 
 void TestGeneratorVisitor::VisitGlobalSetupExpr(GlobalSetupExpr *GS)
