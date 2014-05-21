@@ -116,6 +116,8 @@ void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
     if(call == nullptr)
         throw Exception("Invalid CallInst!");
 
+    // @todo: Modify the constant against which we are comparing
+    // this will have to be done when visitting the expected-constant
     Constant* c = mBuilder.getInt32(0);// Give it a name so we can modify it later
     Value* i = nullptr;
     switch(CO->getType()) {

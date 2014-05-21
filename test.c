@@ -224,3 +224,11 @@ int alloc_int(int ** x) {
 		return -1;
 	return 0;
 }
+
+void if_statement() {
+    int x = 255;
+    if (x == 1)
+        printf("It's a 1\n");
+    else
+        printf("It's not a 1\n");
+}
