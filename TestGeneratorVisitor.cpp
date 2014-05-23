@@ -118,7 +118,7 @@ void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
 
     // @todo: Modify the constant against which we are comparing
     // this will have to be done when visitting the expected-constant
-    Constant* c = mBuilder.getInt32(0);// Give it a name so we can modify it later
+    llvm::Constant* c = mBuilder.getInt32(0);// Give it a name so we can modify it later
     Value* i = nullptr;
     switch(CO->getType()) {
         case ComparisonOperator::EQUAL_TO:
@@ -265,6 +265,11 @@ void TestGeneratorVisitor::VisitGlobalTeardownExpr(GlobalTeardownExpr *GT)
 	mBuilder.ClearInsertionPoint();
 
 	mGlobalTeardown = testFunction;
+}
+
+void TestGeneratorVisitor::VisitExpectedConstant(ExpectedConstant *EC)
+{
+    EC->dump();
 }
 
 /**
