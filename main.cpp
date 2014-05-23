@@ -298,21 +298,19 @@ int main(int argc, const char **argv, char * const *envp)
 					llvm::errs() << "unable to make execution engine: " << Error << "\n";
 					return 255;
 				}
-				std::vector<llvm::GenericValue> Args;
-				typedef int (* ptr_func) ();
+
+				std::vector<llvm::GenericValue> Args;//Dummy arguments
+
 				llvm::Function* globalSetup = visitor.getGlobalSetup();
 				if (globalSetup) {
 					//globalSetup->dump();
-					ptr_func gs = (ptr_func) EE->getPointerToFunction(globalSetup);
-					gs();
+					EE->runFunction(globalSetup,Args);
 				}
 				// execute many
 				while (llvm::Function * f = visitor.nextTest()) {
 					f->dump();
-
-					ptr_func func = (ptr_func) EE->getPointerToFunction(f);
-					Res = func();
-					if (Res) {
+                                        GenericValue rval = EE->runFunction(f,Args);
+					if (rval.IntVal.getBoolValue()) {
 						outs() << "[TEST...PASSED]\n";
 					} else {
 						errs() << "[TEST...FAILED!] ";
@@ -322,8 +320,7 @@ int main(int argc, const char **argv, char * const *envp)
 				llvm::Function* globalTeardown = visitor.getGlobalTeardown();
 				if (globalTeardown) {
 					//globalTeardown->dump();
-					ptr_func gt = (ptr_func) EE->getPointerToFunction(globalTeardown);
-					gt();
+					EE->runFunction(globalTeardown,Args);
 				}
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";

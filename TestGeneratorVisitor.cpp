@@ -144,8 +144,10 @@ void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
     }
 
     mInstructions.push_back((llvm::Instruction*)i);
-
-    mReturnValue = i;
+    // Convert the i1 integer to a i32 integer
+    llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,c->getType());
+    mInstructions.push_back(zext);
+    mReturnValue = zext;
 }
 
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
