@@ -44,7 +44,7 @@ Test File Grammar
 
 <mockup-variable> := <var-assignment>
 # New stuff from here
-<expected-result> :=  <comparison-operator> [ <expected-constant> | [<expected-constant>] <expected-expr>+ ] 
+<expected-result> :=  <comparison-operator> <expected-constant> 
 
 <expected-constant> := <constant>
 <constant> := <numeric-constant> | <string-constant>| <char-constant>

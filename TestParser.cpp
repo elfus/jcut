@@ -102,6 +102,7 @@ int Tokenizer::nextToken()
 		return mCurrentToken = TOK_IDENTIFIER;
 	}
 
+        /// @todo Add support for floating point numbers, detect the dot '.'
 	if (((mLastChar == '-' && isdigit(mInput.peek())) || isdigit(mLastChar))) {
 		tokenStream << mLastChar;
 		while (isdigit((mLastChar = mInput.get()))) {
@@ -270,8 +271,8 @@ FunctionCallExpr* TestDriver::ParseFunctionCall()
 ExpectedResult* TestDriver::ParseExpectedResult()
 {
 	ComparisonOperator* cmp = ParseComparisonOperator();
-	Argument *AR = ParseArgument();
-	return new ExpectedResult(cmp, AR);
+        ExpectedConstant* EC = ParseExpectedConstant();
+	return new ExpectedResult(cmp, EC);
 }
 
 ComparisonOperator* TestDriver::ParseComparisonOperator()
@@ -282,6 +283,28 @@ ComparisonOperator* TestDriver::ParseComparisonOperator()
 		return cmp;
 	}
 	throw Exception("Expected 'ComparisonOperator' but received token " + mTokenizer.getTokenStringValue());
+}
+
+ExpectedConstant* TestDriver::ParseExpectedConstant()
+{
+    return new ExpectedConstant(ParseConstant());
+}
+
+Constant* TestDriver::ParseConstant()
+{
+    if(mCurrentToken == Tokenizer::TOK_INT)
+        return new Constant(new NumericConstant(mTokenizer.getInteger()));
+
+     if(mCurrentToken == Tokenizer::TOK_DOUBLE)// @TODO Refactor name double to float
+        return new Constant(new NumericConstant(mTokenizer.getDouble()));
+
+    if(mCurrentToken == Tokenizer::TOK_STRING)
+        return new Constant(new StringConstant(mTokenizer.getTokenStringValue()));
+
+    if(mCurrentToken == Tokenizer::TOK_CHAR)
+        return new Constant(new CharConstant(mTokenizer.getChar()));
+
+    throw Exception("Expected a Constant but received token "+mTokenizer.getTokenStringValue());
 }
 
 TestTeardownExpr* TestDriver::ParseTestTearDown()

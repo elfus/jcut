@@ -19,6 +19,11 @@ class FunctionArgument;
 class Identifier;
 class FunctionCallExpr;
 class ExpectedResult;
+class ExpectedConstant;
+class Constant;
+class NumericConstant;
+class StringConstant;
+class CharConstant;
 class ComparisonOperator;
 class TestTeardownExpr;
 class TestFunction;
@@ -51,6 +56,11 @@ public:
     virtual void VisitFunctionArgument(FunctionArgument *) {}
     virtual void VisitFunctionCallExpr(FunctionCallExpr *) {}
     virtual void VisitExpectedResult(ExpectedResult *) {}
+    virtual void VisitExpectedConstant(ExpectedConstant *) {}
+    virtual void VisitConstant(Constant *) {}
+    virtual void VisitNumericConstant(NumericConstant *) {}
+    virtual void VisitStringConstant(StringConstant *) {}
+    virtual void VisitCharConstant(CharConstant *) {}
     virtual void VisitComparisonOperator(ComparisonOperator *) {}
     virtual void VisitTestTeardowExpr(TestTeardownExpr *) {}
     virtual void VisitTestFunction(TestFunction *) {}

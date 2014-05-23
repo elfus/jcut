@@ -32,7 +32,7 @@ private:
 };
 
 namespace tp { // tp stands for test parser
-    
+
 class Tokenizer {
 public:
     enum Token {
@@ -75,11 +75,13 @@ public:
 
     int getInteger() { return mInt; }
 
-    double getDouble() { return mDouble; }
+    float getDouble() { return mDouble; }
 
     string getBuffAlloc() { return mBuffAlloc;  }
 
     string getTokenStringValue() { return mTokStrValue; }
+
+    char getChar() { return mLastChar; }
 
     Identifier getIdentifierType() {  return mIdType;  }
 
@@ -91,7 +93,7 @@ private:
     string mFunction;
     char mEqOp;
     int mInt;
-    double mDouble;
+    float mDouble;
     string mBuffAlloc;
     string mTokStrValue;
     char mLastChar;
@@ -104,7 +106,7 @@ public:
     TestExpr() { ++leaks; }
 
     virtual void dump() = 0;
-    
+
     virtual void accept(Visitor *) = 0;
 
     virtual ~TestExpr() {--leaks;}
@@ -139,11 +141,11 @@ public:
         else if (mStringRepresentation == "<")
             mType = LESS;
     }
-    
+
     void dump() {
         cout << mStringRepresentation;
     }
-    
+
     void accept(Visitor* v) {
         v->VisitComparisonOperator(this);
     }
@@ -152,6 +154,104 @@ public:
 private:
     string mStringRepresentation;
     Type mType;
+};
+
+class NumericConstant : public TestExpr{
+private:
+    union {
+        int ic;
+        float fc;
+    } mNC;
+public:
+    explicit NumericConstant(int i) {
+        mNC.ic = i;
+    }
+    explicit NumericConstant(float f) {
+        mNC.fc = f;
+    }
+    ~NumericConstant() {}
+
+    void dump() {
+        cout << "int = " << mNC.ic << ", float = " << mNC.fc;
+    }
+    void accept(Visitor* v) {
+        v->VisitNumericConstant(this);
+    }
+};
+
+class StringConstant : public TestExpr{
+private:
+    string mStr;
+public:
+    StringConstant(const string& str) : mStr(str) {}
+
+    ~StringConstant() {}
+
+    void dump() {
+        cout << mStr;
+    }
+    void accept(Visitor* v) {
+        v->VisitStringConstant(this);
+    }
+};
+
+class CharConstant : public TestExpr{
+private:
+    char mC;
+public:
+    explicit CharConstant(char C) : mC(C) {}
+    ~CharConstant() {}
+    void dump() {
+        cout << "char = " << mC;
+    }
+    void accept(Visitor* v) {
+        v->VisitCharConstant(this);
+    }
+};
+
+class Constant : public TestExpr {
+private:
+    NumericConstant* mNC;
+    StringConstant* mSC;
+    CharConstant* mCC;
+public:
+    Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr) {}
+    Constant(StringConstant *C) : mNC(nullptr), mSC(C), mCC(nullptr) {}
+    Constant(CharConstant *C) : mNC(nullptr), mSC(nullptr), mCC(C) {}
+    ~Constant() {
+        if(mNC) delete mNC;
+        if(mSC) delete mSC;
+        if(mCC) delete mCC;
+    }
+
+    void dump() {
+        if(mNC) mNC->dump();
+        if(mSC) mSC->dump();
+        if(mCC) mCC->dump();
+    }
+    void accept(Visitor* v) {
+        if(mNC) mNC->accept(v);
+        if(mSC) mSC->accept(v);
+        if(mCC) mCC->accept(v);
+        v->VisitConstant(this);
+    }
+};
+
+class ExpectedConstant : public TestExpr {
+private:
+    Constant* mC;
+public:
+    ExpectedConstant() = delete;
+    explicit ExpectedConstant(Constant *C) : mC(C) {}
+    ~ExpectedConstant() { delete mC;}
+
+    void dump() {
+        mC->dump();
+    }
+    void accept(Visitor* v) {
+        mC->accept(v);
+        v->VisitExpectedConstant(this);
+    }
 };
 
 class Argument : public TestExpr {
@@ -164,14 +264,14 @@ public:
     StringRepresentation(str), TokenType(token) { }
 
     ~Argument() {}
-    
+
     const string& getStringRepresentation() const { return StringRepresentation; }
     Tokenizer::Token getTokenType() const { return TokenType; }
 
     void dump() {
         cout << StringRepresentation;
     }
-    
+
     void accept(Visitor *v) {
        v->VisitArgument(this); // Argument doesn't have any children
     }
@@ -189,11 +289,11 @@ public:
     void dump() {
         cout << mIdentifierString;
     }
-    
+
     void accept(Visitor *v) {
         v->VisitIdentifier(this);
     }
-    
+
     string getIdentifierStr() const {return mIdentifierString;}
 };
 
@@ -204,7 +304,7 @@ private:
     Identifier *FunctionName;
     vector<FunctionArgument*> FunctionArguments;
 public:
-    
+
     Identifier *getIdentifier() const {return FunctionName;}
 
     FunctionCallExpr(Identifier* name, const vector<FunctionArgument*>& arg);
@@ -212,34 +312,34 @@ public:
     virtual ~FunctionCallExpr();
 
     void dump();
-    
+
     void accept(Visitor *v);
 };
 
 class ExpectedResult : public TestExpr {
 private:
     ComparisonOperator* mCompOp;
-    Argument* mArgument;
+    ExpectedConstant* mEC;
 public:
-    ExpectedResult(ComparisonOperator* cmp, Argument* Arg) :
-    mCompOp(cmp), mArgument(Arg) {}
+    ExpectedResult(ComparisonOperator* cmp, ExpectedConstant* Arg) :
+    mCompOp(cmp), mEC(Arg) {}
     ~ExpectedResult() {
-        delete mArgument;
+        delete mEC;
         delete mCompOp;
     }
     void dump() {
         mCompOp->dump();
-        mArgument->dump();
+        mEC->dump();
     }
-    
+
     void accept(Visitor *v) {
         mCompOp->accept(v);
-        mArgument->accept(v);
+        mEC->accept(v);
         v->VisitExpectedResult(this);
     }
-    
+
     ComparisonOperator* getComparisonOperator() const { return mCompOp; }
-    Argument* getArgument() const { return mArgument; }
+    ExpectedConstant* getExpectedConstant() const { return mEC; }
 };
 
 class VariableAssignmentExpr : public TestExpr {
@@ -263,7 +363,7 @@ public:
         delete mIdentifier;
         delete mArgument;
     }
-    
+
     Identifier* getIdentifier() const { return mIdentifier; }
     Argument* getArgument() const { return mArgument; }
 
@@ -272,7 +372,7 @@ public:
         cout << " = ";
         mArgument->dump();
     }
-    
+
     void accept(Visitor *v){
         mIdentifier->accept(v);
         mArgument->accept(v);
@@ -299,7 +399,7 @@ public:
     void dump() {
         mVariableAssignment->dump();
     }
-    
+
     void accept(Visitor *v) {
         mVariableAssignment->accept(v);
         v->VisitMockupVariableExpr(this);
@@ -336,7 +436,7 @@ public:
         cout << " = ";
         mArgument->dump();
     }
-    
+
     void accept(Visitor *v) {
         mFunctionCall->accept(v);
         v->VisitMockupFunctionExpr(this);
@@ -376,14 +476,14 @@ public:
             cout << endl;
         }
     }
-    
+
     void accept(Visitor *v) {
         for (auto*& ptr : mMockupVariables)
             ptr->accept(v);
 
         for (auto*& ptr : mMockupFunctions)
             ptr->accept(v);
-        
+
         v->VisitMockupFixtureExpr(this);
     }
 };
@@ -405,7 +505,7 @@ public:
         mMockupFixture->dump();
         cout << "}" << endl;
     }
-    
+
     void accept(Visitor *v) {
         mMockupFixture->accept(v);
         v->VisitTestMockupExpr(this);
@@ -451,13 +551,13 @@ public:
             cout << endl;
         }
     }
-    
+
     void accept(Visitor *v) {
         for (auto*& ptr : mVarAssign)
             ptr->accept(v);
-        
+
         for (auto*& ptr : mFunctionCalls)
-            ptr->accept(v);        
+            ptr->accept(v);
 
         v->VisitTestFixtureExpr(this);
     }
@@ -480,7 +580,7 @@ public:
         mTestFixtureExpr->dump();
         cout << "}" << endl;
     }
-    
+
     void accept(Visitor *v) {
         mTestFixtureExpr->accept(v);
         v->VisitTestSetupExpr(this);
@@ -498,15 +598,15 @@ public:
         if(mFunctionCall) delete mFunctionCall;
         if(mExpectedResult) delete mExpectedResult;
     }
-    
+
     FunctionCallExpr* getFunctionCall() const {return mFunctionCall; }
     ExpectedResult* getExpectedResult() const {return mExpectedResult; }
-    
+
     void dump() {
         mFunctionCall->dump();
         mExpectedResult->dump();
     }
-    
+
     void accept(Visitor *v) {
         mFunctionCall->accept(v);
         if (mExpectedResult)
@@ -532,7 +632,7 @@ public:
         mTestFixture->dump();
         cout << "}" << endl << endl;
     }
-    
+
     void accept(Visitor *v) {
         mTestFixture->accept(v);
         v->VisitTestTeardowExpr(this);
@@ -555,7 +655,7 @@ public:
     FunctionCall(function), TestSetup(setup),
     TestTeardown(teardown), TestMockup(mockup) {
     }
-    
+
     TestFunction * getTestFunction() const {return FunctionCall;}
 
     virtual ~TestDefinitionExpr() {
@@ -578,7 +678,7 @@ public:
             TestTeardown->dump();
         }
     }
-    
+
     void accept(Visitor *v) {
         if(TestMockup) TestMockup->accept(v);
         if(TestSetup) TestSetup->accept(v);
@@ -606,7 +706,7 @@ public:
             cout << endl;
         }
     }
-    
+
     void accept(Visitor *v) {
         for (auto*& ptr : TestDefinitions) {
             ptr->accept(v);
@@ -654,7 +754,7 @@ public:
         mTestFixture->dump();
         cout << "}" << endl << endl;
     }
-    
+
     void accept(Visitor *v) {
         mTestFixture->accept(v);
         v->VisitGlobalSetupExpr(this);
@@ -678,7 +778,7 @@ public:
         mTestFixture->dump();
         cout << "}" << endl;
     }
-    
+
     void accept(Visitor *v) {
         mTestFixture->accept(v);
         v->VisitGlobalTeardownExpr(this);
@@ -697,7 +797,7 @@ public:
             GlobalSetupExpr *gs = nullptr, GlobalTeardownExpr *gt = nullptr) :
     mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt),
     mUnitTest(ut) {
-        
+
     }
 
     ~TestFile() {
@@ -713,7 +813,7 @@ public:
         if (mGlobalTeardown) mGlobalTeardown->dump();
         mUnitTest->dump();
     }
-    
+
     void accept(Visitor *v) {
         if(mGlobalMockup) mGlobalMockup->accept(v);
         if(mGlobalSetup) mGlobalSetup->accept(v);
@@ -730,11 +830,11 @@ private:
     string DefaultValue;
 public:
 
-    BufferAlloc(const string& str) : StringRepresentation(str) , 
+    BufferAlloc(const string& str) : StringRepresentation(str) ,
             BufferSize("1"), DefaultValue("0"){
         if(StringRepresentation[0] != '[' or StringRepresentation.back() != ']')
             throw Exception("Malformed buffer allocation");
-        
+
         size_t pos = StringRepresentation.find(":");
         if(pos == string::npos) {
             pos = StringRepresentation.find("]");
@@ -747,15 +847,15 @@ public:
     }
 
     ~BufferAlloc() { }
-    
-    
+
+
     string getBufferSize() const { return BufferSize; }
     string getDefaultValue() const { return DefaultValue; }
-    
+
     void dump() {
         cout << StringRepresentation;
     }
-    
+
     void accept(Visitor *v) {
         v->VisitBufferAlloc(this); // Doesn't have any children
     }
@@ -768,13 +868,13 @@ protected:
     unsigned    ArgIndx;
     FunctionCallExpr *Parent;// Pointer to its parent
 public:
-    explicit FunctionArgument(Argument *arg) : 
+    explicit FunctionArgument(Argument *arg) :
         argArgument(arg), argBuffAlloc(nullptr), ArgIndx(0), Parent(nullptr) { }
-    explicit FunctionArgument(BufferAlloc *arg) : 
+    explicit FunctionArgument(BufferAlloc *arg) :
         argArgument(nullptr), argBuffAlloc(arg), ArgIndx(0), Parent(nullptr) { }
     ~FunctionArgument() {}
-    
-    Tokenizer::Token getTokenType() const { 
+
+    Tokenizer::Token getTokenType() const {
         if(argArgument) return argArgument->getTokenType();
         return Tokenizer::TOK_BUFF_ALLOC;
     }
@@ -782,12 +882,12 @@ public:
     FunctionCallExpr* getParent() const { return Parent; }
     void setIndex(unsigned ndx) {ArgIndx = ndx; }
     void setParent(FunctionCallExpr *ptr) {Parent = ptr; }
-    const string& getStringRepresentation() const { 
+    const string& getStringRepresentation() const {
         return argArgument->getStringRepresentation();
     }
-    
+
     BufferAlloc* getBufferAlloc() const { return argBuffAlloc; }
-    
+
     void dump() {
         cout<<Parent->getIdentifier()->getIdentifierStr()<<"(";
         cout<<ArgIndx<<":";
@@ -797,13 +897,13 @@ public:
             argBuffAlloc->dump();
         cout<<")";
     }
-    
+
     void accept(Visitor *v) {
         if(argArgument)
             argArgument->accept(v);
         if(argBuffAlloc)
             argBuffAlloc->accept(v);
-        
+
         v->VisitFunctionArgument(this);// TODO IMplement
     }
 };
@@ -834,6 +934,8 @@ private:
     FunctionCallExpr* ParseFunctionCall();
     ExpectedResult* ParseExpectedResult();
     ComparisonOperator* ParseComparisonOperator();
+    ExpectedConstant* ParseExpectedConstant();
+    Constant* ParseConstant();
     TestTeardownExpr* ParseTestTearDown();
     TestFunction* ParseTestFunction();
     TestSetupExpr* ParseTestSetup();
