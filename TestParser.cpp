@@ -292,19 +292,24 @@ ExpectedConstant* TestDriver::ParseExpectedConstant()
 
 Constant* TestDriver::ParseConstant()
 {
-    if(mCurrentToken == Tokenizer::TOK_INT)
-        return new Constant(new NumericConstant(mTokenizer.getInteger()));
+	Constant* C = nullptr;
 
-     if(mCurrentToken == Tokenizer::TOK_DOUBLE)// @TODO Refactor name double to float
-        return new Constant(new NumericConstant(mTokenizer.getDouble()));
-
+	if (mCurrentToken == Tokenizer::TOK_INT)
+		C = new Constant(new NumericConstant(mTokenizer.getInteger()));
+	else
+    if(mCurrentToken == Tokenizer::TOK_DOUBLE)// @TODO Refactor name double to float
+		C = new Constant(new NumericConstant(mTokenizer.getDouble()));
+	else
     if(mCurrentToken == Tokenizer::TOK_STRING)
-        return new Constant(new StringConstant(mTokenizer.getTokenStringValue()));
-
+		C = new Constant(new StringConstant(mTokenizer.getTokenStringValue()));
+	else
     if(mCurrentToken == Tokenizer::TOK_CHAR)
-        return new Constant(new CharConstant(mTokenizer.getChar()));
+		C = new Constant(new CharConstant(mTokenizer.getChar()));
+	else
+		throw Exception("Expected a Constant but received token " + mTokenizer.getTokenStringValue());
 
-    throw Exception("Expected a Constant but received token "+mTokenizer.getTokenStringValue());
+	mCurrentToken = mTokenizer.nextToken(); // Consume the constant
+	return C;
 }
 
 TestTeardownExpr* TestDriver::ParseTestTearDown()
