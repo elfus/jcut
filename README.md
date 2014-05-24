@@ -36,7 +36,7 @@ Test File Grammar
 
 <test-teardown> := after "{" <test-fixture> "}"
 
-<test-fixture> := <function-call>*  <var-assignment>*
+<test-fixture> := <function-call>*  <var-assignment>* <expected-expr>*
 
 <mockup-fixture> := <mockup-function>*  <mockup-variable>*
 
@@ -46,15 +46,16 @@ Test File Grammar
 # New stuff from here
 <expected-result> :=  <comparison-operator> <expected-constant> 
 
+# We may want to remove constant and just put NumericConstant and CharConstant
+# for ExpectedConstant
 <expected-constant> := <constant>
 <constant> := <numeric-constant> | <string-constant>| <char-constant>
 <numeric-constant> := [-][<integer>|<float>] 
 <string-constant> := string (the usual enclosed string with quotes like this "string" )
 <char-constant> := char ( a single character with single quote like this 'a' )
 
-<expected-expr> := <lhs-operand> <comparison-operator> <rhs-operand>
-<lhs-operand> := <constant> | <identifier>
-<rhs-operand> := <constant> | <identifier>
+<expected-expr> := <operand> <comparison-operator> <operand>
+<operand> := <constant> | <identifier>
 
 <comparison-operator> := "==" | "!=" | ">=" | "<=" | "<" | ">"
 

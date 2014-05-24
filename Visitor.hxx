@@ -20,6 +20,7 @@ class Identifier;
 class FunctionCallExpr;
 class ExpectedResult;
 class ExpectedConstant;
+class ExpectedExpression;
 class Constant;
 class NumericConstant;
 class StringConstant;
@@ -58,6 +59,7 @@ public:
     virtual void VisitFunctionCallExpr(FunctionCallExpr *) {}
     virtual void VisitExpectedResult(ExpectedResult *) {}
     virtual void VisitExpectedConstant(ExpectedConstant *) {}
+    virtual void VisitExpectedExpression(ExpectedExpression *) {}
     virtual void VisitConstant(Constant *) {}
     virtual void VisitNumericConstant(NumericConstant *) {}
     virtual void VisitStringConstant(StringConstant *) {}

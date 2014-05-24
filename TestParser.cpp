@@ -26,10 +26,25 @@ bool Tokenizer::isCharIgnored(char c)
 	return false;
 }
 
+int Tokenizer::peekToken()
+{
+	Token oldToken = mCurrentToken;
+	char oldChar = mLastChar;
+	string oldStr = mTokStrValue;
+	int peek_token = nextToken();
+	mInput.seekg(mOldPos);
+	mCurrentToken = oldToken;
+	mLastChar = oldChar;
+	mTokStrValue = oldStr;
+	return peek_token;
+}
+
 int Tokenizer::nextToken()
 {
 	stringstream tokenStream;
 	mTokStrValue = "";
+	mOldPos = mInput.tellg();
+	mIdType = ID_UNKNOWN;
 	mLastChar = mInput.get();
 	while (isspace(mLastChar) || isCharIgnored(mLastChar))
 		mLastChar = mInput.get();
@@ -38,6 +53,7 @@ int Tokenizer::nextToken()
 		while ((mLastChar = mInput.get()) != '"') {
 			mTokStrValue += mLastChar;
 		}
+		mIdType = ID_CONSTANT;
 		return mCurrentToken = TOK_STRING;
 	}
 
@@ -71,6 +87,7 @@ int Tokenizer::nextToken()
 				mCurrentToken == TOK_MOCKUP || mCurrentToken == TOK_MOCKUP_ALL ||
 				mCurrentToken == TOK_AFTER_ALL || mCurrentToken == TOK_BEFORE_ALL) {
 			mCurrentToken = TOK_ASCII_CHAR;
+			mIdType = ID_CONSTANT;
 			return mLastChar;
 		}
 	}
@@ -111,6 +128,7 @@ int Tokenizer::nextToken()
 		mInput.putback(mLastChar);
 		tokenStream >> mInt;
 		mTokStrValue = tokenStream.str();
+		mIdType = ID_CONSTANT;
 		return mCurrentToken = TOK_INT;
 	}
 
@@ -357,23 +375,56 @@ TestFixtureExpr* TestDriver::ParseTestFixture()
 {
 	vector<VariableAssignmentExpr*> assignments;
 	vector<FunctionCallExpr*> functions;
+	vector<ExpectedExpression*> expected;
 	FunctionCallExpr *func = nullptr;
 	VariableAssignmentExpr* var = nullptr;
+	ExpectedExpression* exp = nullptr;
+
 	while (mCurrentToken != '}') {
 		if (mTokenizer.getIdentifierType() == Tokenizer::Identifier::ID_FUNCTION) {
 			func = (FunctionCallExpr*) ParseFunctionCall();
 			functions.push_back(func);
 			func = nullptr;
-		} else if (mTokenizer.getIdentifierType() == Tokenizer::Identifier::ID_VARIABLE) {
-			var = (VariableAssignmentExpr*) ParseVariableAssignment();
-			assignments.push_back(var);
-			var = nullptr;
+		} else if (mTokenizer.getIdentifierType() == Tokenizer::ID_VARIABLE) {
+			if (mTokenizer.peekToken() == Tokenizer::TOK_COMPARISON_OP) {
+				exp = ParseExpectedExpression();
+				expected.push_back(exp);
+				exp = nullptr;
+			} else if(mTokenizer.peekToken() == '=') {
+				var = (VariableAssignmentExpr*) ParseVariableAssignment();
+				assignments.push_back(var);
+				var = nullptr;
+			}
+		} else if (mTokenizer.getIdentifierType() == Tokenizer::ID_CONSTANT) {
+			exp = ParseExpectedExpression();
+			expected.push_back(exp);
+			exp = nullptr;
 		}
 
 		if (mCurrentToken == '}')
 			break;
 	}
-	return new TestFixtureExpr(functions, assignments);
+	return new TestFixtureExpr(functions, assignments, expected);
+}
+
+ExpectedExpression* TestDriver::ParseExpectedExpression()
+{
+	Operand* LHS = ParseOperand();
+	ComparisonOperator* CO = ParseComparisonOperator();
+	Operand* RHS = ParseOperand();
+	return new ExpectedExpression(LHS, CO, RHS);
+}
+
+Operand* TestDriver::ParseOperand()
+{
+	if(mTokenizer.getIdentifierType() == Tokenizer::ID_CONSTANT) {
+		Constant* C = ParseConstant();
+		return new Operand(C);
+	} else if(mCurrentToken == Tokenizer::TOK_IDENTIFIER) {
+		Identifier* I = ParseIdentifier();
+		return new Operand(I);
+	}
+	throw Exception("Expected a CONSTANT or an IDENTIFIER");
 }
 
 MockupVariableExpr* TestDriver::ParseMockupVariable()

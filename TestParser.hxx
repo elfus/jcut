@@ -58,9 +58,10 @@ public:
     };
 
     enum Identifier {
-        ID_UNKOWN = 0,
+        ID_UNKNOWN = 0,
         ID_FUNCTION,
         ID_VARIABLE,
+        ID_CONSTANT
     };
 
     Tokenizer(const string& filename);
@@ -72,6 +73,7 @@ public:
     }
 
     int nextToken();
+    int peekToken();
 
     int getInteger() { return mInt; }
 
@@ -98,6 +100,7 @@ private:
     string mTokStrValue;
     char mLastChar;
     Identifier mIdType;
+    unsigned mOldPos;
 };
 
 class TestExpr {
@@ -247,19 +250,52 @@ public:
     }
 };
 
+class Identifier : public TestExpr {
+private:
+    string mIdentifierString;
+public:
+
+    Identifier(const string& str) : mIdentifierString(str) {    }
+
+    ~Identifier() {    }
+
+    void dump() {
+        cout << mIdentifierString;
+    }
+
+    void accept(Visitor *v) {
+        v->VisitIdentifier(this);
+    }
+
+    string getIdentifierStr() const {return mIdentifierString;}
+};
+
 class Operand : public TestExpr {
 private:
     Constant* mC;
+    Identifier* mI;
 public:
-    Operand(Constant* C) : mC(C) {}
-    ~Operand() { delete mC; }
+    explicit Operand(Constant* C) : mC(C), mI(nullptr) {}
+    explicit Operand(Identifier* I) : mC(nullptr), mI(I) {}
+    ~Operand() {
+        if (mC)
+            delete mC;
+        if(mI)
+            delete mI;
+    }
     
     void dump() {
-        mC->dump();
+        if(mC)
+            mC->dump();
+        if(mI)
+            mI->dump();
     }
     
     void accept(Visitor* v) {
-        mC->accept(v);
+        if(mC)
+            mC->accept(v);
+        if(mI)
+            mI->accept(v);
         v->VisitOperand(this);
     }
 };
@@ -308,26 +344,6 @@ public:
     }
 };
 
-class Identifier : public TestExpr {
-private:
-    string mIdentifierString;
-public:
-
-    Identifier(const string& str) : mIdentifierString(str) {    }
-
-    ~Identifier() {    }
-
-    void dump() {
-        cout << mIdentifierString;
-    }
-
-    void accept(Visitor *v) {
-        v->VisitIdentifier(this);
-    }
-
-    string getIdentifierStr() const {return mIdentifierString;}
-};
-
 class FunctionArgument;
 
 class FunctionCallExpr : public TestExpr {
@@ -371,6 +387,34 @@ public:
 
     ComparisonOperator* getComparisonOperator() const { return mCompOp; }
     ExpectedConstant* getExpectedConstant() const { return mEC; }
+};
+
+class ExpectedExpression : public TestExpr {
+private:
+    Operand* mLHS;
+    ComparisonOperator* mCO;
+    Operand* mRHS;
+public:
+    ExpectedExpression(Operand* LHS, ComparisonOperator* CO, Operand* RHS) :
+    mLHS(LHS), mCO(CO), mRHS(RHS) {  }
+    ~ExpectedExpression() {
+        delete mLHS;
+        delete mCO;
+        delete mRHS;
+    }
+    
+    void dump() {
+        mLHS->dump();
+        mCO->dump();
+        mRHS->dump();
+    }
+    
+    void accept(Visitor* v) {
+        mLHS->accept(v);
+        mCO->accept(v);
+        mRHS->accept(v);
+        v->VisitExpectedExpression(this);
+    }
 };
 
 class VariableAssignmentExpr : public TestExpr {
@@ -547,11 +591,13 @@ class TestFixtureExpr : public TestExpr {
 private:
     vector<FunctionCallExpr*> mFunctionCalls;
     vector<VariableAssignmentExpr*> mVarAssign;
+    vector<ExpectedExpression*> mExp;
 public:
 
     TestFixtureExpr(const vector<FunctionCallExpr*>& func,
-            const vector<VariableAssignmentExpr*>& var) :
-    mFunctionCalls(func), mVarAssign(var) {
+            const vector<VariableAssignmentExpr*>& var,
+            const vector<ExpectedExpression*>& exp) :
+    mFunctionCalls(func), mVarAssign(var), mExp(exp) {
 
     }
 
@@ -560,6 +606,9 @@ public:
             delete ptr;
 
         for (auto*& ptr : mVarAssign)
+            delete ptr;
+        
+        for (auto*& ptr : mExp)
             delete ptr;
     }
 
@@ -581,6 +630,15 @@ public:
             }
             cout << endl;
         }
+        
+        if (mExp.size()) {
+            cout << endl << "EXPECTED EXPRESSIONS" << endl;
+            for (auto*& ptr : mExp) {
+                ptr->dump();
+                cout << " ";
+            }
+            cout << endl;
+        }
     }
 
     void accept(Visitor *v) {
@@ -588,6 +646,9 @@ public:
             ptr->accept(v);
 
         for (auto*& ptr : mFunctionCalls)
+            ptr->accept(v);
+        
+        for (auto*& ptr : mExp)
             ptr->accept(v);
 
         v->VisitTestFixtureExpr(this);
@@ -966,6 +1027,8 @@ private:
     ExpectedResult* ParseExpectedResult();
     ComparisonOperator* ParseComparisonOperator();
     ExpectedConstant* ParseExpectedConstant();
+    ExpectedExpression* ParseExpectedExpression();
+    Operand* ParseOperand();
     Constant* ParseConstant();
     TestTeardownExpr* ParseTestTearDown();
     TestFunction* ParseTestFunction();
