@@ -99,7 +99,7 @@ void TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr *FC)
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
         if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
-               mReturnValue = mBuilder.getInt32(0);
+               mReturnValue = mBuilder.getInt32(1);// 1 Passes, 0 fails for void functions
         else
                mReturnValue = call;
 
