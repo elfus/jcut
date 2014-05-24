@@ -232,3 +232,7 @@ void if_statement() {
     else
         printf("It's not a 1\n");
 }
+
+void modify_state() {
+	GLOBAL_VARIABLE *= 2;
+}
