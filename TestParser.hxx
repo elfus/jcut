@@ -177,6 +177,8 @@ public:
     void accept(Visitor* v) {
         v->VisitNumericConstant(this);
     }
+    
+    int getInt() const { return mNC.ic; }
 };
 
 class StringConstant : public TestExpr{
@@ -207,6 +209,7 @@ public:
     void accept(Visitor* v) {
         v->VisitCharConstant(this);
     }
+    int getChar() const { return mC; }
 };
 
 class Constant : public TestExpr {
@@ -235,6 +238,13 @@ public:
         if(mCC) mCC->accept(v);
         v->VisitConstant(this);
     }
+    
+    int getValue() const {
+        if(mNC) return mNC->getInt();
+        // @bug String not supported yet
+        if(mCC) return (int) mCC->getChar();
+        return 0;
+    }
 };
 
 class ExpectedConstant : public TestExpr {
@@ -251,6 +261,10 @@ public:
     void accept(Visitor* v) {
         mC->accept(v);
         v->VisitExpectedConstant(this);
+    }
+    
+    int getValue() const {
+        return mC->getValue();
     }
 };
 
