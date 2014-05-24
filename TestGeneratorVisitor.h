@@ -55,13 +55,13 @@ public:
     
     void VisitFunctionArgument(FunctionArgument *);
     void VisitFunctionCallExpr(FunctionCallExpr *);
-    void VisitComparisonOperator(ComparisonOperator *);
+    void VisitExpectedResult(ExpectedResult *);
     void VisitTestFunction(TestFunction *);
     void VisitVariableAssignmentExpr(VariableAssignmentExpr *);
     void VisitTestDefinitionExpr(TestDefinitionExpr *);
     void VisitGlobalSetupExpr(GlobalSetupExpr *);
     void VisitGlobalTeardownExpr(GlobalTeardownExpr *);
-    void VisitExpectedConstant(ExpectedConstant *);
+    
 
     
     llvm::Function* nextTest() {

@@ -247,6 +247,23 @@ public:
     }
 };
 
+class Operand : public TestExpr {
+private:
+    Constant* mC;
+public:
+    Operand(Constant* C) : mC(C) {}
+    ~Operand() { delete mC; }
+    
+    void dump() {
+        mC->dump();
+    }
+    
+    void accept(Visitor* v) {
+        mC->accept(v);
+        v->VisitOperand(this);
+    }
+};
+
 class ExpectedConstant : public TestExpr {
 private:
     Constant* mC;

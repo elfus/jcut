@@ -108,10 +108,9 @@ void TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr *FC)
 	mArgs.clear();
 }
 
-// ComparisonOperator will be visited after FunctionCallExpr
-void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
+void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 {
-    // Get the call instruction pushed by VisitFunctionCallExpr
+	// Get the call instruction pushed by VisitFunctionCallExpr
     CallInst *call = dyn_cast<CallInst>(mInstructions.back());
     if(call == nullptr)
         throw Exception("Invalid CallInst!");
@@ -121,13 +120,11 @@ void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
 		return;
 	}
 
-    // @todo: Modify the constant against which we are comparing
-    // this will have to be done when visitting the expected-constant
-	llvm::Constant* c = mBuilder.getInt32(5); // Give it a name so we can modify it later
+	llvm::Constant* c = mBuilder.getInt32(ER->getExpectedConstant()->getValue());
 
 	string InstName = "ComparisonInstruction";
     Value* i = nullptr;
-    switch(CO->getType()) {
+    switch(ER->getComparisonOperator()->getType()) {
         case ComparisonOperator::EQUAL_TO:
 			i = mBuilder.CreateICmpEQ(call, c, InstName);
             break;
@@ -155,21 +152,6 @@ void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
     llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,c->getType());
     mInstructions.push_back(zext);
     mReturnValue = zext;
-}
-
-void TestGeneratorVisitor::VisitExpectedConstant(ExpectedConstant *EC)
-{
-	vector<llvm::Instruction*>::reverse_iterator it;
-	llvm::Instruction* inst = nullptr;
-	for (it = mInstructions.rbegin(); it != mInstructions.rend(); ++it) {
-		inst = *it;
-		if (inst->getName() == "ComparisonInstruction") {
-			// This operand is the constant created in the VisitComparisonOperator method
-			llvm::Constant* c = mBuilder.getInt32(EC->getValue());
-			inst->setOperand(1,c);
-			break;
-		}
-	}
 }
 
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)

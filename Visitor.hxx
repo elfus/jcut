@@ -25,6 +25,7 @@ class NumericConstant;
 class StringConstant;
 class CharConstant;
 class ComparisonOperator;
+class Operand;
 class TestTeardownExpr;
 class TestFunction;
 class TestSetupExpr;
@@ -62,6 +63,7 @@ public:
     virtual void VisitStringConstant(StringConstant *) {}
     virtual void VisitCharConstant(CharConstant *) {}
     virtual void VisitComparisonOperator(ComparisonOperator *) {}
+    virtual void VisitOperand(Operand *) {}
     virtual void VisitTestTeardowExpr(TestTeardownExpr *) {}
     virtual void VisitTestFunction(TestFunction *) {}
     virtual void VisitTestSetupExpr(TestSetupExpr *) {}
