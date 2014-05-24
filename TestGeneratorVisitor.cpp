@@ -120,7 +120,10 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 		return;
 	}
 
-	llvm::Constant* c = mBuilder.getInt32(ER->getExpectedConstant()->getValue());
+	stringstream ss;
+	int tmp = ER->getExpectedConstant()->getValue();//workaround, convert int to string
+	ss << tmp;
+	llvm::Value* c = createValue(call->getType(), ss.str());
 
 	string InstName = "ComparisonInstruction";
     Value* i = nullptr;
