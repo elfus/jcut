@@ -116,6 +116,11 @@ void TestGeneratorVisitor::VisitComparisonOperator(ComparisonOperator *CO)
     if(call == nullptr)
         throw Exception("Invalid CallInst!");
 
+	if(call->getCalledFunction()->getReturnType()->getTypeID() == Type::TypeID::VoidTyID) {
+		cerr<<"Warning: Trying compare a value against a function with no return value"<<endl;
+		return;
+	}
+
     // @todo: Modify the constant against which we are comparing
     // this will have to be done when visitting the expected-constant
 	llvm::Constant* c = mBuilder.getInt32(5); // Give it a name so we can modify it later
