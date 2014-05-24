@@ -298,6 +298,11 @@ public:
             mI->accept(v);
         v->VisitOperand(this);
     }
+    
+    bool isConstant() const { return (mC) ? true : false; }
+    bool isIdentifier() const { return (mI) ? true : false; }
+    Identifier* getIdentifier() const { return mI;}
+    Constant* getConstant() const { return mC; }
 };
 
 class ExpectedConstant : public TestExpr {
@@ -415,6 +420,10 @@ public:
         mRHS->accept(v);
         v->VisitExpectedExpression(this);
     }
+    
+    Operand* getLHSOperand() const { return mLHS; }
+    Operand* getRHSOperand() const { return mRHS; }
+    ComparisonOperator* getComparisonOperator() const { return mCO; }
 };
 
 class VariableAssignmentExpr : public TestExpr {

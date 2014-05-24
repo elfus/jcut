@@ -157,6 +157,81 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
     mReturnValue = zext;
 }
 
+void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
+{
+	Operand* LHS = EE->getLHSOperand();
+	Operand* RHS = EE->getRHSOperand();
+	ComparisonOperator* CO = EE->getComparisonOperator();
+	Value* L = nullptr;
+	Value* R = nullptr;
+
+	if (LHS->isIdentifier()) {
+		llvm::GlobalVariable* g = mModule->getGlobalVariable(LHS->getIdentifier()->getIdentifierStr());
+		assert(g && "LHS Operator not found!");
+		L = mBuilder.CreateLoad(g);
+		mInstructions.push_back((llvm::Instruction*)L);
+	} 
+
+	if (RHS->isIdentifier()) {
+		llvm::GlobalVariable* g = mModule->getGlobalVariable(RHS->getIdentifier()->getIdentifierStr());
+		assert(g && "RHS Operator not found!");
+		R = mBuilder.CreateLoad(g);
+		mInstructions.push_back((llvm::Instruction*)R);
+	}
+
+	if (LHS->isConstant()) {
+		if (R != nullptr) {
+			stringstream ss;
+			ss <<  LHS->getConstant()->getValue();
+			L = createValue(R->getType(),ss.str());
+		}
+	}
+
+	if (RHS->isConstant()) {
+		if (L != nullptr) {
+			stringstream ss;
+			ss <<  RHS->getConstant()->getValue();
+			R = createValue(L->getType(),ss.str());
+		}
+	}
+
+	string InstName = "ExpExprComp";
+	Value* i = nullptr;
+    switch(CO->getType()) {
+        case ComparisonOperator::EQUAL_TO:
+			i = mBuilder.CreateICmpEQ(L, R, InstName);
+            break;
+        case ComparisonOperator::NOT_EQUAL_TO:
+			i = mBuilder.CreateICmpNE(L, R, InstName);
+            break;
+        case ComparisonOperator::GREATER_OR_EQUAL:
+            i = mBuilder.CreateICmpSGE(L, R, InstName);
+            break;
+        case ComparisonOperator::LESS_OR_EQUAL:
+            i = mBuilder.CreateICmpSLE(L, R, InstName);
+            break;
+        case ComparisonOperator::GREATER:
+            i = mBuilder.CreateICmpSGT(L, R, InstName);
+            break;
+        case ComparisonOperator::LESS:
+            i = mBuilder.CreateICmpSLT(L, R, InstName);
+            break;
+        case ComparisonOperator::INVALID:
+            break;
+    }
+	assert(i && "Invalid ComparisonOperator");
+	
+	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mReturnValue->getType());
+	llvm::Value* mainBool = mBuilder.CreateICmpEQ(mReturnValue, zext);
+	llvm::ZExtInst* zext2 = (llvm::ZExtInst*) mBuilder.CreateZExt(mainBool,mReturnValue->getType());
+
+	mInstructions.push_back((llvm::Instruction*)i);
+	mInstructions.push_back(zext);
+    mInstructions.push_back((llvm::Instruction*)mainBool);
+	mInstructions.push_back(zext2);
+	mReturnValue = zext2;
+}
+
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
 

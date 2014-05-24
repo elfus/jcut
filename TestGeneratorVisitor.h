@@ -56,6 +56,7 @@ public:
     void VisitFunctionArgument(FunctionArgument *);
     void VisitFunctionCallExpr(FunctionCallExpr *);
     void VisitExpectedResult(ExpectedResult *);
+    void VisitExpectedExpression(ExpectedExpression *);
     void VisitTestFunction(TestFunction *);
     void VisitVariableAssignmentExpr(VariableAssignmentExpr *);
     void VisitTestDefinitionExpr(TestDefinitionExpr *);
