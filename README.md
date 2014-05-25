@@ -24,7 +24,7 @@ Test File Grammar
 
 <unit-test-expr> := <test-definition>* | <test-group>*
 
-<test-group> := group "{" <test-definition>* | <test-group>* "}"
+<test-group> := group [<identifier>] "{" <test-definition>* | <test-group>* "}"
 
 <test-definition> := [<test-info> | <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
 

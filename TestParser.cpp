@@ -70,7 +70,7 @@ int Tokenizer::nextToken()
 		if (mCurrentToken == TOK_BEFORE || mCurrentToken == TOK_AFTER ||
 				mCurrentToken == TOK_MOCKUP || mCurrentToken == TOK_MOCKUP_ALL ||
 				mCurrentToken == TOK_AFTER_ALL || mCurrentToken == TOK_BEFORE_ALL ||
-				mCurrentToken == TOK_GROUP) {
+				mCurrentToken == TOK_GROUP || mCurrentToken == TOK_IDENTIFIER) {
 			mCurrentToken = TOK_ASCII_CHAR;
 			return mLastChar;
 		}
@@ -516,8 +516,12 @@ TestGroup* TestDriver::ParseTestGroup()
 {
 	vector<TestDefinitionExpr*> definitions;
 	vector<TestGroup*> groups;
+	Identifier* name = nullptr;
 
 	mCurrentToken = mTokenizer.nextToken(); // eat up the group keyword
+
+	if (mCurrentToken == Tokenizer::TOK_IDENTIFIER)
+		name = ParseIdentifier();
 	
 	if (mCurrentToken != '{')
 		throw Exception("Expected a '{'  for the given group, but received: "+mTokenizer.getTokenStringValue());
@@ -544,7 +548,7 @@ TestGroup* TestDriver::ParseTestGroup()
 	}
 
 	mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
-	return new TestGroup(definitions, groups);
+	return new TestGroup(name, definitions, groups);
 }
 
 UnitTestExpr* TestDriver::ParseUnitTestExpr()

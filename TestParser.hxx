@@ -814,12 +814,17 @@ public:
 
 class TestGroup : public TestExpr {
 private:
+    Identifier* mName;
     vector<TestDefinitionExpr*> mTestDefinitions;
     vector<TestGroup*> mTestGroups;
 public:
-    TestGroup(const vector<TestDefinitionExpr*>& def,
+    TestGroup(Identifier* name,
+            const vector<TestDefinitionExpr*>& def,
             const vector<TestGroup*>& groups) : 
-    mTestDefinitions(def), mTestGroups(groups) {}
+    mName(name), mTestDefinitions(def), mTestGroups(groups) {
+        if (!mName)
+            cout<<"Generate a default group name"<<endl;
+    }
     ~TestGroup() {
         for (auto*& ptr : mTestDefinitions)
             delete ptr;
