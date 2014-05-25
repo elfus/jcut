@@ -37,6 +37,7 @@ class MockupFunctionExpr;
 class MockupFixtureExpr;
 class TestMockupExpr;
 class TestDefinitionExpr;
+class TestGroup;
 class UnitTestExpr;
 class GlobalMockupExpr;
 class GlobalSetupExpr;
@@ -77,6 +78,7 @@ public:
     virtual void VisitTestInfo(TestInfo* ) {}
     virtual void VisitTestMockupExpr(TestMockupExpr *) {}
     virtual void VisitTestDefinitionExpr(TestDefinitionExpr *) {}
+    virtual void VisitTestGroup(TestGroup *) {}
     virtual void VisitUnitTestExpr(UnitTestExpr *) {}
     virtual void VisitGlobalMockupExpr(GlobalMockupExpr *) {}
     virtual void VisitGlobalSetupExpr(GlobalSetupExpr *) {}

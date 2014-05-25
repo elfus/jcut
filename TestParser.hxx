@@ -56,6 +56,7 @@ public:
         TOK_AFTER_ALL = -104,
         TOK_MOCKUP_ALL = -105,
         TOK_TEST_INFO = -106,
+        TOK_GROUP = -107,
     };
 
     enum Identifier {
@@ -811,15 +812,57 @@ public:
     }
 };
 
+class TestGroup : public TestExpr {
+private:
+    vector<TestDefinitionExpr*> mTestDefinitions;
+    vector<TestGroup*> mTestGroups;
+public:
+    TestGroup(const vector<TestDefinitionExpr*>& def,
+            const vector<TestGroup*>& groups) : 
+    mTestDefinitions(def), mTestGroups(groups) {}
+    ~TestGroup() {
+        for (auto*& ptr : mTestDefinitions)
+            delete ptr;
+        for (auto*& ptr : mTestGroups)
+            delete ptr;
+    }
+    
+    void dump() {
+        for (auto*& ptr : mTestDefinitions) {
+            ptr->dump();
+            cout << endl;
+        }
+        for (auto*& ptr : mTestGroups) {
+            ptr->dump();
+            cout << endl;
+        }
+    }
+
+    void accept(Visitor *v) {
+        for (auto*& ptr : mTestDefinitions) {
+            ptr->accept(v);
+        }
+        for (auto*& ptr : mTestGroups) {
+            ptr->accept(v);
+        }
+        v->VisitTestGroup(this);
+    }
+};
+
 class UnitTestExpr : public TestExpr {
 private:
     vector<TestDefinitionExpr*> TestDefinitions;
+    vector<TestGroup*> mTestGroups;
 public:
 
-    UnitTestExpr(const vector<TestDefinitionExpr*>& def) : TestDefinitions(def) { }
+    UnitTestExpr(const vector<TestDefinitionExpr*>& def,
+            const vector<TestGroup*> groups) : TestDefinitions(def),
+            mTestGroups(groups) { }
 
     virtual ~UnitTestExpr() {
         for (auto*& ptr : TestDefinitions)
+            delete ptr;
+        for (auto*& ptr : mTestGroups)
             delete ptr;
     }
 
@@ -828,10 +871,17 @@ public:
             ptr->dump();
             cout << endl;
         }
+        for (auto*& ptr : mTestGroups) {
+            ptr->dump();
+            cout << endl;
+        }
     }
 
     void accept(Visitor *v) {
         for (auto*& ptr : TestDefinitions) {
+            ptr->accept(v);
+        }
+        for (auto*& ptr : mTestGroups) {
             ptr->accept(v);
         }
         v->VisitUnitTestExpr(this);
@@ -1071,6 +1121,7 @@ private:
     TestMockupExpr* ParseTestMockup();
     TestInfo* ParseTestInfo();
     TestDefinitionExpr* ParseTestDefinition();
+    TestGroup* ParseTestGroup();
     UnitTestExpr* ParseUnitTestExpr();
     GlobalMockupExpr* ParseGlobalMockupExpr();
     GlobalSetupExpr* ParseGlobalSetupExpr();

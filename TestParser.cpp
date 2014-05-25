@@ -69,7 +69,8 @@ int Tokenizer::nextToken()
 
 		if (mCurrentToken == TOK_BEFORE || mCurrentToken == TOK_AFTER ||
 				mCurrentToken == TOK_MOCKUP || mCurrentToken == TOK_MOCKUP_ALL ||
-				mCurrentToken == TOK_AFTER_ALL || mCurrentToken == TOK_BEFORE_ALL) {
+				mCurrentToken == TOK_AFTER_ALL || mCurrentToken == TOK_BEFORE_ALL ||
+				mCurrentToken == TOK_GROUP) {
 			mCurrentToken = TOK_ASCII_CHAR;
 			return mLastChar;
 		}
@@ -117,6 +118,7 @@ int Tokenizer::nextToken()
 		if (mTokStrValue == "after_all") return mCurrentToken = TOK_AFTER_ALL;
 		if (mTokStrValue == "mockup_all") return mCurrentToken = TOK_MOCKUP_ALL;
 		if (mTokStrValue == "test") return mCurrentToken = TOK_TEST_INFO;
+		if (mTokStrValue == "group") return mCurrentToken = TOK_GROUP;
 		return mCurrentToken = TOK_IDENTIFIER;
 	}
 
@@ -510,24 +512,69 @@ TestDefinitionExpr* TestDriver::ParseTestDefinition()
 	return new TestDefinitionExpr(info, testFunction, setup, teardown, mockup);
 }
 
+TestGroup* TestDriver::ParseTestGroup()
+{
+	vector<TestDefinitionExpr*> definitions;
+	vector<TestGroup*> groups;
+
+	mCurrentToken = mTokenizer.nextToken(); // eat up the group keyword
+	
+	if (mCurrentToken != '{')
+		throw Exception("Expected a '{'  for the given group, but received: "+mTokenizer.getTokenStringValue());
+
+	mCurrentToken = mTokenizer.nextToken();// eat up the '{'
+	while (true) {
+		try {
+			if (mCurrentToken == '}' or mCurrentToken == Tokenizer::TOK_EOF)
+				break;
+			if (mCurrentToken == Tokenizer::TOK_GROUP) {
+				TestGroup* group = ParseTestGroup();
+				groups.push_back(group);
+			} else {
+				TestDefinitionExpr *TestDefinition = ParseTestDefinition();
+				definitions.push_back(TestDefinition);
+			}
+		} catch (const exception& e) {
+			cerr << e.what() << endl;
+			// Let's try to recover until the next test inside this group
+			while (mCurrentToken != Tokenizer::TOK_IDENTIFIER and
+					mCurrentToken != Tokenizer::TOK_EOF)
+				mCurrentToken = mTokenizer.nextToken();
+		}
+	}
+
+	mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
+	return new TestGroup(definitions, groups);
+}
+
 UnitTestExpr* TestDriver::ParseUnitTestExpr()
 {
 	vector<TestDefinitionExpr*> definitions;
+	vector<TestGroup*> groups;
 
 	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER &&
 			mCurrentToken != Tokenizer::TOK_BEFORE &&
-			mCurrentToken != Tokenizer::TOK_MOCKUP)
+			mCurrentToken != Tokenizer::TOK_MOCKUP &&
+			mCurrentToken != Tokenizer::TOK_TEST_INFO &&
+			mCurrentToken != Tokenizer::TOK_GROUP)
 		throw Exception("Expected a function call");
 
 	if (mCurrentToken == Tokenizer::TOK_IDENTIFIER or
 			mCurrentToken == Tokenizer::TOK_BEFORE or
-			mCurrentToken == Tokenizer::TOK_MOCKUP) {
+			mCurrentToken == Tokenizer::TOK_MOCKUP or
+			mCurrentToken == Tokenizer::TOK_TEST_INFO or
+			mCurrentToken == Tokenizer::TOK_GROUP) {
 		while (true) {
 			try {
 				if (mCurrentToken == Tokenizer::TOK_EOF)
 					break;
-				TestDefinitionExpr *TestDefinition = ParseTestDefinition();
-				definitions.push_back(TestDefinition);
+				if (mCurrentToken == Tokenizer::TOK_GROUP) {
+					TestGroup* group = ParseTestGroup();
+					groups.push_back(group);
+				} else {
+					TestDefinitionExpr *TestDefinition = ParseTestDefinition();
+					definitions.push_back(TestDefinition);
+				}
 			} catch (const exception& e) {
 				cerr << e.what() << endl;
 				// Let's try to recover until the next test
@@ -537,7 +584,7 @@ UnitTestExpr* TestDriver::ParseUnitTestExpr()
 			}
 		}
 	}
-	return new UnitTestExpr(definitions);
+	return new UnitTestExpr(definitions, groups);
 }
 
 GlobalMockupExpr* TestDriver::ParseGlobalMockupExpr()
