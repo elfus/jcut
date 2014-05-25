@@ -116,6 +116,7 @@ int Tokenizer::nextToken()
 		if (mTokStrValue == "before_all") return mCurrentToken = TOK_BEFORE_ALL;
 		if (mTokStrValue == "after_all") return mCurrentToken = TOK_AFTER_ALL;
 		if (mTokStrValue == "mockup_all") return mCurrentToken = TOK_MOCKUP_ALL;
+		if (mTokStrValue == "test") return mCurrentToken = TOK_TEST_INFO;
 		return mCurrentToken = TOK_IDENTIFIER;
 	}
 
@@ -487,14 +488,26 @@ TestMockupExpr* TestDriver::ParseTestMockup()
 	throw Exception("Excpected { but received " + mTokenizer.getTokenStringValue());
 }
 
+TestInfo* TestDriver::ParseTestInfo()
+{
+	if (mCurrentToken != Tokenizer::TOK_TEST_INFO) {
+		// @todo Create default information
+		return nullptr;
+	}
+	mCurrentToken = mTokenizer.nextToken(); // eat the keyword test
+	Identifier* name = ParseIdentifier();
+	return new TestInfo(name);
+}
+
 TestDefinitionExpr* TestDriver::ParseTestDefinition()
 {
+	TestInfo *info = ParseTestInfo();
 	TestMockupExpr *mockup = ParseTestMockup();
 	TestSetupExpr *setup = ParseTestSetup();
 	TestFunction *testFunction = ParseTestFunction();
 	TestTeardownExpr *teardown = ParseTestTearDown();
 
-	return new TestDefinitionExpr(testFunction, setup, teardown, mockup);
+	return new TestDefinitionExpr(info, testFunction, setup, teardown, mockup);
 }
 
 UnitTestExpr* TestDriver::ParseUnitTestExpr()

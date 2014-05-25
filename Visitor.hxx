@@ -27,6 +27,7 @@ class StringConstant;
 class CharConstant;
 class ComparisonOperator;
 class Operand;
+class TestInfo;
 class TestTeardownExpr;
 class TestFunction;
 class TestSetupExpr;
@@ -73,6 +74,7 @@ public:
     virtual void VisitMockupVariableExpr(MockupVariableExpr *) {}
     virtual void VisitMockupFunctionExpr(MockupFunctionExpr *) {}
     virtual void VisitMockupFixtureExpr(MockupFixtureExpr *) {}
+    virtual void VisitTestInfo(TestInfo* ) {}
     virtual void VisitTestMockupExpr(TestMockupExpr *) {}
     virtual void VisitTestDefinitionExpr(TestDefinitionExpr *) {}
     virtual void VisitUnitTestExpr(UnitTestExpr *) {}

@@ -24,7 +24,9 @@ Test File Grammar
 
 <unit-test-expr> := <test-definition>+
 
-<test-definition> := [ <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
+<test-definition> := [<test-info> <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
+
+<test-info> := test <identifier>
 
 <test-mockup> := mockup "{" <mockup-fixture> "}"
 

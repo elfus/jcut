@@ -55,6 +55,7 @@ public:
         TOK_BEFORE_ALL = -103,
         TOK_AFTER_ALL = -104,
         TOK_MOCKUP_ALL = -105,
+        TOK_TEST_INFO = -106,
     };
 
     enum Identifier {
@@ -740,8 +741,25 @@ public:
     }
 };
 
+class TestInfo : public TestExpr {
+private:
+    Identifier* mTestName;
+public:
+    TestInfo(Identifier* name) : mTestName(name) {}
+    ~TestInfo() { delete mTestName; }
+    
+    void dump() {
+        
+    }
+    
+    void accept(Visitor* v) {
+        v->VisitTestInfo(this);
+    }
+};
+
 class TestDefinitionExpr : public TestExpr {
 private:
+    TestInfo *mTestInfo;
     TestFunction *FunctionCall;
     TestSetupExpr *TestSetup;
     TestTeardownExpr *TestTeardown;
@@ -749,17 +767,20 @@ private:
 
 public:
 
-    TestDefinitionExpr(TestFunction *function,
+    TestDefinitionExpr(
+            TestInfo *info,
+            TestFunction *function,
             TestSetupExpr *setup = nullptr,
             TestTeardownExpr *teardown = nullptr,
             TestMockupExpr *mockup = nullptr) :
-    FunctionCall(function), TestSetup(setup),
+    mTestInfo(info), FunctionCall(function), TestSetup(setup),
     TestTeardown(teardown), TestMockup(mockup) {
     }
 
     TestFunction * getTestFunction() const {return FunctionCall;}
 
     virtual ~TestDefinitionExpr() {
+        if (mTestInfo) delete mTestInfo;
         if (FunctionCall) delete FunctionCall;
         if (TestSetup) delete TestSetup;
         if (TestTeardown) delete TestTeardown;
@@ -781,6 +802,7 @@ public:
     }
 
     void accept(Visitor *v) {
+        if(mTestInfo) mTestInfo->accept(v);
         if(TestMockup) TestMockup->accept(v);
         if(TestSetup) TestSetup->accept(v);
         FunctionCall->accept(v);
@@ -1047,6 +1069,7 @@ private:
     MockupFunctionExpr* ParseMockupFunction();
     MockupFixtureExpr* ParseMockupFixture();
     TestMockupExpr* ParseTestMockup();
+    TestInfo* ParseTestInfo();
     TestDefinitionExpr* ParseTestDefinition();
     UnitTestExpr* ParseUnitTestExpr();
     GlobalMockupExpr* ParseGlobalMockupExpr();
