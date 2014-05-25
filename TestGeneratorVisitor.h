@@ -11,6 +11,7 @@
 #include "Visitor.hxx"
 #include <string>
 #include <vector>
+#include <tuple>
 
 namespace llvm {
     class Function;
@@ -35,6 +36,9 @@ private:
     std::vector<llvm::Instruction*> mInstructions;
     /// Used to hold the arguments for each FunctionCallExpr
     std::vector<llvm::Value*> mArgs;
+    /// Used to hold backup values of global variables and their original values
+    /// @todo Add support for structures
+    std::vector<tuple<llvm::Value*,llvm::GlobalVariable*>> mBackup;
     // llvm::Function's created by this Visitor
     std::vector<llvm::Function*> mTests;
     llvm::Function *mGlobalSetup;

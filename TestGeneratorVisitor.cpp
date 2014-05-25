@@ -251,6 +251,11 @@ void TestGeneratorVisitor::VisitVariableAssignmentExpr(VariableAssignmentExpr *V
 	Tokenizer::Token tokenType = VA->getArgument()->getTokenType();
 	string real_value = VA->getArgument()->getStringRepresentation();
 
+	/// @todo Add support for structures
+	LoadInst* load_value = mBuilder.CreateLoad(global_variable);
+	mBackup.push_back(make_tuple(load_value, global_variable));
+	mInstructions.push_back(load_value);
+
 	// TODO: Handle the rest of token types
 	switch (tokenType) {
 	case Tokenizer::TOK_INT:
@@ -286,14 +291,22 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
 			"wrapper_block_" + func_name, testFunction);
 
-        ReturnInst *ret = mBuilder.CreateRet(mReturnValue);
-        mInstructions.push_back(ret);
+	//  Restore backup values
+	/// @todo Add support for structures
+	for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
+		StoreInst* st = mBuilder.CreateStore(get<0>(tup), get<1>(tup));
+		mInstructions.push_back(st);
+	}
+
+	ReturnInst *ret = mBuilder.CreateRet(mReturnValue);
+	mInstructions.push_back(ret);
 
 	mBuilder.SetInsertPoint(BB);
 	for (auto*& inst : mInstructions)
 		mBuilder.Insert(inst);
 
 	mInstructions.clear();
+	mBackup.clear();
 	mBuilder.ClearInsertionPoint();
 
 	mTests.push_back(testFunction);

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int GLOBAL_VARIABLE = 10;
+int GLOBAL_VARIABLE;
 
 void do_cmath(char *x) {
   printf("%s: X before: %d\n",__func__,*x);
