@@ -18,6 +18,21 @@
 
 using namespace std;
 
+namespace llvm {
+    class Function;
+}
+
+class LLVMFunctionWrapper {
+private:
+    llvm::Function* mFunction;
+public:
+    LLVMFunctionWrapper() {}
+    virtual ~LLVMFunctionWrapper() {}
+    
+    void setLLVMFunction(llvm::Function* f) { mFunction = f; }
+    llvm::Function* getLLVMFunction() const { return mFunction; }
+};
+
 class Exception : public std::exception {
 public:
     Exception() = delete;
@@ -758,7 +773,7 @@ public:
     }
 };
 
-class TestDefinitionExpr : public TestExpr {
+class TestDefinitionExpr : public TestExpr, public LLVMFunctionWrapper {
 private:
     TestInfo *mTestInfo;
     TestFunction *FunctionCall;
@@ -916,7 +931,7 @@ public:
     }
 };
 
-class GlobalSetupExpr : public TestExpr {
+class GlobalSetupExpr : public TestExpr, public LLVMFunctionWrapper {
 private:
     TestFixtureExpr *mTestFixture;
 public:
@@ -939,7 +954,7 @@ public:
     }
 };
 
-class GlobalTeardownExpr : public TestExpr {
+class GlobalTeardownExpr : public TestExpr, public LLVMFunctionWrapper {
 private:
     TestFixtureExpr *mTestFixture;
 public:

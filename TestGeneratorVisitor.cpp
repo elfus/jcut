@@ -310,6 +310,7 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	mBuilder.ClearInsertionPoint();
 
 	mTests.push_back(testFunction);
+	TD->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitGlobalSetupExpr(GlobalSetupExpr *GS)
@@ -335,6 +336,7 @@ void TestGeneratorVisitor::VisitGlobalSetupExpr(GlobalSetupExpr *GS)
 	mBuilder.ClearInsertionPoint();
 
 	mGlobalSetup = testFunction;
+	GS->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitGlobalTeardownExpr(GlobalTeardownExpr *GT)
@@ -360,6 +362,7 @@ void TestGeneratorVisitor::VisitGlobalTeardownExpr(GlobalTeardownExpr *GT)
 	mBuilder.ClearInsertionPoint();
 
 	mGlobalTeardown = testFunction;
+	GT->setLLVMFunction(testFunction);
 }
 
 
