@@ -18,10 +18,6 @@ mModule(mod),
 mBuilder(mod->getContext()),
 mTestFunctionCall(nullptr),
 mCurrentBB(nullptr),
-mGlobalSetup(nullptr),
-mGlobalTeardown(nullptr),
-mCurrentTest(0),
-mTestCount(0),
 mReturnValue(nullptr)
 {
 }
@@ -309,7 +305,6 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	mBackup.clear();
 	mBuilder.ClearInsertionPoint();
 
-	mTests.push_back(testFunction);
 	TD->setLLVMFunction(testFunction);
 }
 
@@ -335,7 +330,6 @@ void TestGeneratorVisitor::VisitGlobalSetupExpr(GlobalSetupExpr *GS)
 	mInstructions.clear();
 	mBuilder.ClearInsertionPoint();
 
-	mGlobalSetup = testFunction;
 	GS->setLLVMFunction(testFunction);
 }
 
@@ -361,7 +355,6 @@ void TestGeneratorVisitor::VisitGlobalTeardownExpr(GlobalTeardownExpr *GT)
 	mInstructions.clear();
 	mBuilder.ClearInsertionPoint();
 
-	mGlobalTeardown = testFunction;
 	GT->setLLVMFunction(testFunction);
 }
 

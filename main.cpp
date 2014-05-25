@@ -32,6 +32,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "TestParser.hxx"
 #include "TestGeneratorVisitor.h"
+#include "TestRunnerVisitor.h"
 #include <iostream>
 #include <utility>
 using namespace std;
@@ -292,36 +293,13 @@ int main(int argc, const char **argv, char * const *envp)
 				// Initialize the JIT Engine only once
 				llvm::InitializeNativeTarget();
 				std::string Error;
-				OwningPtr<llvm::ExecutionEngine> EE(
-						llvm::ExecutionEngine::createJIT(Module, &Error));
-				if (!EE) {
+				TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(Module, &Error));
+				if (runner.isValidExecutionEngine() == false) {
 					llvm::errs() << "unable to make execution engine: " << Error << "\n";
 					return 255;
 				}
+				tests->accept(&runner);
 
-				std::vector<llvm::GenericValue> Args;//Dummy arguments
-
-				llvm::Function* globalSetup = visitor.getGlobalSetup();
-				if (globalSetup) {
-					//globalSetup->dump();
-					EE->runFunction(globalSetup,Args);
-				}
-				// execute many
-				while (llvm::Function * f = visitor.nextTest()) {
-					f->dump();
-                                        GenericValue rval = EE->runFunction(f,Args);
-					if (rval.IntVal.getBoolValue()) {
-						outs() << "[TEST...PASSED]\n";
-					} else {
-						errs() << "[TEST...FAILED!] ";
-					}
-				}
-
-				llvm::Function* globalTeardown = visitor.getGlobalTeardown();
-				if (globalTeardown) {
-					//globalTeardown->dump();
-					EE->runFunction(globalTeardown,Args);
-				}
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";
 			}

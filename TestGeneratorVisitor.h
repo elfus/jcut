@@ -39,12 +39,6 @@ private:
     /// Used to hold backup values of global variables and their original values
     /// @todo Add support for structures
     std::vector<tuple<llvm::Value*,llvm::GlobalVariable*>> mBackup;
-    // llvm::Function's created by this Visitor
-    std::vector<llvm::Function*> mTests;
-    llvm::Function *mGlobalSetup;
-    llvm::Function *mGlobalTeardown;
-    unsigned mCurrentTest;
-    unsigned mTestCount;
     llvm::Value *mReturnValue;
     
     /**
@@ -67,17 +61,6 @@ public:
     void VisitGlobalSetupExpr(GlobalSetupExpr *);
     void VisitGlobalTeardownExpr(GlobalTeardownExpr *);
     
-
-    
-    llvm::Function* nextTest() {
-        if(mCurrentTest == mTests.size())
-            return nullptr;
-        return mTests[mCurrentTest++];
-    }
-    
-    
-    llvm::Function* getGlobalSetup() const { return mGlobalSetup; }
-    llvm::Function* getGlobalTeardown() const { return mGlobalTeardown; }
 };
 
 #endif	/* TESTGENERATORVISITOR_H */

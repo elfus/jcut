@@ -16,21 +16,24 @@
 
 #include "Visitor.hxx"
 
+#include "llvm/ExecutionEngine/GenericValue.h"
+#include "llvm/IR/Function.h"
+
 using namespace std;
 
-namespace llvm {
-    class Function;
-}
 
 class LLVMFunctionWrapper {
 private:
     llvm::Function* mFunction;
+    llvm::GenericValue mReturnValue;
 public:
-    LLVMFunctionWrapper() {}
-    virtual ~LLVMFunctionWrapper() {}
+    LLVMFunctionWrapper() : mFunction(nullptr) {}
+    virtual ~LLVMFunctionWrapper() {delete mFunction;}
     
     void setLLVMFunction(llvm::Function* f) { mFunction = f; }
     llvm::Function* getLLVMFunction() const { return mFunction; }
+    void setReturnValue(llvm::GenericValue GV) { mReturnValue = GV; }
+    llvm::GenericValue getReturnValue () const { return mReturnValue; }
 };
 
 class Exception : public std::exception {
