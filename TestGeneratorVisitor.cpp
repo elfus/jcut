@@ -166,7 +166,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 		assert(g && "LHS Operator not found!");
 		L = mBuilder.CreateLoad(g);
 		mInstructions.push_back((llvm::Instruction*)L);
-	} 
+	}
 
 	if (RHS->isIdentifier()) {
 		llvm::GlobalVariable* g = mModule->getGlobalVariable(RHS->getIdentifier()->getIdentifierStr());
@@ -216,7 +216,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
             break;
     }
 	assert(i && "Invalid ComparisonOperator");
-	
+
 	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mReturnValue->getType());
 	llvm::Value* mainBool = mBuilder.CreateICmpEQ(mReturnValue, zext);
 	llvm::ZExtInst* zext2 = (llvm::ZExtInst*) mBuilder.CreateZExt(mainBool,mReturnValue->getType());
@@ -280,6 +280,7 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 		++i;
 	} while (mModule->getFunction(test_name));
 
+        TD->setTestName(test_name);
 	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
 			test_name,
 			Type::getInt32Ty(mModule->getContext()),

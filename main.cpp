@@ -33,6 +33,7 @@
 #include "TestParser.hxx"
 #include "TestGeneratorVisitor.h"
 #include "TestRunnerVisitor.h"
+#include "TestLoggerVisitor.h"
 #include <iostream>
 #include <utility>
 using namespace std;
@@ -299,6 +300,9 @@ int main(int argc, const char **argv, char * const *envp)
 					return 255;
 				}
 				tests->accept(&runner);
+
+                                TestLoggerVisitor results_logger;
+                                tests->accept(&results_logger);
 
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";

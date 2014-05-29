@@ -29,7 +29,7 @@ private:
 public:
     LLVMFunctionWrapper() : mFunction(nullptr) {}
     virtual ~LLVMFunctionWrapper() {delete mFunction;}
-    
+
     void setLLVMFunction(llvm::Function* f) { mFunction = f; }
     llvm::Function* getLLVMFunction() const { return mFunction; }
     void setReturnValue(llvm::GenericValue GV) { mReturnValue = GV; }
@@ -174,6 +174,7 @@ public:
     }
 
     Type getType() const { return mType; }
+    string getTypeStr() const { return mStringRepresentation; }
 private:
     string mStringRepresentation;
     Type mType;
@@ -185,11 +186,12 @@ private:
         int ic;
         float fc;
     } mNC;
+    bool mIsInt;
 public:
-    explicit NumericConstant(int i) {
+    explicit NumericConstant(int i) : mIsInt(true) {
         mNC.ic = i;
     }
-    explicit NumericConstant(float f) {
+    explicit NumericConstant(float f) : mIsInt(false) {
         mNC.fc = f;
     }
     ~NumericConstant() {}
@@ -200,8 +202,10 @@ public:
     void accept(Visitor* v) {
         v->VisitNumericConstant(this);
     }
-    
+
     int getInt() const { return mNC.ic; }
+    bool isInt() const { return mIsInt; }
+    bool isFloat() const { return !mIsInt; }
 };
 
 class StringConstant : public TestExpr{
@@ -236,14 +240,22 @@ public:
 };
 
 class Constant : public TestExpr {
+public:
+    enum Type {
+        NUMERIC,
+        STRING,
+        CHAR,
+        INVALID,
+    };
 private:
     NumericConstant* mNC;
     StringConstant* mSC;
     CharConstant* mCC;
+    Type    mType;
 public:
-    Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr) {}
-    Constant(StringConstant *C) : mNC(nullptr), mSC(C), mCC(nullptr) {}
-    Constant(CharConstant *C) : mNC(nullptr), mSC(nullptr), mCC(C) {}
+    Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr), mType(NUMERIC) {}
+    Constant(StringConstant *C) : mNC(nullptr), mSC(C), mCC(nullptr), mType(STRING) {}
+    Constant(CharConstant *C) : mNC(nullptr), mSC(nullptr), mCC(C), mType(CHAR) {}
     ~Constant() {
         if(mNC) delete mNC;
         if(mSC) delete mSC;
@@ -261,13 +273,15 @@ public:
         if(mCC) mCC->accept(v);
         v->VisitConstant(this);
     }
-    
+
     int getValue() const {
         if(mNC) return mNC->getInt();
         // @bug String not supported yet
         if(mCC) return (int) mCC->getChar();
         return 0;
     }
+
+    Type getType() const { return mType; }
 };
 
 class Identifier : public TestExpr {
@@ -303,14 +317,14 @@ public:
         if(mI)
             delete mI;
     }
-    
+
     void dump() {
         if(mC)
             mC->dump();
         if(mI)
             mI->dump();
     }
-    
+
     void accept(Visitor* v) {
         if(mC)
             mC->accept(v);
@@ -318,7 +332,7 @@ public:
             mI->accept(v);
         v->VisitOperand(this);
     }
-    
+
     bool isConstant() const { return (mC) ? true : false; }
     bool isIdentifier() const { return (mI) ? true : false; }
     Identifier* getIdentifier() const { return mI;}
@@ -340,7 +354,7 @@ public:
         mC->accept(v);
         v->VisitExpectedConstant(this);
     }
-    
+
     int getValue() const {
         return mC->getValue();
     }
@@ -427,20 +441,20 @@ public:
         delete mCO;
         delete mRHS;
     }
-    
+
     void dump() {
         mLHS->dump();
         mCO->dump();
         mRHS->dump();
     }
-    
+
     void accept(Visitor* v) {
         mLHS->accept(v);
         mCO->accept(v);
         mRHS->accept(v);
         v->VisitExpectedExpression(this);
     }
-    
+
     Operand* getLHSOperand() const { return mLHS; }
     Operand* getRHSOperand() const { return mRHS; }
     ComparisonOperator* getComparisonOperator() const { return mCO; }
@@ -636,7 +650,7 @@ public:
 
         for (auto*& ptr : mVarAssign)
             delete ptr;
-        
+
         for (auto*& ptr : mExp)
             delete ptr;
     }
@@ -659,7 +673,7 @@ public:
             }
             cout << endl;
         }
-        
+
         if (mExp.size()) {
             cout << endl << "EXPECTED EXPRESSIONS" << endl;
             for (auto*& ptr : mExp) {
@@ -676,7 +690,7 @@ public:
 
         for (auto*& ptr : mFunctionCalls)
             ptr->accept(v);
-        
+
         for (auto*& ptr : mExp)
             ptr->accept(v);
 
@@ -766,11 +780,11 @@ private:
 public:
     TestInfo(Identifier* name) : mTestName(name) {}
     ~TestInfo() { delete mTestName; }
-    
+
     void dump() {
-        
+
     }
-    
+
     void accept(Visitor* v) {
         v->VisitTestInfo(this);
     }
@@ -783,6 +797,7 @@ private:
     TestSetupExpr *TestSetup;
     TestTeardownExpr *TestTeardown;
     TestMockupExpr *TestMockup;
+    string mTestName;
 
 public:
 
@@ -793,7 +808,7 @@ public:
             TestTeardownExpr *teardown = nullptr,
             TestMockupExpr *mockup = nullptr) :
     mTestInfo(info), FunctionCall(function), TestSetup(setup),
-    TestTeardown(teardown), TestMockup(mockup) {
+    TestTeardown(teardown), TestMockup(mockup), mTestName() {
     }
 
     TestFunction * getTestFunction() const {return FunctionCall;}
@@ -828,6 +843,9 @@ public:
         if(TestTeardown) TestTeardown->accept(v);
         v->VisitTestDefinitionExpr(this);
     }
+
+    void setTestName(const string& name) { mTestName = name; }
+    string getTestName() const { return mTestName; }
 };
 
 class TestGroup : public TestExpr {
@@ -838,7 +856,7 @@ private:
 public:
     TestGroup(Identifier* name,
             const vector<TestDefinitionExpr*>& def,
-            const vector<TestGroup*>& groups) : 
+            const vector<TestGroup*>& groups) :
     mName(name), mTestDefinitions(def), mTestGroups(groups) {
         if (!mName)
             cout<<"Generate a default group name"<<endl;
@@ -849,7 +867,7 @@ public:
         for (auto*& ptr : mTestGroups)
             delete ptr;
     }
-    
+
     void dump() {
         for (auto*& ptr : mTestDefinitions) {
             ptr->dump();
@@ -901,6 +919,7 @@ public:
     }
 
     void accept(Visitor *v) {
+        v->VisitUnitTestFirst(this);
         for (auto*& ptr : TestDefinitions) {
             ptr->accept(v);
         }

@@ -1,7 +1,7 @@
 /**
  * @file Visitor.hxx
  * @author Adrian Ortega
- * 
+ *
  * Created on May 1, 2014, 9:19 AM
  */
 
@@ -9,7 +9,7 @@
 #define	VISITOR_HXX
 
 namespace tp { // tp stands for test parser
-    
+
 // Forward declarations
 class FunctionCallExpr;
 class Argument;
@@ -50,8 +50,10 @@ public:
     Visitor() {}
     Visitor(const Visitor& orig) = delete;
 
-    /* All these methods return true when we want to keep visiting children
-     * elements in the object structure, false to not visit children
+    /*
+     * The following methods visit each node in the object structure in a
+     * post-order fashion, meaning that all the children of a given node are
+     * visited first and then we visit the current node.
      */
     virtual void VisitArgument(Argument *) {}
     virtual void VisitVariableAssignmentExpr(VariableAssignmentExpr *) {}
@@ -85,6 +87,13 @@ public:
     virtual void VisitGlobalTeardownExpr(GlobalTeardownExpr *) {}
     virtual void VisitTestFile(TestFile *) {}
     virtual ~Visitor() {}
+
+    /*
+     * The following methods visit each node in the object structure in a
+     * pre-order fashion, meaning that all the current node is visited first
+     * and then all its children.
+     */
+    virtual void VisitUnitTestFirst(UnitTestExpr *) {}
 };
 
 } // namespace tp
