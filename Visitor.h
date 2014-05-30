@@ -93,7 +93,7 @@ public:
      * pre-order fashion, meaning that all the current node is visited first
      * and then all its children.
      */
-    virtual void VisitUnitTestFirst(UnitTestExpr *) {}
+    virtual void VisitUnitTestFirst(UnitTests *) {}
 };
 
 } // namespace tp

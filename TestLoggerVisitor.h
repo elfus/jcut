@@ -10,8 +10,8 @@
 
 #include <iostream>
 #include <iomanip>
-#include "Visitor.hxx"
-#include "TestParser.hxx"
+#include "Visitor.h"
+#include "TestParser.h"
 
 using namespace std;
 using namespace tp;
@@ -24,14 +24,14 @@ public:
     TestLoggerVisitor() {}
     ~TestLoggerVisitor() {}
 
-    void VisitUnitTestFirst(UnitTestExpr* UT)
+    void VisitUnitTestFirst(UnitTests* UT)
     {   cout << setw(60) << setfill('=') << '=' << endl;
         cout << "Test name\t\tResult\tExpected result"<<endl;
         cout << setw(60) << setfill('-') << '-' << endl;
     }
 
 
-    void VisitTestDefinitionExpr(TestDefinitionExpr *TD) {
+    void VisitTestDefinition(TestDefinition *TD) {
         cout << TD->getTestName() << "\t\t";
         cout << (TD->getReturnValue().IntVal.getBoolValue()?
                 "PASSED" : "FAILED") << "\t";
