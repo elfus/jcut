@@ -22,9 +22,9 @@ Test File Grammar
 
 <global-teardown> := after_all "{" <test-fixture> "}"
 
-<unit-tests> := <test-definition>* | <test-group>*
+<unit-tests> := <test-group>
 
-<test-group> := group [<identifier>] "{" <test-definition>* | <test-group>* "}"
+<test-group> := <test-definition>+ | group [<identifier>] "{" <test-group>+ "}"
 
 <test-definition> := [<test-info> | <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
 

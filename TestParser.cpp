@@ -518,20 +518,22 @@ TestGroup* TestDriver::ParseTestGroup()
 	vector<TestGroup*> groups;
 	Identifier* name = nullptr;
 
-	mCurrentToken = mTokenizer.nextToken(); // eat up the group keyword
-
-	if (mCurrentToken == Tokenizer::TOK_IDENTIFIER)
-		name = ParseIdentifier();
-	
-	if (mCurrentToken != '{')
-		throw Exception("Expected a '{'  for the given group, but received: "+mTokenizer.getTokenStringValue());
-
-	mCurrentToken = mTokenizer.nextToken();// eat up the '{'
 	while (true) {
 		try {
 			if (mCurrentToken == '}' or mCurrentToken == Tokenizer::TOK_EOF)
 				break;
+
 			if (mCurrentToken == Tokenizer::TOK_GROUP) {
+
+				mCurrentToken = mTokenizer.nextToken(); // eat up the group keyword
+
+				if (mCurrentToken == Tokenizer::TOK_IDENTIFIER)
+					name = ParseIdentifier();
+
+				if (mCurrentToken != '{')
+					throw Exception("Expected a '{'  for the given group, but received: "+mTokenizer.getTokenStringValue());
+
+				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
 				TestGroup* group = ParseTestGroup();
 				groups.push_back(group);
 			} else {
@@ -553,7 +555,6 @@ TestGroup* TestDriver::ParseTestGroup()
 
 UnitTests* TestDriver::ParseUnitTest()
 {
-	vector<TestDefinition*> definitions;
 	vector<TestGroup*> groups;
 
 	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER &&
@@ -568,27 +569,10 @@ UnitTests* TestDriver::ParseUnitTest()
 			mCurrentToken == Tokenizer::TOK_MOCKUP or
 			mCurrentToken == Tokenizer::TOK_TEST_INFO or
 			mCurrentToken == Tokenizer::TOK_GROUP) {
-		while (true) {
-			try {
-				if (mCurrentToken == Tokenizer::TOK_EOF)
-					break;
-				if (mCurrentToken == Tokenizer::TOK_GROUP) {
-					TestGroup* group = ParseTestGroup();
-					groups.push_back(group);
-				} else {
-					TestDefinition *TestDefinition = ParseTestDefinition();
-					definitions.push_back(TestDefinition);
-				}
-			} catch (const exception& e) {
-				cerr << e.what() << endl;
-				// Let's try to recover until the next test
-				while (mCurrentToken != Tokenizer::TOK_IDENTIFIER and
-						mCurrentToken != Tokenizer::TOK_EOF)
-					mCurrentToken = mTokenizer.nextToken();
-			}
-		}
+		TestGroup* group = ParseTestGroup();
+		groups.push_back(group);
 	}
-	return new UnitTests(definitions, groups);
+	return new UnitTests(groups);
 }
 
 GlobalMockup* TestDriver::ParseGlobalMockup()

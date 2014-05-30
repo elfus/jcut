@@ -892,26 +892,17 @@ public:
 
 class UnitTests : public TestExpr {
 private:
-    vector<TestDefinition*> TestDefinitions;
     vector<TestGroup*> mTestGroups;
 public:
 
-    UnitTests(const vector<TestDefinition*>& def,
-            const vector<TestGroup*> groups) : TestDefinitions(def),
-            mTestGroups(groups) { }
+    UnitTests(const vector<TestGroup*> groups) : mTestGroups(groups) { }
 
     virtual ~UnitTests() {
-        for (auto*& ptr : TestDefinitions)
-            delete ptr;
         for (auto*& ptr : mTestGroups)
             delete ptr;
     }
 
     void dump() {
-        for (auto*& ptr : TestDefinitions) {
-            ptr->dump();
-            cout << endl;
-        }
         for (auto*& ptr : mTestGroups) {
             ptr->dump();
             cout << endl;
@@ -919,10 +910,6 @@ public:
     }
 
     void accept(Visitor *v) {
-        v->VisitUnitTestFirst(this);
-        for (auto*& ptr : TestDefinitions) {
-            ptr->accept(v);
-        }
         for (auto*& ptr : mTestGroups) {
             ptr->accept(v);
         }
