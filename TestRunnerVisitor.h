@@ -8,7 +8,7 @@
 #ifndef TESTRUNNERVISITOR_H
 #define	TESTRUNNERVISITOR_H
 
-#include "TestParser.hxx"
+#include "TestParser.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 
@@ -32,15 +32,15 @@ public:
     
     bool isValidExecutionEngine() const { return mEE != nullptr; }
     
-    void VisitGlobalSetupExpr(GlobalSetupExpr *GS) {
+    void VisitGlobalSetup(GlobalSetup *GS) {
         runFunction(GS);
     }
 
-    void VisitGlobalTeardownExpr(GlobalTeardownExpr *GT) {
+    void VisitGlobalTeardown(GlobalTeardown *GT) {
         runFunction(GT);
     }
     
-    void VisitTestDefinitionExpr(TestDefinitionExpr *TD) {
+    void VisitTestDefinition(TestDefinition *TD) {
         runFunction(TD);
     }
 

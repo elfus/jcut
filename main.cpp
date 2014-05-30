@@ -30,7 +30,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
-#include "TestParser.hxx"
+#include "TestParser.h"
 #include "TestGeneratorVisitor.h"
 #include "TestRunnerVisitor.h"
 #include "TestLoggerVisitor.h"

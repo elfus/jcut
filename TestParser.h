@@ -1,12 +1,12 @@
 /*
- * File:   TestParser.hxx
- * Author: aortegag
+ * File:   TestParser.h
+ * Author: Adrián Ortega García
  *
  * Created on April 17, 2014, 10:09 AM
  */
 
-#ifndef TESTPARSER_HXX
-#define	TESTPARSER_HXX
+#ifndef TESTPARSER_H
+#define	TESTPARSER_H
 
 #include <string>
 #include <fstream>
@@ -14,7 +14,7 @@
 #include <vector>
 #include <iostream>
 
-#include "Visitor.hxx"
+#include "Visitor.h"
 
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/IR/Function.h"
@@ -385,7 +385,7 @@ public:
 
 class FunctionArgument;
 
-class FunctionCallExpr : public TestExpr {
+class FunctionCall : public TestExpr {
 private:
     Identifier *FunctionName;
     vector<FunctionArgument*> FunctionArguments;
@@ -393,9 +393,9 @@ public:
 
     Identifier *getIdentifier() const {return FunctionName;}
 
-    FunctionCallExpr(Identifier* name, const vector<FunctionArgument*>& arg);
+    FunctionCall(Identifier* name, const vector<FunctionArgument*>& arg);
 
-    virtual ~FunctionCallExpr();
+    virtual ~FunctionCall();
 
     void dump();
 
@@ -460,13 +460,13 @@ public:
     ComparisonOperator* getComparisonOperator() const { return mCO; }
 };
 
-class VariableAssignmentExpr : public TestExpr {
+class VariableAssignment : public TestExpr {
 private:
     Identifier *mIdentifier;
     Argument *mArgument;
 public:
 
-    VariableAssignmentExpr(Identifier *id, Argument *arg) :
+    VariableAssignment(Identifier *id, Argument *arg) :
     mIdentifier(nullptr), mArgument(nullptr) {
         mIdentifier = dynamic_cast<Identifier*> (id);
         if (mIdentifier == nullptr)
@@ -477,7 +477,7 @@ public:
             throw Exception("Invalid Argument type");
     }
 
-    ~VariableAssignmentExpr() {
+    ~VariableAssignment() {
         delete mIdentifier;
         delete mArgument;
     }
@@ -494,22 +494,22 @@ public:
     void accept(Visitor *v){
         mIdentifier->accept(v);
         mArgument->accept(v);
-        v->VisitVariableAssignmentExpr(this);
+        v->VisitVariableAssignment(this);
     }
 };
 
-class MockupVariableExpr : public TestExpr {
+class MockupVariable : public TestExpr {
 private:
-    VariableAssignmentExpr *mVariableAssignment;
+    VariableAssignment *mVariableAssignment;
 public:
 
-    MockupVariableExpr(VariableAssignmentExpr *var) : mVariableAssignment(nullptr) {
-        mVariableAssignment = dynamic_cast<VariableAssignmentExpr*> (var);
+    MockupVariable(VariableAssignment *var) : mVariableAssignment(nullptr) {
+        mVariableAssignment = dynamic_cast<VariableAssignment*> (var);
         if (mVariableAssignment == nullptr)
             throw Exception("Invalid Variable Assignment Expression type");
     }
 
-    ~MockupVariableExpr() {
+    ~MockupVariable() {
         if (mVariableAssignment)
             delete mVariableAssignment;
     }
@@ -520,19 +520,19 @@ public:
 
     void accept(Visitor *v) {
         mVariableAssignment->accept(v);
-        v->VisitMockupVariableExpr(this);
+        v->VisitMockupVariable(this);
     }
 };
 
-class MockupFunctionExpr : public TestExpr {
+class MockupFunction : public TestExpr {
 private:
-    FunctionCallExpr *mFunctionCall;
+    FunctionCall *mFunctionCall;
     Argument *mArgument;
 public:
 
-    MockupFunctionExpr(FunctionCallExpr *call, Argument *arg) :
+    MockupFunction(FunctionCall *call, Argument *arg) :
     mFunctionCall(nullptr), mArgument(nullptr) {
-        mFunctionCall = dynamic_cast<FunctionCallExpr*> (call);
+        mFunctionCall = dynamic_cast<FunctionCall*> (call);
         if (mFunctionCall == nullptr)
             throw Exception("Invalid FunctionCallExpr type");
 
@@ -541,7 +541,7 @@ public:
             throw Exception("Invalid Argument type");
     }
 
-    ~MockupFunctionExpr() {
+    ~MockupFunction() {
         if (mFunctionCall)
             delete mFunctionCall;
 
@@ -557,21 +557,21 @@ public:
 
     void accept(Visitor *v) {
         mFunctionCall->accept(v);
-        v->VisitMockupFunctionExpr(this);
+        v->VisitMockupFunction(this);
     }
 };
 
-class MockupFixtureExpr : public TestExpr {
+class MockupFixture : public TestExpr {
 private:
-    vector<MockupFunctionExpr*> mMockupFunctions;
-    vector<MockupVariableExpr*> mMockupVariables;
+    vector<MockupFunction*> mMockupFunctions;
+    vector<MockupVariable*> mMockupVariables;
 public:
-    MockupFixtureExpr(const vector<MockupFunctionExpr*>& func,
-            const vector<MockupVariableExpr*>& var) :
+    MockupFixture(const vector<MockupFunction*>& func,
+            const vector<MockupVariable*>& var) :
     mMockupFunctions(func), mMockupVariables(var) {
     }
 
-    ~MockupFixtureExpr() {
+    ~MockupFixture() {
         for (auto*& ptr : mMockupFunctions)
             delete ptr;
 
@@ -602,19 +602,19 @@ public:
         for (auto*& ptr : mMockupFunctions)
             ptr->accept(v);
 
-        v->VisitMockupFixtureExpr(this);
+        v->VisitMockupFixture(this);
     }
 };
 
-class TestMockupExpr : public TestExpr {
+class TestMockup : public TestExpr {
 private:
-    MockupFixtureExpr *mMockupFixture;
+    MockupFixture *mMockupFixture;
 public:
 
-    TestMockupExpr(MockupFixtureExpr *fixt) : mMockupFixture(fixt) {
+    TestMockup(MockupFixture *fixt) : mMockupFixture(fixt) {
     }
 
-    ~TestMockupExpr() {
+    ~TestMockup() {
         if (mMockupFixture) delete mMockupFixture;
     }
 
@@ -626,25 +626,25 @@ public:
 
     void accept(Visitor *v) {
         mMockupFixture->accept(v);
-        v->VisitTestMockupExpr(this);
+        v->VisitTestMockup(this);
     }
 };
 
-class TestFixtureExpr : public TestExpr {
+class TestFixture : public TestExpr {
 private:
-    vector<FunctionCallExpr*> mFunctionCalls;
-    vector<VariableAssignmentExpr*> mVarAssign;
+    vector<FunctionCall*> mFunctionCalls;
+    vector<VariableAssignment*> mVarAssign;
     vector<ExpectedExpression*> mExp;
 public:
 
-    TestFixtureExpr(const vector<FunctionCallExpr*>& func,
-            const vector<VariableAssignmentExpr*>& var,
+    TestFixture(const vector<FunctionCall*>& func,
+            const vector<VariableAssignment*>& var,
             const vector<ExpectedExpression*>& exp) :
     mFunctionCalls(func), mVarAssign(var), mExp(exp) {
 
     }
 
-    ~TestFixtureExpr() {
+    ~TestFixture() {
         for (auto*& ptr : mFunctionCalls)
             delete ptr;
 
@@ -694,19 +694,19 @@ public:
         for (auto*& ptr : mExp)
             ptr->accept(v);
 
-        v->VisitTestFixtureExpr(this);
+        v->VisitTestFixture(this);
     }
 };
 
-class TestSetupExpr : public TestExpr {
+class TestSetup : public TestExpr {
 private:
-    TestFixtureExpr* mTestFixtureExpr;
+    TestFixture* mTestFixtureExpr;
 public:
 
-    TestSetupExpr(TestFixtureExpr* fixture) : mTestFixtureExpr(fixture) {
+    TestSetup(TestFixture* fixture) : mTestFixtureExpr(fixture) {
     }
 
-    ~TestSetupExpr() {
+    ~TestSetup() {
         if (mTestFixtureExpr) delete mTestFixtureExpr;
     }
 
@@ -718,23 +718,23 @@ public:
 
     void accept(Visitor *v) {
         mTestFixtureExpr->accept(v);
-        v->VisitTestSetupExpr(this);
+        v->VisitTestSetup(this);
     }
 };
 
 class TestFunction : public TestExpr {
 private:
-    FunctionCallExpr* mFunctionCall;
+    FunctionCall* mFunctionCall;
     ExpectedResult* mExpectedResult;
 public:
-    TestFunction(FunctionCallExpr *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
+    TestFunction(FunctionCall *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
             mExpectedResult(E) {}
     ~TestFunction() {
         if(mFunctionCall) delete mFunctionCall;
         if(mExpectedResult) delete mExpectedResult;
     }
 
-    FunctionCallExpr* getFunctionCall() const {return mFunctionCall; }
+    FunctionCall* getFunctionCall() const {return mFunctionCall; }
     ExpectedResult* getExpectedResult() const {return mExpectedResult; }
 
     void dump() {
@@ -750,15 +750,15 @@ public:
     }
 };
 
-class TestTeardownExpr : public TestExpr {
+class TestTeardown : public TestExpr {
 private:
-    TestFixtureExpr* mTestFixture;
+    TestFixture* mTestFixture;
 public:
 
-    TestTeardownExpr(TestFixtureExpr* fixture) : mTestFixture(fixture) {
+    TestTeardown(TestFixture* fixture) : mTestFixture(fixture) {
     }
 
-    ~TestTeardownExpr() {
+    ~TestTeardown() {
         if (mTestFixture) delete mTestFixture;
     }
 
@@ -770,7 +770,7 @@ public:
 
     void accept(Visitor *v) {
         mTestFixture->accept(v);
-        v->VisitTestTeardowExpr(this);
+        v->VisitTestTeardow(this);
     }
 };
 
@@ -790,58 +790,58 @@ public:
     }
 };
 
-class TestDefinitionExpr : public TestExpr, public LLVMFunctionWrapper {
+class TestDefinition : public TestExpr, public LLVMFunctionWrapper {
 private:
     TestInfo *mTestInfo;
     TestFunction *FunctionCall;
-    TestSetupExpr *TestSetup;
-    TestTeardownExpr *TestTeardown;
-    TestMockupExpr *TestMockup;
+    TestSetup *mTestSetup;
+    TestTeardown *mTestTeardown;
+    TestMockup *mTestMockup;
     string mTestName;
 
 public:
 
-    TestDefinitionExpr(
+    TestDefinition(
             TestInfo *info,
             TestFunction *function,
-            TestSetupExpr *setup = nullptr,
-            TestTeardownExpr *teardown = nullptr,
-            TestMockupExpr *mockup = nullptr) :
-    mTestInfo(info), FunctionCall(function), TestSetup(setup),
-    TestTeardown(teardown), TestMockup(mockup), mTestName() {
+            TestSetup *setup = nullptr,
+            TestTeardown *teardown = nullptr,
+            TestMockup *mockup = nullptr) :
+    mTestInfo(info), FunctionCall(function), mTestSetup(setup),
+    mTestTeardown(teardown), mTestMockup(mockup), mTestName()  {
     }
 
     TestFunction * getTestFunction() const {return FunctionCall;}
 
-    virtual ~TestDefinitionExpr() {
+    virtual ~TestDefinition() {
         if (mTestInfo) delete mTestInfo;
         if (FunctionCall) delete FunctionCall;
-        if (TestSetup) delete TestSetup;
-        if (TestTeardown) delete TestTeardown;
-        if (TestMockup) delete TestMockup;
+        if (mTestSetup) delete mTestSetup;
+        if (mTestTeardown) delete mTestTeardown;
+        if (mTestMockup) delete mTestMockup;
     }
 
     void dump() {
-        if (TestMockup) {
-            TestMockup->dump();
+        if (mTestMockup) {
+            mTestMockup->dump();
         }
-        if (TestSetup) {
-            TestSetup->dump();
+        if (mTestSetup) {
+            mTestSetup->dump();
         }
         FunctionCall->dump();
         cout << endl;
-        if (TestTeardown) {
-            TestTeardown->dump();
+        if (mTestTeardown) {
+            mTestTeardown->dump();
         }
     }
 
     void accept(Visitor *v) {
         if(mTestInfo) mTestInfo->accept(v);
-        if(TestMockup) TestMockup->accept(v);
-        if(TestSetup) TestSetup->accept(v);
+        if(mTestMockup) mTestMockup->accept(v);
+        if(mTestSetup) mTestSetup->accept(v);
         FunctionCall->accept(v);
-        if(TestTeardown) TestTeardown->accept(v);
-        v->VisitTestDefinitionExpr(this);
+        if(mTestTeardown) mTestTeardown->accept(v);
+        v->VisitTestDefinition(this);
     }
 
     void setTestName(const string& name) { mTestName = name; }
@@ -851,11 +851,11 @@ public:
 class TestGroup : public TestExpr {
 private:
     Identifier* mName;
-    vector<TestDefinitionExpr*> mTestDefinitions;
+    vector<TestDefinition*> mTestDefinitions;
     vector<TestGroup*> mTestGroups;
 public:
     TestGroup(Identifier* name,
-            const vector<TestDefinitionExpr*>& def,
+            const vector<TestDefinition*>& def,
             const vector<TestGroup*>& groups) :
     mName(name), mTestDefinitions(def), mTestGroups(groups) {
         if (!mName)
@@ -890,17 +890,17 @@ public:
     }
 };
 
-class UnitTestExpr : public TestExpr {
+class UnitTests : public TestExpr {
 private:
-    vector<TestDefinitionExpr*> TestDefinitions;
+    vector<TestDefinition*> TestDefinitions;
     vector<TestGroup*> mTestGroups;
 public:
 
-    UnitTestExpr(const vector<TestDefinitionExpr*>& def,
+    UnitTests(const vector<TestDefinition*>& def,
             const vector<TestGroup*> groups) : TestDefinitions(def),
             mTestGroups(groups) { }
 
-    virtual ~UnitTestExpr() {
+    virtual ~UnitTests() {
         for (auto*& ptr : TestDefinitions)
             delete ptr;
         for (auto*& ptr : mTestGroups)
@@ -926,18 +926,18 @@ public:
         for (auto*& ptr : mTestGroups) {
             ptr->accept(v);
         }
-        v->VisitUnitTestExpr(this);
+        v->VisitUnitTest(this);
     }
 };
 
-class GlobalMockupExpr : public TestExpr {
+class GlobalMockup : public TestExpr {
 private:
-    MockupFixtureExpr *mMockupFixture;
+    MockupFixture *mMockupFixture;
 public:
 
-    GlobalMockupExpr(MockupFixtureExpr *fixt) : mMockupFixture(fixt) {    }
+    GlobalMockup(MockupFixture *fixt) : mMockupFixture(fixt) {    }
 
-    ~GlobalMockupExpr() {
+    ~GlobalMockup() {
         if (mMockupFixture) delete mMockupFixture;
     }
 
@@ -949,18 +949,18 @@ public:
 
     void accept(Visitor *v) {
         mMockupFixture->accept(v);
-        v->VisitGlobalMockupExpr(this);
+        v->VisitGlobalMockup(this);
     }
 };
 
-class GlobalSetupExpr : public TestExpr, public LLVMFunctionWrapper {
+class GlobalSetup : public TestExpr, public LLVMFunctionWrapper {
 private:
-    TestFixtureExpr *mTestFixture;
+    TestFixture *mTestFixture;
 public:
 
-    GlobalSetupExpr(TestFixtureExpr *fixt) : mTestFixture(fixt) {    }
+    GlobalSetup(TestFixture *fixt) : mTestFixture(fixt) {    }
 
-    ~GlobalSetupExpr() {
+    ~GlobalSetup() {
         if (mTestFixture) delete mTestFixture;
     }
 
@@ -972,19 +972,19 @@ public:
 
     void accept(Visitor *v) {
         mTestFixture->accept(v);
-        v->VisitGlobalSetupExpr(this);
+        v->VisitGlobalSetup(this);
     }
 };
 
-class GlobalTeardownExpr : public TestExpr, public LLVMFunctionWrapper {
+class GlobalTeardown : public TestExpr, public LLVMFunctionWrapper {
 private:
-    TestFixtureExpr *mTestFixture;
+    TestFixture *mTestFixture;
 public:
 
-    GlobalTeardownExpr(TestFixtureExpr *fixt) : mTestFixture(fixt) {
+    GlobalTeardown(TestFixture *fixt) : mTestFixture(fixt) {
     }
 
-    ~GlobalTeardownExpr() {
+    ~GlobalTeardown() {
         if (mTestFixture) delete mTestFixture;
     }
 
@@ -996,20 +996,20 @@ public:
 
     void accept(Visitor *v) {
         mTestFixture->accept(v);
-        v->VisitGlobalTeardownExpr(this);
+        v->VisitGlobalTeardown(this);
     }
 };
 
 class TestFile : public TestExpr {
 private:
-    GlobalMockupExpr *mGlobalMockup;
-    GlobalSetupExpr *mGlobalSetup;
-    GlobalTeardownExpr *mGlobalTeardown;
-    UnitTestExpr *mUnitTest;
+    GlobalMockup *mGlobalMockup;
+    GlobalSetup *mGlobalSetup;
+    GlobalTeardown *mGlobalTeardown;
+    UnitTests *mUnitTest;
 public:
 
-    TestFile(UnitTestExpr *ut, GlobalMockupExpr *gm = nullptr,
-            GlobalSetupExpr *gs = nullptr, GlobalTeardownExpr *gt = nullptr) :
+    TestFile(UnitTests *ut, GlobalMockup *gm = nullptr,
+            GlobalSetup *gs = nullptr, GlobalTeardown *gt = nullptr) :
     mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt),
     mUnitTest(ut) {
 
@@ -1081,7 +1081,7 @@ protected:
     Argument *argArgument;
     BufferAlloc *argBuffAlloc;
     unsigned    ArgIndx;
-    FunctionCallExpr *Parent;// Pointer to its parent
+    FunctionCall *Parent;// Pointer to its parent
 public:
     explicit FunctionArgument(Argument *arg) :
         argArgument(arg), argBuffAlloc(nullptr), ArgIndx(0), Parent(nullptr) { }
@@ -1094,9 +1094,9 @@ public:
         return Tokenizer::TOK_BUFF_ALLOC;
     }
     unsigned getIndex() const { return ArgIndx; }
-    FunctionCallExpr* getParent() const { return Parent; }
+    FunctionCall* getParent() const { return Parent; }
     void setIndex(unsigned ndx) {ArgIndx = ndx; }
-    void setParent(FunctionCallExpr *ptr) {Parent = ptr; }
+    void setParent(FunctionCall *ptr) {Parent = ptr; }
     const string& getStringRepresentation() const {
         return argArgument->getStringRepresentation();
     }
@@ -1142,35 +1142,35 @@ public:
 private:
     Identifier* ParseIdentifier();
     Argument* ParseArgument();
-    VariableAssignmentExpr* ParseVariableAssignment();
+    VariableAssignment* ParseVariableAssignment();
     BufferAlloc* ParseBufferAlloc();
     FunctionArgument* ParseFunctionArgument();
     Identifier* ParseFunctionName(); // We may want to have a FunctionName class
-    FunctionCallExpr* ParseFunctionCall();
+    FunctionCall* ParseFunctionCall();
     ExpectedResult* ParseExpectedResult();
     ComparisonOperator* ParseComparisonOperator();
     ExpectedConstant* ParseExpectedConstant();
     ExpectedExpression* ParseExpectedExpression();
     Operand* ParseOperand();
     Constant* ParseConstant();
-    TestTeardownExpr* ParseTestTearDown();
+    TestTeardown* ParseTestTearDown();
     TestFunction* ParseTestFunction();
-    TestSetupExpr* ParseTestSetup();
-    TestFixtureExpr* ParseTestFixture();
-    MockupVariableExpr* ParseMockupVariable();
-    MockupFunctionExpr* ParseMockupFunction();
-    MockupFixtureExpr* ParseMockupFixture();
-    TestMockupExpr* ParseTestMockup();
+    TestSetup* ParseTestSetup();
+    TestFixture* ParseTestFixture();
+    MockupVariable* ParseMockupVariable();
+    MockupFunction* ParseMockupFunction();
+    MockupFixture* ParseMockupFixture();
+    TestMockup* ParseTestMockup();
     TestInfo* ParseTestInfo();
-    TestDefinitionExpr* ParseTestDefinition();
+    TestDefinition* ParseTestDefinition();
     TestGroup* ParseTestGroup();
-    UnitTestExpr* ParseUnitTestExpr();
-    GlobalMockupExpr* ParseGlobalMockupExpr();
-    GlobalSetupExpr* ParseGlobalSetupExpr();
-    GlobalTeardownExpr* ParseGlobalTeardownExpr();
+    UnitTests* ParseUnitTest();
+    GlobalMockup* ParseGlobalMockup();
+    GlobalSetup* ParseGlobalSetup();
+    GlobalTeardown* ParseGlobalTeardown();
     TestFile* ParseTestFile();
 };
 
 } // namespace tp
-#endif	/* TESTPARSER_HXX */
+#endif	/* TESTPARSER_H */
 

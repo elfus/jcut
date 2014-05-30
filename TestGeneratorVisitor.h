@@ -8,7 +8,7 @@
 #ifndef TESTGENERATORVISITOR_H
 #define	TESTGENERATORVISITOR_H
 
-#include "Visitor.hxx"
+#include "Visitor.h"
 #include <string>
 #include <vector>
 #include <tuple>
@@ -20,7 +20,7 @@ namespace llvm {
 }
 
 #include "llvm/IR/IRBuilder.h"
-#include "TestParser.hxx"
+#include "TestParser.h"
 
 using namespace tp;
 
@@ -52,14 +52,14 @@ public:
     ~TestGeneratorVisitor() {}
     
     void VisitFunctionArgument(FunctionArgument *);
-    void VisitFunctionCallExpr(FunctionCallExpr *);
+    void VisitFunctionCall(FunctionCall *);
     void VisitExpectedResult(ExpectedResult *);
     void VisitExpectedExpression(ExpectedExpression *);
     void VisitTestFunction(TestFunction *);
-    void VisitVariableAssignmentExpr(VariableAssignmentExpr *);
-    void VisitTestDefinitionExpr(TestDefinitionExpr *);
-    void VisitGlobalSetupExpr(GlobalSetupExpr *);
-    void VisitGlobalTeardownExpr(GlobalTeardownExpr *);
+    void VisitVariableAssignment(VariableAssignment *);
+    void VisitTestDefinition(TestDefinition *);
+    void VisitGlobalSetup(GlobalSetup *);
+    void VisitGlobalTeardown(GlobalTeardown *);
     
 };
 

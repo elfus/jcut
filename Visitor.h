@@ -1,23 +1,23 @@
 /**
- * @file Visitor.hxx
+ * @file Visitor.h
  * @author Adrian Ortega
  *
  * Created on May 1, 2014, 9:19 AM
  */
 
-#ifndef VISITOR_HXX
-#define	VISITOR_HXX
+#ifndef VISITOR_H
+#define	VISITOR_H
 
 namespace tp { // tp stands for test parser
 
 // Forward declarations
-class FunctionCallExpr;
+class FunctionCall;
 class Argument;
-class VariableAssignmentExpr;
+class VariableAssignment;
 class BufferAlloc;
 class FunctionArgument;
 class Identifier;
-class FunctionCallExpr;
+class FunctionCall;
 class ExpectedResult;
 class ExpectedConstant;
 class ExpectedExpression;
@@ -28,20 +28,20 @@ class CharConstant;
 class ComparisonOperator;
 class Operand;
 class TestInfo;
-class TestTeardownExpr;
+class TestTeardown;
 class TestFunction;
-class TestSetupExpr;
-class TestFixtureExpr;
-class MockupVariableExpr;
-class MockupFunctionExpr;
-class MockupFixtureExpr;
-class TestMockupExpr;
-class TestDefinitionExpr;
+class TestSetup;
+class TestFixture;
+class MockupVariable;
+class MockupFunction;
+class MockupFixture;
+class TestMockup;
+class TestDefinition;
 class TestGroup;
-class UnitTestExpr;
-class GlobalMockupExpr;
-class GlobalSetupExpr;
-class GlobalTeardownExpr;
+class UnitTests;
+class GlobalMockup;
+class GlobalSetup;
+class GlobalTeardown;
 class TestFile;
 
 class Visitor {
@@ -56,11 +56,11 @@ public:
      * visited first and then we visit the current node.
      */
     virtual void VisitArgument(Argument *) {}
-    virtual void VisitVariableAssignmentExpr(VariableAssignmentExpr *) {}
+    virtual void VisitVariableAssignment(VariableAssignment *) {}
     virtual void VisitBufferAlloc(BufferAlloc *) {}
     virtual void VisitIdentifier(Identifier *) {}
     virtual void VisitFunctionArgument(FunctionArgument *) {}
-    virtual void VisitFunctionCallExpr(FunctionCallExpr *) {}
+    virtual void VisitFunctionCall(FunctionCall *) {}
     virtual void VisitExpectedResult(ExpectedResult *) {}
     virtual void VisitExpectedConstant(ExpectedConstant *) {}
     virtual void VisitExpectedExpression(ExpectedExpression *) {}
@@ -70,21 +70,21 @@ public:
     virtual void VisitCharConstant(CharConstant *) {}
     virtual void VisitComparisonOperator(ComparisonOperator *) {}
     virtual void VisitOperand(Operand *) {}
-    virtual void VisitTestTeardowExpr(TestTeardownExpr *) {}
+    virtual void VisitTestTeardow(TestTeardown *) {}
     virtual void VisitTestFunction(TestFunction *) {}
-    virtual void VisitTestSetupExpr(TestSetupExpr *) {}
-    virtual void VisitTestFixtureExpr(TestFixtureExpr *) {}
-    virtual void VisitMockupVariableExpr(MockupVariableExpr *) {}
-    virtual void VisitMockupFunctionExpr(MockupFunctionExpr *) {}
-    virtual void VisitMockupFixtureExpr(MockupFixtureExpr *) {}
+    virtual void VisitTestSetup(TestSetup *) {}
+    virtual void VisitTestFixture(TestFixture *) {}
+    virtual void VisitMockupVariable(MockupVariable *) {}
+    virtual void VisitMockupFunction(MockupFunction *) {}
+    virtual void VisitMockupFixture(MockupFixture *) {}
     virtual void VisitTestInfo(TestInfo* ) {}
-    virtual void VisitTestMockupExpr(TestMockupExpr *) {}
-    virtual void VisitTestDefinitionExpr(TestDefinitionExpr *) {}
+    virtual void VisitTestMockup(TestMockup *) {}
+    virtual void VisitTestDefinition(TestDefinition *) {}
     virtual void VisitTestGroup(TestGroup *) {}
-    virtual void VisitUnitTestExpr(UnitTestExpr *) {}
-    virtual void VisitGlobalMockupExpr(GlobalMockupExpr *) {}
-    virtual void VisitGlobalSetupExpr(GlobalSetupExpr *) {}
-    virtual void VisitGlobalTeardownExpr(GlobalTeardownExpr *) {}
+    virtual void VisitUnitTest(UnitTests *) {}
+    virtual void VisitGlobalMockup(GlobalMockup *) {}
+    virtual void VisitGlobalSetup(GlobalSetup *) {}
+    virtual void VisitGlobalTeardown(GlobalTeardown *) {}
     virtual void VisitTestFile(TestFile *) {}
     virtual ~Visitor() {}
 
@@ -98,5 +98,5 @@ public:
 
 } // namespace tp
 
-#endif	/* VISITOR_HXX */
+#endif	/* VISITOR_H */
 

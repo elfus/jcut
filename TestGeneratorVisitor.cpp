@@ -9,7 +9,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Instructions.h"
-#include "TestParser.hxx"
+#include "TestParser.h"
 
 using namespace llvm;
 
@@ -33,7 +33,7 @@ mReturnValue(nullptr)
  */
 void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 {
-	FunctionCallExpr* parent = arg->getParent();
+	FunctionCall* parent = arg->getParent();
 	string func_name = parent->getIdentifier()->getIdentifierStr();
 	llvm::Function *currentFunction = mModule->getFunction(func_name);
 	llvm::Function::arg_iterator arg_it = currentFunction->arg_begin();
@@ -87,7 +87,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 	}
 }
 
-void TestGeneratorVisitor::VisitFunctionCallExpr(FunctionCallExpr *FC)
+void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 {
 	string func_name = FC->getIdentifier()->getIdentifierStr();
 	Function *funcToBeCalled = mModule->getFunction(func_name);
@@ -239,7 +239,7 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
  * @todo Support the rest of assignment types
  * @param VA
  */
-void TestGeneratorVisitor::VisitVariableAssignmentExpr(VariableAssignmentExpr *VA)
+void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 {
 	string variable_name = VA->getIdentifier()->getIdentifierStr();
 	GlobalVariable* global_variable = mModule->getGlobalVariable(variable_name);
@@ -268,7 +268,7 @@ void TestGeneratorVisitor::VisitVariableAssignmentExpr(VariableAssignmentExpr *V
 	}
 }
 
-void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
+void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 {
 	string func_name = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
 	string test_name = "test_" + func_name + "_0";
@@ -309,7 +309,7 @@ void TestGeneratorVisitor::VisitTestDefinitionExpr(TestDefinitionExpr *TD)
 	TD->setLLVMFunction(testFunction);
 }
 
-void TestGeneratorVisitor::VisitGlobalSetupExpr(GlobalSetupExpr *GS)
+void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
 	string func_name = "global_setup";
 
@@ -335,7 +335,7 @@ void TestGeneratorVisitor::VisitGlobalSetupExpr(GlobalSetupExpr *GS)
 	GS->setLLVMFunction(testFunction);
 }
 
-void TestGeneratorVisitor::VisitGlobalTeardownExpr(GlobalTeardownExpr *GT)
+void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
 	string func_name = "global_teardown";
 
