@@ -848,75 +848,6 @@ public:
     string getTestName() const { return mTestName; }
 };
 
-class TestGroup : public TestExpr {
-private:
-    Identifier* mName;
-    vector<TestDefinition*> mTestDefinitions;
-    vector<TestGroup*> mTestGroups;
-public:
-    TestGroup(Identifier* name,
-            const vector<TestDefinition*>& def,
-            const vector<TestGroup*>& groups) :
-    mName(name), mTestDefinitions(def), mTestGroups(groups) {
-        if (!mName)
-            cout<<"Generate a default group name"<<endl;
-    }
-    ~TestGroup() {
-        for (auto*& ptr : mTestDefinitions)
-            delete ptr;
-        for (auto*& ptr : mTestGroups)
-            delete ptr;
-    }
-
-    void dump() {
-        for (auto*& ptr : mTestDefinitions) {
-            ptr->dump();
-            cout << endl;
-        }
-        for (auto*& ptr : mTestGroups) {
-            ptr->dump();
-            cout << endl;
-        }
-    }
-
-    void accept(Visitor *v) {
-        for (auto*& ptr : mTestDefinitions) {
-            ptr->accept(v);
-        }
-        for (auto*& ptr : mTestGroups) {
-            ptr->accept(v);
-        }
-        v->VisitTestGroup(this);
-    }
-};
-
-class UnitTests : public TestExpr {
-private:
-    vector<TestGroup*> mTestGroups;
-public:
-
-    UnitTests(const vector<TestGroup*> groups) : mTestGroups(groups) { }
-
-    virtual ~UnitTests() {
-        for (auto*& ptr : mTestGroups)
-            delete ptr;
-    }
-
-    void dump() {
-        for (auto*& ptr : mTestGroups) {
-            ptr->dump();
-            cout << endl;
-        }
-    }
-
-    void accept(Visitor *v) {
-        for (auto*& ptr : mTestGroups) {
-            ptr->accept(v);
-        }
-        v->VisitUnitTest(this);
-    }
-};
-
 class GlobalMockup : public TestExpr {
 private:
     MockupFixture *mMockupFixture;
@@ -987,40 +918,104 @@ public:
     }
 };
 
-class TestFile : public TestExpr {
+class TestGroup : public TestExpr {
 private:
+    Identifier* mName;
+    vector<TestDefinition*> mTestDefinitions;
+    vector<TestGroup*> mTestGroups;
     GlobalMockup *mGlobalMockup;
     GlobalSetup *mGlobalSetup;
     GlobalTeardown *mGlobalTeardown;
-    UnitTests *mUnitTest;
 public:
-
-    TestFile(UnitTests *ut, GlobalMockup *gm = nullptr,
+    TestGroup(Identifier* name,
+            const vector<TestDefinition*>& def,
+            const vector<TestGroup*>& groups,
+            GlobalMockup *gm = nullptr,
             GlobalSetup *gs = nullptr, GlobalTeardown *gt = nullptr) :
-    mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt),
-    mUnitTest(ut) {
-
+    mName(name), mTestDefinitions(def), mTestGroups(groups),
+    mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt) {
+        if (!mName)
+            cout<<"Generate a default group name"<<endl;
     }
-
-    ~TestFile() {
+    ~TestGroup() {
         if (mGlobalMockup) delete mGlobalMockup;
         if (mGlobalSetup) delete mGlobalSetup;
         if (mGlobalTeardown) delete mGlobalTeardown;
-        if (mUnitTest) delete mUnitTest;
+        for (auto*& ptr : mTestDefinitions)
+            delete ptr;
+        for (auto*& ptr : mTestGroups)
+            delete ptr;
     }
 
     void dump() {
         if (mGlobalMockup) mGlobalMockup->dump();
         if (mGlobalSetup) mGlobalSetup->dump();
         if (mGlobalTeardown) mGlobalTeardown->dump();
+        for (auto*& ptr : mTestDefinitions) {
+            ptr->dump();
+            cout << endl;
+        }
+        for (auto*& ptr : mTestGroups) {
+            ptr->dump();
+            cout << endl;
+        }
+    }
+
+    void accept(Visitor *v) {
+        if (mGlobalMockup) mGlobalMockup->accept(v);
+        if (mGlobalSetup) mGlobalSetup->accept(v);
+        for (auto*& ptr : mTestDefinitions) {
+            ptr->accept(v);
+        }
+        for (auto*& ptr : mTestGroups) {
+            ptr->accept(v);
+        }
+        if (mGlobalTeardown) mGlobalTeardown->accept(v);
+        v->VisitTestGroup(this);
+    }
+};
+
+class UnitTests : public TestExpr {
+private:
+    TestGroup* mTestGroups;
+public:
+
+    UnitTests(TestGroup* groups) : mTestGroups(groups) { }
+
+    virtual ~UnitTests() {
+        delete mTestGroups;
+    }
+
+    void dump() {
+        mTestGroups->dump();
+    }
+
+    void accept(Visitor *v) {
+        mTestGroups->accept(v);
+        v->VisitUnitTest(this);
+    }
+};
+
+class TestFile : public TestExpr {
+private:
+    UnitTests *mUnitTest;
+public:
+
+    TestFile(UnitTests *ut) :
+    mUnitTest(ut) {
+
+    }
+
+    ~TestFile() {
+        if (mUnitTest) delete mUnitTest;
+    }
+
+    void dump() {
         mUnitTest->dump();
     }
 
     void accept(Visitor *v) {
-        if(mGlobalMockup) mGlobalMockup->accept(v);
-        if(mGlobalSetup) mGlobalSetup->accept(v);
         mUnitTest->accept(v);
-        if(mGlobalTeardown)mGlobalTeardown->accept(v);
         v->VisitTestFile(this);
     }
 };

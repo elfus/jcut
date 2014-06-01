@@ -14,7 +14,7 @@ Test File Grammar
 
 <test-expr> := <test-file>
 
-<test-file> := [<global-mockup> | <global-setup> | <global-teardown> ] <unit-tests>
+<test-file> :=  <unit-tests>
 
 <global-mockup> := mockup_all "{" <mockup-fixture> "}"
 
@@ -24,7 +24,7 @@ Test File Grammar
 
 <unit-tests> := <test-group>
 
-<test-group> := <test-definition>+ | group [<identifier>] "{" <test-group>+ "}"
+<test-group> := [<global-mockup> | <global-setup> | <global-teardown> ] <test-definition>+ | group [<identifier>] "{" <test-group>+ "}"
 
 <test-definition> := [<test-info> | <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
 
@@ -39,7 +39,7 @@ Test File Grammar
 
 <test-teardown> := after "{" <test-fixture> "}"
 
-<test-fixture> := <function-call>*  <var-assignment>* <expected-expr>*
+<test-fixture> := <function-call>*  <var-assignment>* <expected-expression>*
 
 <mockup-fixture> := <mockup-function>*  <mockup-variable>*
 

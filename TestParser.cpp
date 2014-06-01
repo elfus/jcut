@@ -514,6 +514,9 @@ TestDefinition* TestDriver::ParseTestDefinition()
 
 TestGroup* TestDriver::ParseTestGroup()
 {
+	GlobalMockup *gm = ParseGlobalMockup();
+	GlobalSetup *gs = ParseGlobalSetup();
+	GlobalTeardown *gt = ParseGlobalTeardown();
 	vector<TestDefinition*> definitions;
 	vector<TestGroup*> groups;
 	Identifier* name = nullptr;
@@ -550,29 +553,13 @@ TestGroup* TestDriver::ParseTestGroup()
 	}
 
 	mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
-	return new TestGroup(name, definitions, groups);
+	return new TestGroup(name, definitions, groups, gm, gs, gt);
 }
 
 UnitTests* TestDriver::ParseUnitTest()
 {
-	vector<TestGroup*> groups;
-
-	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER &&
-			mCurrentToken != Tokenizer::TOK_BEFORE &&
-			mCurrentToken != Tokenizer::TOK_MOCKUP &&
-			mCurrentToken != Tokenizer::TOK_TEST_INFO &&
-			mCurrentToken != Tokenizer::TOK_GROUP)
-		throw Exception("Expected a function call");
-
-	if (mCurrentToken == Tokenizer::TOK_IDENTIFIER or
-			mCurrentToken == Tokenizer::TOK_BEFORE or
-			mCurrentToken == Tokenizer::TOK_MOCKUP or
-			mCurrentToken == Tokenizer::TOK_TEST_INFO or
-			mCurrentToken == Tokenizer::TOK_GROUP) {
-		TestGroup* group = ParseTestGroup();
-		groups.push_back(group);
-	}
-	return new UnitTests(groups);
+	TestGroup* group = ParseTestGroup();
+	return new UnitTests(group);
 }
 
 GlobalMockup* TestDriver::ParseGlobalMockup()
@@ -622,11 +609,8 @@ GlobalTeardown* TestDriver::ParseGlobalTeardown()
 
 TestFile* TestDriver::ParseTestFile()
 {
-	GlobalMockup *gm = ParseGlobalMockup();
-	GlobalSetup *gs = ParseGlobalSetup();
-	GlobalTeardown *gt = ParseGlobalTeardown();
 	UnitTests *test = ParseUnitTest();
-	return new TestFile(test, gm, gs, gt);
+	return new TestFile(test);
 }
 
 TestExpr* TestDriver::ParseTestExpr()
