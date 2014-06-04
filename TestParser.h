@@ -133,7 +133,7 @@ public:
     virtual void accept(Visitor *) = 0;
 
     virtual ~TestExpr() {--leaks;}
-    
+
     static int leaks;
 };
 
@@ -939,9 +939,9 @@ public:
             string group_name = "group_";
             group_name += ((char) (((int) '0') + (group_count++)));
             mName = new Identifier(group_name);
-            cout<<"Default name generated: "<<mName->getIdentifierStr()<<endl;
         }
-        
+        cout<<"Group name: "<<mName->getIdentifierStr()<<endl;
+
     }
     ~TestGroup() {
         if (mGlobalMockup) delete mGlobalMockup;
@@ -980,7 +980,7 @@ public:
         if (mGlobalTeardown) mGlobalTeardown->accept(v);
         v->VisitTestGroup(this);
     }
-    
+
     string getGroupName() const { return mName->getIdentifierStr(); }
     GlobalSetup* getGlobalSetup() const { return mGlobalSetup; }
     GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown; }
@@ -1156,7 +1156,8 @@ private:
     TestMockup* ParseTestMockup();
     TestInfo* ParseTestInfo();
     TestDefinition* ParseTestDefinition();
-    TestGroup* ParseTestGroup();
+    // @arg name The name of the group to be parsed
+    TestGroup* ParseTestGroup(Identifier* name = nullptr);
     UnitTests* ParseUnitTest();
     GlobalMockup* ParseGlobalMockup();
     GlobalSetup* ParseGlobalSetup();

@@ -514,14 +514,14 @@ TestDefinition* TestDriver::ParseTestDefinition()
 	return new TestDefinition(info, testFunction, setup, teardown, mockup);
 }
 
-TestGroup* TestDriver::ParseTestGroup()
+TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 {
 	GlobalMockup *gm = ParseGlobalMockup();
 	GlobalSetup *gs = ParseGlobalSetup();
 	GlobalTeardown *gt = ParseGlobalTeardown();
 	vector<TestDefinition*> definitions;
 	vector<TestGroup*> groups;
-	Identifier* name = nullptr;
+        Identifier* new_group_name = nullptr;
 
 	while (true) {
 		try {
@@ -533,13 +533,13 @@ TestGroup* TestDriver::ParseTestGroup()
 				mCurrentToken = mTokenizer.nextToken(); // eat up the group keyword
 
 				if (mCurrentToken == Tokenizer::TOK_IDENTIFIER)
-					name = ParseIdentifier();
+					new_group_name = ParseIdentifier();
 
 				if (mCurrentToken != '{')
 					throw Exception("Expected a '{'  for the given group, but received: "+mTokenizer.getTokenStringValue());
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
-				TestGroup* group = ParseTestGroup();
+				TestGroup* group = ParseTestGroup(new_group_name);
 				groups.push_back(group);
 			} else {
 				TestDefinition *TestDefinition = ParseTestDefinition();
