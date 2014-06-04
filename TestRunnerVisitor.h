@@ -32,12 +32,16 @@ public:
     
     bool isValidExecutionEngine() const { return mEE != nullptr; }
     
-    void VisitGlobalSetup(GlobalSetup *GS) {
-        runFunction(GS);
+    virtual void VisitTestGroupFirst(TestGroup *TG) {
+        GlobalSetup* GS = TG->getGlobalSetup();
+        if (GS)
+            runFunction(GS);
     }
-
-    void VisitGlobalTeardown(GlobalTeardown *GT) {
-        runFunction(GT);
+    
+    void VisitTestGroup(TestGroup *TG) {
+        GlobalTeardown* GT = TG->getGlobalTeardown();
+        if (GT)
+            runFunction(GT);
     }
     
     void VisitTestDefinition(TestDefinition *TD) {

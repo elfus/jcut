@@ -18,7 +18,8 @@ mModule(mod),
 mBuilder(mod->getContext()),
 mTestFunctionCall(nullptr),
 mCurrentBB(nullptr),
-mReturnValue(nullptr)
+mReturnValue(nullptr),
+		mCurrentGroupName()
 {
 }
 
@@ -309,16 +310,21 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 	TD->setLLVMFunction(testFunction);
 }
 
+void TestGeneratorVisitor::VisitTestGroupFirst(TestGroup* TG)
+{
+	mCurrentGroupName = TG->getGroupName();
+}
+
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
-	string func_name = "global_setup";
+	mCurrentGroupName.insert(0,"setup_");
 
 	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
-			func_name,
+			mCurrentGroupName,
 			Type::getInt32Ty(mModule->getContext()),
 			(Type*) 0));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
-			"wrapper_block_" + func_name, testFunction);
+			"wrapper_block_" + mCurrentGroupName, testFunction);
 
 	ReturnInst *ret = mBuilder.CreateRet(mBuilder.getInt32(0));
 

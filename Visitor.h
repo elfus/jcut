@@ -94,6 +94,9 @@ public:
      * and then all its children.
      */
     virtual void VisitUnitTestFirst(UnitTests *) {}
+    virtual void VisitGlobalSetupFirst(GlobalSetup *) {}
+    virtual void VisitGlobalTeardownFirst(GlobalTeardown *) {}
+    virtual void VisitTestGroupFirst(TestGroup *) {}
 };
 
 } // namespace tp

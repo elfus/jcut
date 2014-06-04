@@ -133,7 +133,7 @@ public:
     virtual void accept(Visitor *) = 0;
 
     virtual ~TestExpr() {--leaks;}
-
+    
     static int leaks;
 };
 
@@ -926,6 +926,7 @@ private:
     GlobalMockup *mGlobalMockup;
     GlobalSetup *mGlobalSetup;
     GlobalTeardown *mGlobalTeardown;
+    static int group_count;
 public:
     TestGroup(Identifier* name,
             const vector<TestDefinition*>& def,
@@ -934,8 +935,13 @@ public:
             GlobalSetup *gs = nullptr, GlobalTeardown *gt = nullptr) :
     mName(name), mTestDefinitions(def), mTestGroups(groups),
     mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt) {
-        if (!mName)
-            cout<<"Generate a default group name"<<endl;
+        if (!mName) {
+            string group_name = "group_";
+            group_name += ((char) (((int) '0') + (group_count++)));
+            mName = new Identifier(group_name);
+            cout<<"Default name generated: "<<mName->getIdentifierStr()<<endl;
+        }
+        
     }
     ~TestGroup() {
         if (mGlobalMockup) delete mGlobalMockup;
@@ -962,6 +968,7 @@ public:
     }
 
     void accept(Visitor *v) {
+        v->VisitTestGroupFirst(this);
         if (mGlobalMockup) mGlobalMockup->accept(v);
         if (mGlobalSetup) mGlobalSetup->accept(v);
         for (auto*& ptr : mTestDefinitions) {
@@ -973,6 +980,10 @@ public:
         if (mGlobalTeardown) mGlobalTeardown->accept(v);
         v->VisitTestGroup(this);
     }
+    
+    string getGroupName() const { return mName->getIdentifierStr(); }
+    GlobalSetup* getGlobalSetup() const { return mGlobalSetup; }
+    GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown; }
 };
 
 class UnitTests : public TestExpr {

@@ -5,6 +5,8 @@
 using namespace std;
 using namespace tp;
 
+int TestGroup::group_count = 0;
+
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
 mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mDouble(0.0),
 mBuffAlloc(""), mTokStrValue(""), mLastChar('\0')
