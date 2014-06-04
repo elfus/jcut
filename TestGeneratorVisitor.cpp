@@ -317,14 +317,14 @@ void TestGeneratorVisitor::VisitTestGroupFirst(TestGroup* TG)
 
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
-	mCurrentGroupName.insert(0,"setup_");
+	string func_name = "setup_"+mCurrentGroupName;
 
 	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
-			mCurrentGroupName,
+			func_name,
 			Type::getInt32Ty(mModule->getContext()),
 			(Type*) 0));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
-			"wrapper_block_" + mCurrentGroupName, testFunction);
+			"wrapper_block_" + func_name, testFunction);
 
 	ReturnInst *ret = mBuilder.CreateRet(mBuilder.getInt32(0));
 
@@ -343,7 +343,7 @@ void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 
 void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
-	string func_name = "global_teardown";
+	string func_name = "teardown_"+mCurrentGroupName;
 
 	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
 			func_name,

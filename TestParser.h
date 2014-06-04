@@ -889,6 +889,7 @@ public:
     }
 
     void accept(Visitor *v) {
+        v->VisitGlobalSetupFirst(this);
         mTestFixture->accept(v);
         v->VisitGlobalSetup(this);
     }
@@ -913,6 +914,7 @@ public:
     }
 
     void accept(Visitor *v) {
+        v->VisitGlobalTeardownFirst(this);
         mTestFixture->accept(v);
         v->VisitGlobalTeardown(this);
     }
@@ -1002,6 +1004,7 @@ public:
     }
 
     void accept(Visitor *v) {
+        v->VisitUnitTestFirst(this);
         mTestGroups->accept(v);
         v->VisitUnitTest(this);
     }
