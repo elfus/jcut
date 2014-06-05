@@ -22,15 +22,15 @@
 using namespace std;
 
 
-class LLVMFunctionWrapper {
+class LLVMFunctionHolder {
 private:
     llvm::Function* mFunction;
     llvm::GenericValue mReturnValue;
     /// Attribute used to know the group this LLVM Function belongs to
     string  mGroupName;
 public:
-    LLVMFunctionWrapper() : mFunction(nullptr) {}
-    virtual ~LLVMFunctionWrapper() {delete mFunction;}
+    LLVMFunctionHolder() : mFunction(nullptr) {}
+    virtual ~LLVMFunctionHolder() {delete mFunction;}
 
     void setLLVMFunction(llvm::Function* f) { mFunction = f; }
     llvm::Function* getLLVMFunction() const { return mFunction; }
@@ -794,7 +794,7 @@ public:
     }
 };
 
-class TestDefinition : public TestExpr, public LLVMFunctionWrapper {
+class TestDefinition : public TestExpr, public LLVMFunctionHolder {
 private:
     TestInfo *mTestInfo;
     TestFunction *FunctionCall;
@@ -875,7 +875,7 @@ public:
     }
 };
 
-class GlobalSetup : public TestExpr, public LLVMFunctionWrapper {
+class GlobalSetup : public TestExpr, public LLVMFunctionHolder {
 private:
     TestFixture *mTestFixture;
 public:
@@ -899,7 +899,7 @@ public:
     }
 };
 
-class GlobalTeardown : public TestExpr, public LLVMFunctionWrapper {
+class GlobalTeardown : public TestExpr, public LLVMFunctionHolder {
 private:
     TestFixture *mTestFixture;
 public:

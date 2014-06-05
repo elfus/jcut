@@ -19,7 +19,7 @@ private:
     llvm::ExecutionEngine* mEE;
     std::vector<llvm::GenericValue> mArgs;//Dummy arguments
 
-    void runFunction(LLVMFunctionWrapper* FW) {
+    void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
         llvm::GenericValue rval = mEE->runFunction(f,mArgs);
         FW->setReturnValue(rval);
