@@ -26,6 +26,8 @@ class LLVMFunctionWrapper {
 private:
     llvm::Function* mFunction;
     llvm::GenericValue mReturnValue;
+    /// Attribute used to know the group this LLVM Function belongs to
+    string  mGroupName;
 public:
     LLVMFunctionWrapper() : mFunction(nullptr) {}
     virtual ~LLVMFunctionWrapper() {delete mFunction;}
@@ -34,6 +36,8 @@ public:
     llvm::Function* getLLVMFunction() const { return mFunction; }
     void setReturnValue(llvm::GenericValue GV) { mReturnValue = GV; }
     llvm::GenericValue getReturnValue () const { return mReturnValue; }
+    string getGroupName() const { return mGroupName; }
+    void setGroupName(const string& name) { mGroupName = name; }
 };
 
 class Exception : public std::exception {
@@ -943,7 +947,10 @@ public:
             mName = new Identifier(group_name);
         }
         cout<<"Group name: "<<mName->getIdentifierStr()<<endl;
-
+        /// @todo Enable GlobalMockup
+        // if (GlobalMockup) GlobalMockup->setGroupName(mName->getIdentifierStr());
+        if (mGlobalSetup) mGlobalSetup->setGroupName(mName->getIdentifierStr());
+        if (mGlobalTeardown) mGlobalTeardown->setGroupName(mName->getIdentifierStr());
     }
     ~TestGroup() {
         if (mGlobalMockup) delete mGlobalMockup;

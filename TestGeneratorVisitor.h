@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   TestGeneratorVisitor.h
  * Author: aortegag
  *
@@ -40,9 +40,7 @@ private:
     /// @todo Add support for structures
     std::vector<tuple<llvm::Value*,llvm::GlobalVariable*>> mBackup;
     llvm::Value *mReturnValue;
-    /// Used to hold temporarily the current group name
-    string mCurrentGroupName;
-    
+
     /**
  * Creates a new Value of the same Type as type with real_value
  */
@@ -52,7 +50,7 @@ public:
     TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
     ~TestGeneratorVisitor() {}
-    
+
     void VisitFunctionArgument(FunctionArgument *);
     void VisitFunctionCall(FunctionCall *);
     void VisitExpectedResult(ExpectedResult *);
@@ -62,10 +60,7 @@ public:
     void VisitTestDefinition(TestDefinition *);
     void VisitGlobalSetup(GlobalSetup *);
     void VisitGlobalTeardown(GlobalTeardown *);
-    
-    // Used only to get the group name, that's it
-    void VisitTestGroupFirst(TestGroup* TG);
-    
+
 };
 
 #endif	/* TESTGENERATORVISITOR_H */
