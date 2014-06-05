@@ -46,6 +46,27 @@ private:
  */
     llvm::Value* createValue(llvm::Type* type,
                              const std::string& real_value);
+
+    /**
+     * Takes existing instructions in vector mInstructions to generate a function
+     * of the given name.
+     *
+     * If use_mReturnValue is true, the function created will return the value
+     * pointed to by the attribute mReturnValue, if false it will always return 0.
+     *
+     * If restore_backup is true the function will add code to restore the
+     * original values of global variables stored in the mBackup vector attribute.
+     *
+     * After returning, this function will have cleared the vector of instructions,
+     * the vector of GlobalVariables to be backed up, and clear the IRBuilder
+     * insertion point.
+     *
+     * @param name Name of the function
+     * @param use_mReturnValue
+     * @param restore_backup
+     * @return Function
+     */
+    llvm::Function* generateFunction(const string& name, bool use_mReturnValue = false, bool restore_backup = false);
 public:
     TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;

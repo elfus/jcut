@@ -280,22 +280,37 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 		++i;
 	} while (mModule->getFunction(test_name));
 
-        TD->setTestName(test_name);
-	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
-			test_name,
+	TD->setTestName(test_name);
+
+	Function *testFunction = generateFunction(test_name,true,true);
+
+	TD->setLLVMFunction(testFunction);
+}
+
+llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
+													bool use_mReturnValue,
+													bool restore_backup)
+{
+	Function *function = cast<Function> (mModule->getOrInsertFunction(
+			name,
 			Type::getInt32Ty(mModule->getContext()),
 			(Type*) 0));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
-			"wrapper_block_" + func_name, testFunction);
+			"block_" + name, function);
 
-	//  Restore backup values
-	/// @todo Add support for structures
-	for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
-		StoreInst* st = mBuilder.CreateStore(get<0>(tup), get<1>(tup));
-		mInstructions.push_back(st);
+	if(restore_backup) {
+		for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
+			StoreInst* st = mBuilder.CreateStore(get<0>(tup), get<1>(tup));
+			mInstructions.push_back(st);
+		}
 	}
 
-	ReturnInst *ret = mBuilder.CreateRet(mReturnValue);
+	ReturnInst *ret = nullptr;
+	if(use_mReturnValue)
+		ret = mBuilder.CreateRet(mReturnValue);
+	else
+		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
+	
 	mInstructions.push_back(ret);
 
 	mBuilder.SetInsertPoint(BB);
@@ -306,58 +321,20 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 	mBackup.clear();
 	mBuilder.ClearInsertionPoint();
 
-	TD->setLLVMFunction(testFunction);
+	return function;
 }
 
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
 	string func_name = "setup_"+GS->getGroupName();
-
-	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
-			func_name,
-			Type::getInt32Ty(mModule->getContext()),
-			(Type*) 0));
-	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
-			"block_" + func_name, testFunction);
-
-	ReturnInst *ret = mBuilder.CreateRet(mBuilder.getInt32(0));
-
-	mInstructions.push_back(ret);
-
-	mBuilder.SetInsertPoint(BB);
-	for (auto*& inst : mInstructions)
-		mBuilder.Insert(inst);
-
-	mInstructions.clear();
-	mBackup.clear();
-	mBuilder.ClearInsertionPoint();
-
+	Function *testFunction = generateFunction(func_name);
 	GS->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
 	string func_name = "teardown_"+GT->getGroupName();
-
-	Function *testFunction = cast<Function> (mModule->getOrInsertFunction(
-			func_name,
-			Type::getInt32Ty(mModule->getContext()),
-			(Type*) 0));
-	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
-			"block_" + func_name, testFunction);
-
-	ReturnInst *ret = mBuilder.CreateRet(mBuilder.getInt32(0));
-
-	mInstructions.push_back(ret);
-
-	mBuilder.SetInsertPoint(BB);
-	for (auto*& inst : mInstructions)
-		mBuilder.Insert(inst);
-
-	mInstructions.clear();
-	mBackup.clear();
-	mBuilder.ClearInsertionPoint();
-
+	Function *testFunction = generateFunction(func_name);
 	GT->setLLVMFunction(testFunction);
 }
 
