@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   TestRunnerVisitor.h
  * Author: aortegag
  *
@@ -18,7 +18,7 @@ class TestRunnerVisitor : public Visitor {
 private:
     llvm::ExecutionEngine* mEE;
     std::vector<llvm::GenericValue> mArgs;//Dummy arguments
-    
+
     void runFunction(LLVMFunctionWrapper* FW) {
         llvm::Function* f = FW->getLLVMFunction();
         llvm::GenericValue rval = mEE->runFunction(f,mArgs);
@@ -29,9 +29,9 @@ public:
     TestRunnerVisitor(const TestRunnerVisitor& orig) = delete;
     TestRunnerVisitor(llvm::ExecutionEngine *EE) : mEE(EE) {}
     virtual ~TestRunnerVisitor() { delete mEE; }
-    
+
     bool isValidExecutionEngine() const { return mEE != nullptr; }
-    
+
     // @todo Try visiting GlobalSetup
     virtual void VisitTestGroupFirst(TestGroup *TG) {
         GlobalSetup* GS = TG->getGlobalSetup();
@@ -44,7 +44,7 @@ public:
         if (GT)
             runFunction(GT);
     }
-    
+
     void VisitTestDefinition(TestDefinition *TD) {
         runFunction(TD);
     }
