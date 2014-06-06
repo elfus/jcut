@@ -37,8 +37,15 @@ private:
     /// Used to hold the arguments for each FunctionCallExpr
     std::vector<llvm::Value*> mArgs;
     /// Used to hold backup values of global variables and their original values
+    /// for each of the tests
     /// @todo Add support for structures
     std::vector<tuple<llvm::Value*,llvm::GlobalVariable*>> mBackup;
+    /// Used to hold backup values of global variables and their original values
+    /// for groups
+    /// @todo Add support for structures
+    /// first template argument is the dst (backup), second  is the src
+    /// (original) variable
+    std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupGroup;
     llvm::Value *mReturnValue;
 
     /**
