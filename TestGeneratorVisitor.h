@@ -74,6 +74,41 @@ private:
      * @return Function
      */
     llvm::Function* generateFunction(const string& name, bool use_mReturnValue = false, bool restore_backup = false);
+
+    /**
+     * Saves all the global variables loaded in mBackup in a new global variable.
+	 *
+     * This method saves the global variables backup in an array of 2-tuples
+     * containing the original global variable and the newly create global
+     * variable backup. The array is the attribute mBackupGroup. This method
+     * is used to save the global variable state for each group.
+     *
+     * This method needs to be called before creating a function with the
+     * generateFunction method.
+     *
+     * @note This method needs to be called when we VisitGlobalSetup, because
+     * that's when all the code has been generated for the global variable
+     * assignment. However, the order in which we VisitGlobalSetup is descending
+     * order of group before we VisitGlobaTeardown. In order to differentiate
+     * the GlobalVariables backed up for each group we are inserting a 2-tuple
+     * of nullptrs to mark the beginning of a new group.
+     *
+     */
+    void saveGlobalVariables();
+
+    /**
+     * Restores the backed up variables with the saveGlobalVariables() method.
+     *
+     * @note This method needs to be called when we VisitGlobalTeardown, because
+     * that's when all the code has been generated for the teardown of a group.
+     * This method needs to take into consideration the fact that the teardown
+     * statements are visited in ascending order from the innermost group to the
+     * outermost group, this is due to the way GlobalSetup and GlobalTeardown
+     * are visited in method TestGroup::accept(). Therefore we use the vector
+     * mBackupGroup as a stack in order to pop out the global variables to be
+     * restored and taking into a account the marker of 2-tuple with nullptrs.
+     */
+    void restoreGlobalVariables();
 public:
     TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;

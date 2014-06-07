@@ -287,68 +287,10 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 	TD->setLLVMFunction(testFunction);
 }
 
-llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
-													bool use_mReturnValue,
-													bool restore_backup)
-{
-	Function *function = cast<Function> (mModule->getOrInsertFunction(
-			name,
-			Type::getInt32Ty(mModule->getContext()),
-			(Type*) 0));
-	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
-			"block_" + name, function);
-
-	if(restore_backup) {
-		for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
-			StoreInst* st = mBuilder.CreateStore(get<0>(tup), get<1>(tup));
-			mInstructions.push_back(st);
-		}
-	}
-
-	ReturnInst *ret = nullptr;
-	if(use_mReturnValue)
-		ret = mBuilder.CreateRet(mReturnValue);
-	else
-		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
-	
-	mInstructions.push_back(ret);
-
-	mBuilder.SetInsertPoint(BB);
-	for (auto*& inst : mInstructions)
-		mBuilder.Insert(inst);
-
-	mInstructions.clear();
-	mBackup.clear();
-	mBuilder.ClearInsertionPoint();
-
-	return function;
-}
-
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
 	string func_name = "setup_"+GS->getGroupName();
-	// Save all the global variables loaded in mBackup in a new global variable
-	// before creating the function.
-	llvm::GlobalVariable* dst = nullptr;
-	mBackupGroup.push_back(make_tuple(nullptr,nullptr));
-	for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
-		Value* g_value = get<0>(tup);
-		GlobalVariable* original = get<1>(tup);
-		/// @todo Watch for pointer types and structures
-		dst = new GlobalVariable(*mModule,
-				original->getType()->getElementType(),
-				false,
-				GlobalValue::LinkageTypes::ExternalLinkage,
-				0,
-				"backup_"+original->getName().str(),
-				original);
-		dst->setInitializer(original->getInitializer());
-		dst->copyAttributesFrom(original);
-		StoreInst* st = mBuilder.CreateStore(g_value, dst);
-		mInstructions.push_back(st);
-
-		mBackupGroup.push_back(make_tuple(dst,original));
-	}
+	saveGlobalVariables();
 	Function *testFunction = generateFunction(func_name);
 	GS->setLLVMFunction(testFunction);
 }
@@ -356,19 +298,7 @@ void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
 	string func_name = "teardown_"+GT->getGroupName();
-	// Restore the backed up variables from the global variables created in
-	// VisitGlobalSetup
-	// @bug This works only where we declare a teardown with "after_all"
-	while(mBackupGroup.size()) {
-		tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>& tup = mBackupGroup.back();
-		mBackupGroup.pop_back();
-		if(get<0>(tup)==nullptr and get<1>(tup)==nullptr)
-			break;
-		LoadInst* ld = mBuilder.CreateLoad(get<0>(tup));
-		StoreInst* st = mBuilder.CreateStore(ld, get<1>(tup));
-		mInstructions.push_back(ld);
-		mInstructions.push_back(st);
-	}
+	restoreGlobalVariables();
 	Function *testFunction = generateFunction(func_name);
 	GT->setLLVMFunction(testFunction);
 }
@@ -400,6 +330,84 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		return nullptr;
 	}
 	return nullptr;
+}
+
+llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
+													bool use_mReturnValue,
+													bool restore_backup)
+{
+	Function *function = cast<Function> (mModule->getOrInsertFunction(
+			name,
+			Type::getInt32Ty(mModule->getContext()),
+			(Type*) 0));
+	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
+			"block_" + name, function);
+
+	if(restore_backup) {
+		for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
+			StoreInst* st = mBuilder.CreateStore(get<0>(tup), get<1>(tup));
+			mInstructions.push_back(st);
+		}
+	}
+
+	ReturnInst *ret = nullptr;
+	if(use_mReturnValue)
+		ret = mBuilder.CreateRet(mReturnValue);
+	else
+		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
+
+	mInstructions.push_back(ret);
+
+	mBuilder.SetInsertPoint(BB);
+	for (auto*& inst : mInstructions)
+		mBuilder.Insert(inst);
+
+	mInstructions.clear();
+	mBackup.clear();
+	mBuilder.ClearInsertionPoint();
+
+	return function;
+}
+
+void TestGeneratorVisitor::saveGlobalVariables()
+{
+	llvm::GlobalVariable* dst = nullptr;
+	mBackupGroup.push_back(make_tuple(nullptr,nullptr));
+	for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
+		Value* g_value = get<0>(tup);
+		GlobalVariable* original = get<1>(tup);
+		/// @todo Watch for pointer types and structures
+		dst = new GlobalVariable(*mModule,
+				original->getType()->getElementType(),
+				false,
+				GlobalValue::LinkageTypes::ExternalLinkage,
+				0,
+				"backup_"+original->getName().str(),
+				original);
+		dst->setInitializer(original->getInitializer());
+		dst->copyAttributesFrom(original);
+		StoreInst* st = mBuilder.CreateStore(g_value, dst);
+		mInstructions.push_back(st);
+
+		mBackupGroup.push_back(make_tuple(dst,original));
+	}
+}
+
+void TestGeneratorVisitor::restoreGlobalVariables()
+{
+	// Restore the backed up variables from the global variables created in
+	// VisitGlobalSetup
+	// @bug This works only where we declare a teardown with "after_all"
+	while(mBackupGroup.size()) {
+		tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>& tup = mBackupGroup.back();
+		mBackupGroup.pop_back();
+		if(get<0>(tup)==nullptr and get<1>(tup)==nullptr)
+			break;
+		LoadInst* ld = mBuilder.CreateLoad(get<0>(tup));
+		StoreInst* st = mBuilder.CreateStore(ld, get<1>(tup));
+		mInstructions.push_back(ld);
+		mInstructions.push_back(st);
+	}
 }
 
 
