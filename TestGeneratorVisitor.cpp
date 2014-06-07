@@ -303,6 +303,21 @@ void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 	GT->setLLVMFunction(testFunction);
 }
 
+void TestGeneratorVisitor::VisitTestGroup(TestGroup *TG)
+{
+	GlobalSetup* GS = TG->getGlobalSetup();
+	GlobalTeardown* GT = TG->getGlobalTeardown();
+	// Restore the global variables of this group only if there is a GlobalSetup
+	// and no GlobalTeardown was provided
+	if (nullptr == GT && nullptr != GS) {
+		GT = new GlobalTeardown();
+		string func_name = "teardown_"+TG->getGroupName();
+		restoreGlobalVariables();
+		Function *testFunction = generateFunction(func_name);
+		GT->setLLVMFunction(testFunction);
+		TG->setGlobalTeardown(GT);
+	}
+}
 
 /**
  * Creates a new Value of the same Type as type with real_value
@@ -391,6 +406,7 @@ void TestGeneratorVisitor::saveGlobalVariables()
 
 		mBackupGroup.push_back(make_tuple(dst,original));
 	}
+	mBackup.clear();
 }
 
 void TestGeneratorVisitor::restoreGlobalVariables()

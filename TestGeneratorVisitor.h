@@ -123,6 +123,7 @@ public:
     void VisitTestDefinition(TestDefinition *);
     void VisitGlobalSetup(GlobalSetup *);
     void VisitGlobalTeardown(GlobalTeardown *);
+    void VisitTestGroup(TestGroup *);
 
 };
 

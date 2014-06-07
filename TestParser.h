@@ -904,6 +904,9 @@ private:
     TestFixture *mTestFixture;
 public:
 
+    GlobalTeardown() : mTestFixture(nullptr) {
+    }
+
     GlobalTeardown(TestFixture *fixt) : mTestFixture(fixt) {
     }
 
@@ -919,7 +922,9 @@ public:
 
     void accept(Visitor *v) {
         v->VisitGlobalTeardownFirst(this);
-        mTestFixture->accept(v);
+        // This a workaround because we can build a GlobalTeardown with or without
+        // a TestFixture
+        if (mTestFixture) mTestFixture->accept(v);
         v->VisitGlobalTeardown(this);
     }
 };
@@ -993,6 +998,7 @@ public:
     string getGroupName() const { return mName->getIdentifierStr(); }
     GlobalSetup* getGlobalSetup() const { return mGlobalSetup; }
     GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown; }
+    void setGlobalTeardown(GlobalTeardown* gt) { mGlobalTeardown = gt; }
 };
 
 class UnitTests : public TestExpr {
