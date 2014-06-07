@@ -519,9 +519,8 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	GlobalMockup *gm = ParseGlobalMockup();
 	GlobalSetup *gs = ParseGlobalSetup();
 	GlobalTeardown *gt = ParseGlobalTeardown();
-	vector<TestDefinition*> definitions;
-	vector<TestGroup*> groups;
-        Identifier* new_group_name = nullptr;
+	vector<TestExpr*> tests;
+	Identifier* new_group_name = nullptr;
 
 	while (true) {
 		try {
@@ -540,10 +539,10 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
 				TestGroup* group = ParseTestGroup(new_group_name);
-				groups.push_back(group);
+				tests.push_back(group);
 			} else {
 				TestDefinition *TestDefinition = ParseTestDefinition();
-				definitions.push_back(TestDefinition);
+				tests.push_back(TestDefinition);
 			}
 		} catch (const exception& e) {
 			cerr << e.what() << endl;
@@ -555,7 +554,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	}
 
 	mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
-	return new TestGroup(name, definitions, groups, gm, gs, gt);
+	return new TestGroup(name, tests, gm, gs, gt);
 }
 
 UnitTests* TestDriver::ParseUnitTest()

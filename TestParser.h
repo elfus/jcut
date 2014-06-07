@@ -932,19 +932,18 @@ public:
 class TestGroup : public TestExpr {
 private:
     Identifier* mName;
-    vector<TestDefinition*> mTestDefinitions;
-    vector<TestGroup*> mTestGroups;
+    // Let's work with tests as we find them, do not alter their order.
+    vector<TestExpr*> mTests;
     GlobalMockup *mGlobalMockup;
     GlobalSetup *mGlobalSetup;
     GlobalTeardown *mGlobalTeardown;
     static int group_count;
 public:
     TestGroup(Identifier* name,
-            const vector<TestDefinition*>& def,
-            const vector<TestGroup*>& groups,
+            const vector<TestExpr*>& tests,
             GlobalMockup *gm = nullptr,
             GlobalSetup *gs = nullptr, GlobalTeardown *gt = nullptr) :
-    mName(name), mTestDefinitions(def), mTestGroups(groups),
+    mName(name), mTests(tests),
     mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt) {
         if (!mName) {
             string group_name = "group_";
@@ -961,9 +960,7 @@ public:
         if (mGlobalMockup) delete mGlobalMockup;
         if (mGlobalSetup) delete mGlobalSetup;
         if (mGlobalTeardown) delete mGlobalTeardown;
-        for (auto*& ptr : mTestDefinitions)
-            delete ptr;
-        for (auto*& ptr : mTestGroups)
+        for (auto*& ptr : mTests)
             delete ptr;
     }
 
@@ -971,11 +968,7 @@ public:
         if (mGlobalMockup) mGlobalMockup->dump();
         if (mGlobalSetup) mGlobalSetup->dump();
         if (mGlobalTeardown) mGlobalTeardown->dump();
-        for (auto*& ptr : mTestDefinitions) {
-            ptr->dump();
-            cout << endl;
-        }
-        for (auto*& ptr : mTestGroups) {
+        for (auto*& ptr : mTests) {
             ptr->dump();
             cout << endl;
         }
@@ -985,10 +978,7 @@ public:
         v->VisitTestGroupFirst(this);
         if (mGlobalMockup) mGlobalMockup->accept(v);
         if (mGlobalSetup) mGlobalSetup->accept(v);
-        for (auto*& ptr : mTestDefinitions) {
-            ptr->accept(v);
-        }
-        for (auto*& ptr : mTestGroups) {
+        for (auto*& ptr : mTests) {
             ptr->accept(v);
         }
         if (mGlobalTeardown) mGlobalTeardown->accept(v);
