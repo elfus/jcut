@@ -63,7 +63,7 @@ Test File Grammar
 <comparison-operator> := "==" | "!=" | ">=" | "<=" | "<" | ">"
 
 # Until here
-<var-assignment> := <identifier> = <argument>
+<var-assignment> := <identifier> = <argument> | <struct-initializer>
 
 <function-call> := <function-name>"(" <function-argument>* ")"
 
@@ -76,6 +76,13 @@ Test File Grammar
 <buffer-alloc> := "[" int [":" int] "]"
 
 <array-initializer> := { <number>+ }
+
+<struct-initializer> := { <struct-initializer> | (<initializer-list> | <designated-initializer>) }
+
+<intializer-list> := (<argument> [,]) +
+
+<designated-initializer> := ( .<identifier> = <argument> [,]) +
+
 
 <function-name> := <identifier>
 

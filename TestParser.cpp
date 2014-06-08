@@ -77,6 +77,13 @@ int Tokenizer::nextToken()
 			return mLastChar;
 		}
 
+		// Watch for possible @bug here. This assumes the character before '{'
+		// was an assignment operator '='
+		if (mCurrentToken == TOK_ASCII_CHAR) { // mCurrentToken == '='
+			mTokStrValue = mLastChar;
+			return mCurrentToken = TOK_STRUCT_INIT;
+		}
+
 		while ((mLastChar = mInput.get()) != '}') {
 			mTokStrValue += mLastChar;
 		}
@@ -239,6 +246,84 @@ FunctionArgument* TestDriver::ParseFunctionArgument()
 	throw Exception("Expected a valid Argument but received: " + mTokenizer.getTokenStringValue());
 }
 
+DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
+{
+	Identifier* id = nullptr;
+	Argument* arg = nullptr;
+	vector<tuple<Identifier*,Argument*>> init;
+	do {
+		if (mCurrentToken == ',')
+			mCurrentToken = mTokenizer.nextToken(); // eat up the ','
+
+		if (mCurrentToken != '.') {
+			for(tuple<Identifier*,Argument*>& tup : init) {
+				id = get<0>(tup);
+				arg = get<1>(tup);
+				delete id;
+				delete arg;
+			}
+			throw Exception("Unexpected token: "+mTokenizer.getTokenStringValue());
+		}
+		
+		mCurrentToken = mTokenizer.nextToken(); // eat up the '.'
+		id = ParseIdentifier();
+		if (mCurrentToken != '=') {
+			delete id;
+			throw Exception("Invalid designated initializer");
+		}
+		mCurrentToken = mTokenizer.nextToken(); // eat up the '='
+
+		// @todo Detect recursive structures here!
+		arg = ParseArgument();
+
+		init.push_back(make_tuple(id,arg));
+	} while(mCurrentToken == ',');
+
+	DesignatedInitializer* di = new DesignatedInitializer(init);
+	return di;
+}
+
+InitializerList* TestDriver::ParseInitializerList()
+{
+	Argument* arg = nullptr;
+	vector<Argument*> init;
+	do {
+		if (mCurrentToken == ',')
+			mCurrentToken = mTokenizer.nextToken();
+		// @todo Detect recursive structures here!
+		arg = ParseArgument();
+		init.push_back(arg);
+	} while(mCurrentToken == ',');
+
+	InitializerList* il = new InitializerList(init);
+	return il;
+}
+
+StructInitializer* TestDriver::ParseStructInitializer()
+{
+	if (mCurrentToken != Tokenizer::TOK_STRUCT_INIT)
+		throw Exception("Expected struct initializer '{' but received "+mTokenizer.getTokenStringValue());
+	mCurrentToken = mTokenizer.nextToken(); // eat up the '{'
+
+	StructInitializer* si = nullptr;
+	InitializerList* il = nullptr;
+	if (mCurrentToken == '.') {
+		DesignatedInitializer* di = ParseDesignatedInitializer();
+		si = new StructInitializer(di);
+	} else {
+		il = ParseInitializerList();
+		si = new StructInitializer(il);
+	}
+
+	if(mCurrentToken != '}') {
+		delete si;
+		throw Exception("Malformed designated initializer");
+	}
+
+	mCurrentToken = mTokenizer.nextToken(); // eat up the '}'
+	return si;
+}
+
 VariableAssignment* TestDriver::ParseVariableAssignment()
 {
 	Identifier *identifier = ParseIdentifier();
@@ -249,8 +334,12 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '='
 
-	Argument *arg = ParseArgument();
+	if (mCurrentToken == Tokenizer::TOK_STRUCT_INIT) {
+		StructInitializer* struct_init = ParseStructInitializer();
+		return new VariableAssignment(identifier, struct_init);
+	}
 
+	Argument *arg = ParseArgument();
 	return new VariableAssignment(identifier, arg);
 }
 

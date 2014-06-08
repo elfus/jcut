@@ -70,6 +70,7 @@ public:
         TOK_BUFF_ALLOC = -10,
         TOK_ARRAY_INIT = -11,
         TOK_COMPARISON_OP = -12,
+        TOK_STRUCT_INIT = -13,
         // keywords
         TOK_BEFORE = -100,
         TOK_AFTER = -101,
@@ -387,6 +388,104 @@ public:
     }
 };
 
+class InitializerList : public TestExpr {
+private:
+    vector<Argument*> mArguments;
+public:
+    InitializerList(vector<Argument*> & arg) : mArguments(arg) {}
+    ~InitializerList() {
+        for(Argument*& ptr : mArguments)
+            delete ptr;
+    }
+
+    void dump() {
+        for(Argument*& ptr : mArguments) {
+            ptr->dump();
+            cout<<" ";
+        }
+    }
+
+    void accept(Visitor *v) {
+        for(Argument*& ptr : mArguments)
+            ptr->accept(v);
+        v->VisitInitializerList(this);
+    }
+};
+
+
+class DesignatedInitializer : public TestExpr {
+private:
+    vector<tuple<Identifier*,Argument*>> mInit;
+public:
+    DesignatedInitializer(vector<tuple<Identifier*,Argument*>> & arg)
+            : mInit(arg) {}
+    ~DesignatedInitializer() {
+        Identifier * id = nullptr;
+        Argument * arg = nullptr;
+        for(tuple<Identifier*,Argument*>& tup : mInit) {
+            id = get<0>(tup);
+            arg = get<1>(tup);
+            delete id;
+            delete arg;
+        }
+    }
+
+    void dump() {
+        Identifier * id = nullptr;
+        Argument * arg = nullptr;
+        for(tuple<Identifier*,Argument*>& tup : mInit) {
+            id = get<0>(tup);
+            arg = get<1>(tup);
+            id->dump();
+            cout<<"=";
+            arg->dump();
+            cout<<" ";
+        }
+    }
+
+    void accept(Visitor *v) {
+        Identifier * id = nullptr;
+        Argument * arg = nullptr;
+        for(tuple<Identifier*,Argument*>& tup : mInit) {
+            id = get<0>(tup);
+            arg = get<1>(tup);
+            id->accept(v);
+            arg->accept(v);
+        }
+        v->VisitDesignatedInitializer(this);
+    }
+};
+
+class StructInitializer : public TestExpr{
+private:
+    InitializerList *mInitializerList;
+    DesignatedInitializer *mDesignatedInitializer;
+
+public:
+    StructInitializer(InitializerList *init)
+        : mInitializerList(init), mDesignatedInitializer(nullptr) { }
+
+    StructInitializer(DesignatedInitializer *init)
+        : mInitializerList(nullptr), mDesignatedInitializer(init) {}
+
+    ~StructInitializer() {
+        if (mInitializerList) delete mInitializerList;
+        if (mDesignatedInitializer) delete mDesignatedInitializer;
+    }
+    void dump() {
+        cout << "{ ";
+        if (mInitializerList) mInitializerList->dump();
+        if (mDesignatedInitializer) mDesignatedInitializer->dump();
+        cout << "}"<<endl;
+    }
+
+    void accept(Visitor *v) {
+        if (mInitializerList) mInitializerList->accept(v);
+        if (mDesignatedInitializer) mDesignatedInitializer->accept(v);
+        v->VisitStructInitializer(this);
+    }
+};
+
 class FunctionArgument;
 
 class FunctionCall : public TestExpr {
@@ -468,36 +567,41 @@ class VariableAssignment : public TestExpr {
 private:
     Identifier *mIdentifier;
     Argument *mArgument;
+    StructInitializer *mStructInitializer;
 public:
 
     VariableAssignment(Identifier *id, Argument *arg) :
-    mIdentifier(nullptr), mArgument(nullptr) {
-        mIdentifier = dynamic_cast<Identifier*> (id);
-        if (mIdentifier == nullptr)
-            throw Exception("Invalid Identifier type");
+    mIdentifier(id), mArgument(arg), mStructInitializer(nullptr) {  }
 
-        mArgument = dynamic_cast<Argument*> (arg);
-        if (mArgument == nullptr)
-            throw Exception("Invalid Argument type");
-    }
+    VariableAssignment(Identifier *id, StructInitializer *arg) :
+    mIdentifier(id), mArgument(nullptr), mStructInitializer(arg) {  }
 
     ~VariableAssignment() {
         delete mIdentifier;
-        delete mArgument;
+        if (mArgument) delete mArgument;
+        if (mStructInitializer) delete mStructInitializer;
     }
 
     Identifier* getIdentifier() const { return mIdentifier; }
     Argument* getArgument() const { return mArgument; }
+    StructInitializer* getStructInitializer() const { return mStructInitializer; }
+    Tokenizer::Token getTokenType() const {
+        if (mArgument)
+            return mArgument->getTokenType();
+        return Tokenizer::TOK_STRUCT_INIT;
+    }
 
     void dump() {
         mIdentifier->dump();
         cout << " = ";
-        mArgument->dump();
+        if (mArgument) mArgument->dump();
+        if (mStructInitializer) mStructInitializer->dump();
     }
 
     void accept(Visitor *v){
         mIdentifier->accept(v);
-        mArgument->accept(v);
+        if (mArgument) mArgument->accept(v);
+        if (mStructInitializer) mStructInitializer->accept(v);
         v->VisitVariableAssignment(this);
     }
 };
@@ -1141,6 +1245,9 @@ public:
 private:
     Identifier* ParseIdentifier();
     Argument* ParseArgument();
+    DesignatedInitializer* ParseDesignatedInitializer();
+    InitializerList* ParseInitializerList();
+    StructInitializer* ParseStructInitializer();
     VariableAssignment* ParseVariableAssignment();
     BufferAlloc* ParseBufferAlloc();
     FunctionArgument* ParseFunctionArgument();

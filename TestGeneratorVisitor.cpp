@@ -244,8 +244,12 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	string variable_name = VA->getIdentifier()->getIdentifierStr();
 	GlobalVariable* global_variable = mModule->getGlobalVariable(variable_name);
 	assert(global_variable && "Variable not found!");
-	Tokenizer::Token tokenType = VA->getArgument()->getTokenType();
-	string real_value = VA->getArgument()->getStringRepresentation();
+	Tokenizer::Token tokenType = VA->getTokenType();
+	string real_value;
+
+	if(VA->getArgument()) {
+		real_value = VA->getArgument()->getStringRepresentation();
+	}
 
 	/// @todo Add support for structures
 	LoadInst* load_value = mBuilder.CreateLoad(global_variable);
@@ -254,17 +258,20 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 
 	// TODO: Handle the rest of token types
 	switch (tokenType) {
-	case Tokenizer::TOK_INT:
-	{
-		// Watch for the real type of a global variable, there might be a @bug
-		Value * v = createValue(global_variable->getType()->getPointerElementType(), real_value);
-		StoreInst *store = mBuilder.CreateStore(v, global_variable);
-		mInstructions.push_back(store);
-	}
-		break;
-	default:
-		assert(false && "Unhandled case! FIX ME");
-		break;
+		case Tokenizer::TOK_INT:
+		{
+			// Watch for the real type of a global variable, there might be a @bug
+			Value * v = createValue(global_variable->getType()->getPointerElementType(), real_value);
+			StoreInst *store = mBuilder.CreateStore(v, global_variable);
+			mInstructions.push_back(store);
+		}
+			break;
+		case Tokenizer::TOK_STRUCT_INIT:
+			VA->getStructInitializer()->dump();
+			break;
+		default:
+			assert(false && "Unhandled case! FIX ME");
+			break;
 	}
 }
 
