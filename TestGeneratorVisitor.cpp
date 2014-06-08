@@ -267,7 +267,35 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 		}
 			break;
 		case Tokenizer::TOK_STRUCT_INIT:
-			VA->getStructInitializer()->dump();
+		{
+			StructInitializer* str_init = VA->getStructInitializer();
+			
+			// @todo @bug Fix the bugs for when a structure has a nested
+			// structure inside of it.
+			// Add code to the parser to detect when there is another structure
+			// initialization inside.
+			if (str_init->getInitializerList()) {
+				InitializerList* init_list = str_init->getInitializerList();
+				const vector<tp::Argument*>& args = init_list->getArguments();
+				int i = 0;
+				for(tp::Argument* arg : args) {
+					Value* idx[2];
+					idx[0]= mBuilder.getInt32(0);
+					idx[1] = mBuilder.getInt32(i);
+					ArrayRef<Value*> arr(idx,2);
+					Value* gep =
+							mBuilder.CreateGEP(global_variable,
+							arr,
+							Twine("struct_"+i));
+					Value* v = createValue(gep->getType()->getPointerElementType(), arg->getStringRepresentation());
+					StoreInst* store = mBuilder.CreateStore(v,gep);
+					mInstructions.push_back(store);
+					i++;
+				}
+			} else {
+				DesignatedInitializer* des_init = str_init->getDesignatedInitializer();
+			}
+		}
 			break;
 		default:
 			assert(false && "Unhandled case! FIX ME");

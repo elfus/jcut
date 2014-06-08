@@ -410,6 +410,8 @@ public:
             ptr->accept(v);
         v->VisitInitializerList(this);
     }
+
+    const vector<tp::Argument*>& getArguments() const { return mArguments; }
 };
 
 
@@ -484,6 +486,9 @@ public:
         if (mDesignatedInitializer) mDesignatedInitializer->accept(v);
         v->VisitStructInitializer(this);
     }
+
+    InitializerList* getInitializerList() const { return mInitializerList; }
+    DesignatedInitializer* getDesignatedInitializer() const { return mDesignatedInitializer; }
 };
 
 class FunctionArgument;
