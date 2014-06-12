@@ -246,6 +246,18 @@ FunctionArgument* TestDriver::ParseFunctionArgument()
 	throw Exception("Expected a valid Argument but received: " + mTokenizer.getTokenStringValue());
 }
 
+InitializerValue* TestDriver::ParseInitializerValue()
+{
+	if (mCurrentToken == Tokenizer::TOK_STRUCT_INIT) {
+		StructInitializer* val = ParseStructInitializer();
+		return new InitializerValue(val);
+	}
+	else {
+		Argument* arg = ParseArgument();
+		return new InitializerValue(arg);
+	}
+}
+
 DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 {
 	Identifier* id = nullptr;
@@ -285,13 +297,13 @@ DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 
 InitializerList* TestDriver::ParseInitializerList()
 {
-	Argument* arg = nullptr;
-	vector<Argument*> init;
+	InitializerValue* arg = nullptr;
+	vector<InitializerValue*> init;
 	do {
 		if (mCurrentToken == ',')
 			mCurrentToken = mTokenizer.nextToken();
 		// @todo Detect recursive structures here!
-		arg = ParseArgument();
+		arg = ParseInitializerValue();
 		init.push_back(arg);
 	} while(mCurrentToken == ',');
 
@@ -750,4 +762,20 @@ void FunctionCall::accept(Visitor *v)
 		ptr->accept(v);
 	}
 	v->VisitFunctionCall(this);
+}
+
+InitializerValue::~InitializerValue() {
+	if (mArgValue) delete mArgValue;
+	if (mStructValue) delete mStructValue;
+}
+
+void InitializerValue::dump() {
+	if (mArgValue) mArgValue->dump();
+	if (mStructValue) mStructValue->dump();
+}
+
+void InitializerValue::accept(Visitor *v) {
+	if (mArgValue) mArgValue->accept(v);
+	if (mStructValue) mStructValue->accept(v);
+	v->VisitInitializerValue(this);
 }

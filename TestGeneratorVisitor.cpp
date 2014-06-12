@@ -276,9 +276,9 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 			// initialization inside.
 			if (str_init->getInitializerList()) {
 				InitializerList* init_list = str_init->getInitializerList();
-				const vector<tp::Argument*>& args = init_list->getArguments();
+				const vector<tp::InitializerValue*>& args = init_list->getArguments();
 				int i = 0;
-				for(tp::Argument* arg : args) {
+				for(tp::InitializerValue* arg : args) {
 					Value* idx[2];
 					idx[0]= mBuilder.getInt32(0);
 					idx[1] = mBuilder.getInt32(i);
@@ -287,7 +287,15 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 							mBuilder.CreateGEP(global_variable,
 							arr,
 							Twine("struct_"+i));
-					Value* v = createValue(gep->getType()->getPointerElementType(), arg->getStringRepresentation());
+					
+					string str_value;
+					if (arg->isArgument())
+						str_value = arg->getArgument().getStringRepresentation();
+					else if (arg->isStructInitializer()) {
+						assert(false && "Implement structure initializer! Extract values from initializer structures");
+					}
+					
+					Value* v = createValue(gep->getType()->getPointerElementType(), str_value);
 					StoreInst* store = mBuilder.CreateStore(v,gep);
 					mInstructions.push_back(store);
 					i++;

@@ -13,6 +13,7 @@ namespace tp { // tp stands for test parser
 // Forward declarations
 class FunctionCall;
 class Argument;
+class InitializerValue;
 class InitializerList;
 class VariableAssignment;
 class BufferAlloc;
@@ -63,6 +64,7 @@ public:
     virtual void VisitVariableAssignment(VariableAssignment *) {}
     virtual void VisitBufferAlloc(BufferAlloc *) {}
     virtual void VisitIdentifier(Identifier *) {}
+    virtual void VisitInitializerValue(InitializerValue *) {}
     virtual void VisitDesignatedInitializer(DesignatedInitializer *) {}
     virtual void VisitStructInitializer(StructInitializer *) {}
     virtual void VisitFunctionArgument(FunctionArgument *) {}

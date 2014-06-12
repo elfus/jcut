@@ -77,12 +77,13 @@ Test File Grammar
 
 <array-initializer> := { <number>+ }
 
-<struct-initializer> := { <struct-initializer> | (<initializer-list> | <designated-initializer>) }
+<struct-initializer> := { <initializer-list> | <designated-initializer> }
 
-<intializer-list> := (<argument> [,]) +
+<intializer-list> := (<initializer-value> [,])+
 
-<designated-initializer> := ( .<identifier> = <argument> [,]) +
+<designated-initializer> := ( .<identifier> = <initializer-value> [,])+
 
+<initializer-value> := <argument> | <struct-initializer> 
 
 <function-name> := <identifier>
 

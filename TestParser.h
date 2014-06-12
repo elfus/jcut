@@ -388,30 +388,54 @@ public:
     }
 };
 
+class StructInitializer;
+
+class InitializerValue : public TestExpr {
+private:
+    Argument* mArgValue;
+    StructInitializer* mStructValue;
+public:
+    explicit InitializerValue(Argument* val) : mArgValue(val), mStructValue(nullptr) {}
+    explicit InitializerValue(StructInitializer* val) : mArgValue(nullptr),
+        mStructValue(val) {}
+
+    ~InitializerValue();
+    void dump();
+    void accept(Visitor *v);
+
+    bool isArgument() const { return (mArgValue) ? true : false; }
+    bool isStructInitializer() const { return (mStructValue) ? true : false; }
+
+    // @warning Make sure you call these only when the pointer is not nullptr!
+    // use the isArgument() method before.
+    const Argument& getArgument() const { return *mArgValue; }
+    const StructInitializer& getStructInitializer() const { return *mStructValue;}
+};
+
 class InitializerList : public TestExpr {
 private:
-    vector<Argument*> mArguments;
+    vector<InitializerValue*> mArguments;
 public:
-    InitializerList(vector<Argument*> & arg) : mArguments(arg) {}
+    InitializerList(vector<InitializerValue*> & arg) : mArguments(arg) {}
     ~InitializerList() {
-        for(Argument*& ptr : mArguments)
+        for(InitializerValue*& ptr : mArguments)
             delete ptr;
     }
 
     void dump() {
-        for(Argument*& ptr : mArguments) {
+        for(InitializerValue*& ptr : mArguments) {
             ptr->dump();
             cout<<" ";
         }
     }
 
     void accept(Visitor *v) {
-        for(Argument*& ptr : mArguments)
+        for(InitializerValue*& ptr : mArguments)
             ptr->accept(v);
         v->VisitInitializerList(this);
     }
 
-    const vector<tp::Argument*>& getArguments() const { return mArguments; }
+    const vector<tp::InitializerValue*>& getArguments() const { return mArguments; }
 };
 
 
@@ -1250,6 +1274,7 @@ public:
 private:
     Identifier* ParseIdentifier();
     Argument* ParseArgument();
+    InitializerValue* ParseInitializerValue();
     DesignatedInitializer* ParseDesignatedInitializer();
     InitializerList* ParseInitializerList();
     StructInitializer* ParseStructInitializer();
