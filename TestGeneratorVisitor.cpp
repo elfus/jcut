@@ -269,40 +269,9 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 		case Tokenizer::TOK_STRUCT_INIT:
 		{
 			StructInitializer* str_init = VA->getStructInitializer();
-			
-			// @todo @bug Fix the bugs for when a structure has a nested
-			// structure inside of it.
-			// Add code to the parser to detect when there is another structure
-			// initialization inside.
-			if (str_init->getInitializerList()) {
-				InitializerList* init_list = str_init->getInitializerList();
-				const vector<tp::InitializerValue*>& args = init_list->getArguments();
-				int i = 0;
-				for(tp::InitializerValue* arg : args) {
-					Value* idx[2];
-					idx[0]= mBuilder.getInt32(0);
-					idx[1] = mBuilder.getInt32(i);
-					ArrayRef<Value*> arr(idx,2);
-					Value* gep =
-							mBuilder.CreateGEP(global_variable,
-							arr,
-							Twine("struct_"+i));
-					
-					string str_value;
-					if (arg->isArgument())
-						str_value = arg->getArgument().getStringRepresentation();
-					else if (arg->isStructInitializer()) {
-						assert(false && "Implement structure initializer! Extract values from initializer structures");
-					}
-					
-					Value* v = createValue(gep->getType()->getPointerElementType(), str_value);
-					StoreInst* store = mBuilder.CreateStore(v,gep);
-					mInstructions.push_back(store);
-					i++;
-				}
-			} else {
-				DesignatedInitializer* des_init = str_init->getDesignatedInitializer();
-			}
+			vector<Value*> values;
+			values.push_back(mBuilder.getInt32(0));
+			extractInitializerValues(global_variable, str_init,&values);
 		}
 			break;
 		default:
@@ -466,6 +435,42 @@ void TestGeneratorVisitor::restoreGlobalVariables()
 		StoreInst* st = mBuilder.CreateStore(ld, get<1>(tup));
 		mInstructions.push_back(ld);
 		mInstructions.push_back(st);
+	}
+}
+
+void TestGeneratorVisitor::extractInitializerValues(GlobalVariable* global_struct,
+		const StructInitializer* init,
+		vector<Value*>* ndxs)
+{
+	if (init->getInitializerList()) {
+		InitializerList* init_list = init->getInitializerList();
+		const vector<tp::InitializerValue*>& args = init_list->getArguments();
+		int i = 0;
+		for(tp::InitializerValue* arg : args) {
+			ndxs->push_back(mBuilder.getInt32(i));
+			ArrayRef<Value*> arr(*ndxs);
+			Value* gep =
+					mBuilder.CreateGEP(global_struct,
+					arr,
+					Twine("struct_"+i));
+
+			string str_value;
+			if (arg->isArgument()) {
+				str_value = arg->getArgument().getStringRepresentation();
+				Value* v = createValue(gep->getType()->getPointerElementType(), str_value);
+				StoreInst* store = mBuilder.CreateStore(v,gep);
+				mInstructions.push_back(store);
+			}
+			else if (arg->isStructInitializer()) {
+				const StructInitializer& sub_init = arg->getStructInitializer();
+				extractInitializerValues(global_struct,&sub_init,ndxs);
+			}
+			i++;
+			ndxs->pop_back();
+		}
+	} else {
+		DesignatedInitializer* des_init = init->getDesignatedInitializer();
+		assert(false && "TODO: Implementer generation of code for DesignatedInitializers");
 	}
 }
 

@@ -1,0 +1,12 @@
+group A {
+    #before_all { gint = 255; }
+
+    #before {  gstruct = { .c = 30, .a=10, .b=20  }; gint = 10;}
+    #print_g();
+
+
+    before { gstruct = { 300, 600, 900, {555, 444}, 7, {999} } }
+    print_g();
+
+    print_g();
+}

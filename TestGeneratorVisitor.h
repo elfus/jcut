@@ -109,6 +109,10 @@ private:
      * restored and taking into a account the marker of 2-tuple with nullptrs.
      */
     void restoreGlobalVariables();
+
+    void extractInitializerValues(llvm::GlobalVariable* global_struct,
+                                  const StructInitializer* init,
+                                  vector<llvm::Value*>* ndxs);
 public:
     TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
