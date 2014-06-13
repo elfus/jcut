@@ -441,14 +441,14 @@ public:
 
 class DesignatedInitializer : public TestExpr {
 private:
-    vector<tuple<Identifier*,Argument*>> mInit;
+    vector<tuple<Identifier*,InitializerValue*>> mInit;
 public:
-    DesignatedInitializer(vector<tuple<Identifier*,Argument*>> & arg)
+    DesignatedInitializer(vector<tuple<Identifier*,InitializerValue*>> & arg)
             : mInit(arg) {}
     ~DesignatedInitializer() {
         Identifier * id = nullptr;
-        Argument * arg = nullptr;
-        for(tuple<Identifier*,Argument*>& tup : mInit) {
+        InitializerValue * arg = nullptr;
+        for(tuple<Identifier*,InitializerValue*>& tup : mInit) {
             id = get<0>(tup);
             arg = get<1>(tup);
             delete id;
@@ -458,8 +458,8 @@ public:
 
     void dump() {
         Identifier * id = nullptr;
-        Argument * arg = nullptr;
-        for(tuple<Identifier*,Argument*>& tup : mInit) {
+        InitializerValue * arg = nullptr;
+        for(tuple<Identifier*,InitializerValue*>& tup : mInit) {
             id = get<0>(tup);
             arg = get<1>(tup);
             id->dump();
@@ -471,8 +471,8 @@ public:
 
     void accept(Visitor *v) {
         Identifier * id = nullptr;
-        Argument * arg = nullptr;
-        for(tuple<Identifier*,Argument*>& tup : mInit) {
+        InitializerValue * arg = nullptr;
+        for(tuple<Identifier*,InitializerValue*>& tup : mInit) {
             id = get<0>(tup);
             arg = get<1>(tup);
             id->accept(v);
@@ -480,6 +480,8 @@ public:
         }
         v->VisitDesignatedInitializer(this);
     }
+
+    const vector<tuple<Identifier*,InitializerValue*>>& getInitializers() const { return mInit; }
 };
 
 class StructInitializer : public TestExpr{

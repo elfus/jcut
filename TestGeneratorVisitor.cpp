@@ -469,8 +469,46 @@ void TestGeneratorVisitor::extractInitializerValues(GlobalVariable* global_struc
 			ndxs->pop_back();
 		}
 	} else {
+		/// @note The reason why designated initializers are not supported
+		/// is because LLVM API does not save the field names of a struct.
+		/// The only way to access is through indexes, thus finding the index
+		/// based on the name is impossible using LLVM API.
+		/// We could use clang API, however I made a quick search and seems
+		/// we'll hit the same problem.
+		/// The only solution to this is to parse the source code ourselves and
+		/// find the struct definitions, and extract their names and create a
+		/// data structure that we can use at this pointer.
+		/// Implementing this feature will take a lot of time, so I decided
+		/// to drop it for the first prototype.
+		assert(false && "Designated initializers are not supported!");
 		DesignatedInitializer* des_init = init->getDesignatedInitializer();
-		assert(false && "TODO: Implementer generation of code for DesignatedInitializers");
+		const vector<tuple<Identifier*,InitializerValue*>>& args = des_init->getInitializers();
+		// find the index for a given identifier
+		Identifier* id = nullptr;
+		InitializerValue* init_val = nullptr;
+		for(const tuple<Identifier*,InitializerValue*>& tup : args) {
+			id = get<0>(tup);
+			init_val = get<1>(tup);
+			id->dump();
+			cout << " = ";
+			init_val->dump();
+			cout << endl;
+			//global_struct->dump();
+			Type* struct_type = global_struct->getType()->getElementType();
+			cout<<"Num of contained types: "<<struct_type->getNumContainedTypes()<<endl;
+			cout<<"getStructNumElements(): "<<struct_type->getStructNumElements()<<endl;
+			cout<<"Struct name: "<<struct_type->getStructName().str()<<endl;
+			cout<<"TypeID: "<<struct_type->getTypeID()<<endl;
+			if (struct_type->isStructTy()) {
+				cout<<"This is a struct type!"<<endl;
+				for(Type::subtype_iterator it = struct_type->subtype_begin();
+						it != struct_type->subtype_end(); ++it) {
+					Type* t = *it;
+					cout<<"SUBTYPE TYPE: "<<t->getTypeID()<<endl;
+				}
+			}
+			cout << endl;
+		}
 	}
 }
 

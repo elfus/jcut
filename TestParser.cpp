@@ -261,14 +261,14 @@ InitializerValue* TestDriver::ParseInitializerValue()
 DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 {
 	Identifier* id = nullptr;
-	Argument* arg = nullptr;
-	vector<tuple<Identifier*,Argument*>> init;
+	InitializerValue* arg = nullptr;
+	vector<tuple<Identifier*,InitializerValue*>> init;
 	do {
 		if (mCurrentToken == ',')
 			mCurrentToken = mTokenizer.nextToken(); // eat up the ','
 
 		if (mCurrentToken != '.') {
-			for(tuple<Identifier*,Argument*>& tup : init) {
+			for(tuple<Identifier*,InitializerValue*>& tup : init) {
 				id = get<0>(tup);
 				arg = get<1>(tup);
 				delete id;
@@ -285,8 +285,7 @@ DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 		}
 		mCurrentToken = mTokenizer.nextToken(); // eat up the '='
 
-		// @todo Detect recursive structures here!
-		arg = ParseArgument();
+		arg = ParseInitializerValue();
 
 		init.push_back(make_tuple(id,arg));
 	} while(mCurrentToken == ',');
@@ -302,7 +301,6 @@ InitializerList* TestDriver::ParseInitializerList()
 	do {
 		if (mCurrentToken == ',')
 			mCurrentToken = mTokenizer.nextToken();
-		// @todo Detect recursive structures here!
 		arg = ParseInitializerValue();
 		init.push_back(arg);
 	} while(mCurrentToken == ',');
