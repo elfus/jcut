@@ -88,15 +88,3 @@ Test File Grammar
 <function-name> := <identifier>
 
 <identifier> := identifier string
-
-
-Tokens:
-	- Function name
-	- equal operator
-	- int
-	- double
-	- buffer alloc
-
-keywords:
-	before
-	afterTest file grammar

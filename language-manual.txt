@@ -1,0 +1,260 @@
+C programming language features
+1. Functions that receive the following data types by value:
+	char, short, int, long, float, double [include unsigned versions too]
+2. Global variables of primitive types
+3. Functions that receive structures by value
+
+4. Functions that receive pointers to primitive data types
+5. Global variables of pointers to primitive data types.
+6. Functions that receive structures by pointers
+7. Functions that take pointers to functions
+8. Global variables that are pointers to functions
+
+================================================================================
+1. Running tests
+==========
+1.1 The simplest test
+-------
+Assuming you have a C file 'some_file.c' with the function definition:
+
+void my_function() {
+	 return;
+}
+
+Running some tests on the above function can be done with the following command
+line:
+
+	jit-testing some_file.c --test-file my_test_file.txt
+
+The contents of the test file is as follows:
+
+	my_function();
+
+Running a test is as simple as calling a function in C code. What the tool will
+do is taking the given test function 'my_function()', it will search for its
+definition in the input C files, it will compile and execute it using LLVM JIT
+framework. Since this is a void function the tool assumes the test has passed
+if it completed its execution without interruption.
+=======
+1.2 Expected results
+-------
+Often times program executions depend on the results returned by a given funtion.
+Suppose whe have a function performs sums and return its result:
+
+	int sum(int a, int b) {
+		return a+b;
+	}
+
+In order to check the expected behavior of this function we can write a test
+like this:
+
+	sum(2,2) == 4;
+
+This syntax is telling that we expect a value of 4 for the returning data type.
+If that condition is not met then test fails. That test can also be written this
+way:
+
+	sum(2,2) > 3;
+	sum(2,2) < 5;
+	sum(2,2) != 0;
+	sum(2,2) >= 4;
+	sum(2,2) <= 4;
+
+All previous tests pass successfully. Also those examples were introduced to show
+the supported comparison operators supported by the tool.
+
+=======
+1.3 Pre-conditions and post-conditions for each unit test
+-------
+Talk about 'before' and 'after' for a unit test
+
+	 before { pre_work(); global = 10; }
+	 my_function();
+	 after { wrap_up(); global != 20;}
+
+Talk about comparison statements in after statements
+=======
+1.4 Creating new implementations with 'mockup' keyword
+-------
+Talk about 'mockup'
+
+	 mockup { 'create mockup syntax' }
+	 before { pre_work(); global = 10; }
+	 my_function();
+	 after { wrap_up(); global != 20;}
+
+Talk how it interacts with before/after statements
+=======
+1.5 Pre-conditions and post-conditions for a set of tests
+-------
+Talk about 'before_all' and 'after_all'
+
+	 before_all { pre_work(); global = 10; }
+	 after_all { wrap_up(); global != 20;}
+
+	 my_function();
+
+Talk about how it interacts with regular before/after statements.
+=======
+1.6 Grouping tests
+-------
+Talk about how logical related tests can be grouped and how the
+mockup/before/after/mocku_all/before_all/after_all statements affect only
+the tests in a group.
+
+group MyGroup {
+	  my_function();
+}
+
+Also about nested groups
+
+group A {
+	  group B{
+	  }
+}
+
+Default groups
+
+group {
+}
+
+================================================================================
+2. JIT-TESTING Language features
+==========
+2.1 Keywords
+-------
+mockup_all - Allows creating a quick implementation for both functions and
+		   global variables. Mockup functions will behave in a given way
+		   stated by the language syntax. Always returning the same output for
+		   the given input.
+
+before_all - This statement lets you specifify a set of functions to be called
+		   before all the tests in a given group. It also allows you specify the
+		   value for any global variable of any type. This statement ensures
+		   the global variables modified here will always hold the given state
+		   for each of the tests in that group. Thus, this statement won't keep
+		   track of the state of global variables modified in the functions to
+		   be called.
+
+		   These statements will be executed only once before all the given
+		   tests in a group.
+
+after_all - Behaves pretty much the same as the 'before_all' statement with the
+		  only difference that it will execute the statements after all the
+		  tests have been executed.
+
+group -	The group keyword lets you group tests into a single
+	  	  logical related tests. This way the tool will let you specify what
+		  groups to execute only. A group can optionally contain more groups
+		  indefinitely. A group can optionally have name given by the user, if
+		  it's not provided the tool will generate a default name. This name
+		  will be used for error reporting purposes and easy tracking from the
+		  user.
+
+mockup - Behaves just like 'mock_up' except that the mockup functions and mockup
+	   variables only apply for the given tests. After executing the test,
+	   the default implementation for mockup functions and mockup variables
+	   will be reverted back to its original state (could be an undefined
+	   variable, undefined function, also known as declaration, or the original
+	   implementation).
+
+	   Any modification done to the program state by the functions called won't
+	   be reverted.
+
+before - Behaves just like 'before_all' except that all the statements executed
+	   will only affect the given tests. After executing the test, all the
+	   original values of global variables before assigning them the value
+	   stated in the 'before' statement will be restored.
+
+	   Any modification done to the program state by the functions called won't
+	   be reverted.
+
+after - Behaves just like 'after_all' except that all statements executed will
+	  only affect the given test.
+
+	   Any modification done to the program state by the functions called won't
+	   be reverted.
+
+
+comparison operators - The comparison operators are provided to compare the
+	   output of a given function. The operators available are:
+
+	   ==, !=, >=, <=, <, >
+
+	   Their behavior is the same as the behavior provided by the C programming
+	   language for all the data types.
+=======
+2.2 Language features
+-------
+When using the all variants of 'mockup*, before*, and after*' statements,
+if you want to assign the value to a given structure you need to use the
+C89 list initialization syntax for structures. For instance:
+
+	struct X {
+	  int x;
+	  int a;
+	} var;
+
+	...
+
+	var = {12, 20};
+
+This syntax is the same that can be used in real C code to initialize the
+values in a structures, and is the same syntax used in our tool
+=======
+2.3 Automatic memory allocation for pointers
+-------
+Functions that take pointers of any type, or global variables that pointers of
+any type assume the memory allocation for the given data type has already been
+done. Our tool provides a simple syntax for allocating memory to any global
+variable of a pointer type, or a pointer to any type that is an argument of
+a function. The syntax is as follows:
+
+  [N] - The squared brackets tell our tool that should allocate 'N' elements
+  	  	of the corresponding type that being pointed to. The tool automatically
+		detects the data type being pointed to.
+
+Look at the following example in which you have a function that increments the
+value of an integer.
+
+	  void increment(int *x) {
+	  	 (*x)++;
+	  }
+
+When running a test you can specify how many data types will be allocated by the
+tool with the following syntax:
+
+	 void increment([1]);
+
+That indicates that the tool will allocate 1 integer and pass the pointer to the
+function. However the data allocated has not been initilized, in the event you
+want to initialize that can be done as follows:
+
+	 [N:X] - It will intialize N elements of the given type with the value X.
+
+This means that the following example:
+
+	 void increment([1:5]);
+
+will initialize allocate 1 integer and assign a value of 5 to the memory pointed
+to. Another example would be:
+
+	void increment([10:6]);
+
+This last example will allocate 10 integers and initialize all of them with a
+value of 6. However sometimes that is not the behavior you want for intialization.
+You may want to have a little bit more of control when doing so.
+
+	void increment([5:{1,2,3,4,5}]
+
+The previous syntax allocates 5 integers and assign them the given values
+'1,2,3,4,5' sequentially. If you give less values that the buffer size the tool
+the tool will initialize the rest to 0 regardless of the data type. If you give
+more values than the buffer size the tool will give you a warning about it and
+ignore the exceeding values.
+
+This same syntax works when allocating memory for a structure.
+
+// TODO Add more text describing that.
+
+
