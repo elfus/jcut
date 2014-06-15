@@ -34,6 +34,10 @@ div(3, 0) == 0; # debug this
 
 t0s(5,5) == 10;
 t0s('a','b') == 42;
+t0s('0','1') == 1;
+t0u(5,5) == 10;
+t0u('a','b') == 42;
+t0u('0','1') == 97;
 # Negative testing
 
 # This test should fail, check what happens here
