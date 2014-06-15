@@ -118,12 +118,19 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 
 	stringstream ss;
-	if(ER->getExpectedConstant()->getConstant()->getNumericConstant()->isInt()) {
-		int tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getInt();//workaround, convert int to string
-		ss << tmp;
-	} else if(ER->getExpectedConstant()->getConstant()->getNumericConstant()->isFloat()) {
-		float tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getFloat();
-		ss << tmp;
+	tp::Constant* EC = ER->getExpectedConstant()->getConstant();
+	if(EC->isCharConstant()) {
+		ss << EC->getValue();
+	}
+
+	if(EC->isNumericConstant()) {
+		if(EC->getNumericConstant()->isInt()) {
+			int tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getInt();//workaround, convert int to string
+			ss << tmp;
+		} else if(EC->getNumericConstant()->isFloat()) {
+			float tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getFloat();
+			ss << tmp;
+		}
 	}
 	llvm::Value* c = createValue(call->getType(), ss.str());
 

@@ -438,7 +438,7 @@ Constant* TestDriver::ParseConstant()
 		C = new Constant(new StringConstant(mTokenizer.getTokenStringValue()));
 	else
     if(mCurrentToken == Tokenizer::TOK_CHAR)
-		C = new Constant(new CharConstant(mTokenizer.getChar()));
+		C = new Constant(new CharConstant(mTokenizer.getTokenStringValue()[0]));
 	else
 		throw Exception("Expected a Constant but received token " + mTokenizer.getTokenStringValue());
 

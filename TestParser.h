@@ -242,7 +242,7 @@ public:
     void accept(Visitor* v) {
         v->VisitCharConstant(this);
     }
-    int getChar() const { return mC; }
+    char getChar() const { return mC; }
 };
 
 class Constant : public TestExpr {
@@ -281,12 +281,17 @@ public:
     }
 
     int getValue() const {
+        // @bug remove mNC->getInt()
         if(mNC) return mNC->getInt();
         // @bug String not supported yet
         if(mCC) return (int) mCC->getChar();
         return 0;
     }
 
+    bool isCharConstant() const { return (mCC) ? true : false; }
+    bool isStringConstant() const { return (mSC) ? true: false; }
+    bool isNumericConstant() const { return (mNC) ? true: false; }
+    CharConstant* getCharConstant() const { return mCC; }
     NumericConstant* getNumericConstant() const { return mNC; }
 
     Type getType() const { return mType; }
