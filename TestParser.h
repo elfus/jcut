@@ -1090,7 +1090,6 @@ public:
             group_name += ((char) (((int) '0') + (group_count++)));
             mName = new Identifier(group_name);
         }
-        cout<<"Group name: "<<mName->getIdentifierStr()<<endl;
         /// @todo Enable GlobalMockup
         // if (GlobalMockup) GlobalMockup->setGroupName(mName->getIdentifierStr());
         if (mGlobalSetup) mGlobalSetup->setGroupName(mName->getIdentifierStr());
