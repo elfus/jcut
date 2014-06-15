@@ -137,7 +137,8 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 		mInstructions.push_back(zext);
 		mReturnValue = zext;
 	}
-	else if (returnedType->getTypeID() == Type::FloatTyID) {
+	else if (returnedType->getTypeID() == Type::FloatTyID or
+			returnedType->getTypeID() == Type::DoubleTyID) {
 		i = createFloatComparison(ER->getComparisonOperator()->getType(), call, c);
 		mInstructions.push_back((llvm::Instruction*)i);
 		mReturnValue = i;
@@ -351,6 +352,7 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	}
 		break;
 	case Type::TypeID::FloatTyID:
+	case Type::TypeID::DoubleTyID:
 	{
 		return ConstantFP::get(type,real_value);
 	}
