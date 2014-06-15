@@ -39,7 +39,32 @@ public:
         // @todo detect what failed, after conditions?
         ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
         if (ER) {
-            cout << ER->getComparisonOperator()->getTypeStr() << " "<<ER->getExpectedConstant()->getValue();
+            Constant* C = ER->getExpectedConstant()->getConstant();
+            cout << ER->getComparisonOperator()->getTypeStr() << " ";
+            switch(C->getType()){
+                case Constant::Type::NUMERIC:
+                {
+                    NumericConstant* nc = C->getNumericConstant();
+                    if(nc->isFloat())
+                        cout << nc->getFloat();
+                    if(nc->isInt())
+                        cout << nc->getInt();
+                }
+                    break;
+                case Constant::Type::STRING:
+                {
+
+                }
+                    break;
+                case Constant::Type::CHAR:
+                {
+                    
+                }
+                    break;
+                default:
+                    cerr<<"Invalid Constant!"<<endl;
+                    break;
+            }
         }
         cout << endl;
     }

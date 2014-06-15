@@ -209,6 +209,7 @@ public:
     }
 
     int getInt() const { return mNC.ic; }
+    float getFloat() const { return mNC.fc; }
     bool isInt() const { return mIsInt; }
     bool isFloat() const { return !mIsInt; }
 };
@@ -285,6 +286,8 @@ public:
         if(mCC) return (int) mCC->getChar();
         return 0;
     }
+
+    NumericConstant* getNumericConstant() const { return mNC; }
 
     Type getType() const { return mType; }
 };
@@ -363,6 +366,8 @@ public:
     int getValue() const {
         return mC->getValue();
     }
+
+    Constant* getConstant() const { return mC; }
 };
 
 class Argument : public TestExpr {
