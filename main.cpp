@@ -110,20 +110,32 @@ TestFunctionArgs extractTestFunction(SmallVector<const char *, 16> & Args)
 string extractTestFile(SmallVector<const char *, 16> & Args)
 {
 	string fileName;
-	unsigned delete_count = 1; // remove the flag --test
+	unsigned delete_count = 1; // remove the flag --test-file
+	auto it = Args.begin();
 
-	for (unsigned i = 0; i < Args.size(); i++) {
-		if (string(Args[i]) == "--test-file") {
+	for (; it != Args.end(); it++) {
+		if (string(*it) == "--test-file") {
 			++delete_count;
-			fileName = string(Args[++i]);
+			auto it_2 = it + 1;
+			fileName = string(*it_2);
+			break;
 		}
 	}
 
-	if (delete_count > 1)
-		while (delete_count--)
-			Args.pop_back();
+	Args.erase(it, it+2);// 1 past the end so we can erase the file name
 
 	return fileName;
+}
+
+bool extractDumpFlag(SmallVector<const char *, 16> & Args)
+{
+	for (auto it = Args.begin(); it != Args.end(); it++) {
+		if (string(*it) == "--dump") {
+			Args.erase(it);
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -220,6 +232,7 @@ int main(int argc, const char **argv, char * const *envp)
 	SmallVector<const char *, 16> Args(argv, argv + argc);
 	TestFunctionArgs testFunction = extractTestFunction(Args);
 	string file_name = extractTestFile(Args);
+	bool dump_functions = extractDumpFlag(Args);
 	Args.push_back("-fsyntax-only");
 	OwningPtr<Compilation> C(TheDriver.BuildCompilation(Args));
 	if (!C)
@@ -294,7 +307,7 @@ int main(int argc, const char **argv, char * const *envp)
 				// Initialize the JIT Engine only once
 				llvm::InitializeNativeTarget();
 				std::string Error;
-				TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(Module, &Error));
+				TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(Module, &Error),dump_functions);
 				if (runner.isValidExecutionEngine() == false) {
 					llvm::errs() << "unable to make execution engine: " << Error << "\n";
 					return 255;

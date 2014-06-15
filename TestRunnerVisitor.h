@@ -18,16 +18,20 @@ class TestRunnerVisitor : public Visitor {
 private:
     llvm::ExecutionEngine* mEE;
     std::vector<llvm::GenericValue> mArgs;//Dummy arguments
+    bool mDumpFunctions;
 
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
+        if (mDumpFunctions)
+            f->dump();
         llvm::GenericValue rval = mEE->runFunction(f,mArgs);
         FW->setReturnValue(rval);
     }
 public:
     TestRunnerVisitor() = delete;
     TestRunnerVisitor(const TestRunnerVisitor& orig) = delete;
-    TestRunnerVisitor(llvm::ExecutionEngine *EE) : mEE(EE) {}
+    TestRunnerVisitor(llvm::ExecutionEngine *EE, bool dump_func = false) : mEE(EE),
+        mDumpFunctions(dump_func) {}
     virtual ~TestRunnerVisitor() { delete mEE; }
 
     bool isValidExecutionEngine() const { return mEE != nullptr; }
