@@ -118,8 +118,13 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 
 	stringstream ss;
-	int tmp = ER->getExpectedConstant()->getValue();//workaround, convert int to string
-	ss << tmp;
+	if(ER->getExpectedConstant()->getConstant()->getNumericConstant()->isInt()) {
+		int tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getInt();//workaround, convert int to string
+		ss << tmp;
+	} else if(ER->getExpectedConstant()->getConstant()->getNumericConstant()->isFloat()) {
+		float tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getFloat();
+		ss << tmp;
+	}
 	llvm::Value* c = createValue(call->getType(), ss.str());
 
 	string InstName = "ComparisonInstruction";
@@ -332,9 +337,18 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	Type::TypeID typeID = type->getTypeID();
 	switch (typeID) {
 	case Type::TypeID::IntegerTyID:
+	{
+		/// @todo throw a warning when we 'cast' a floating type to an integer
+		string value = real_value;
+		if(real_value.find('.') != string::npos) {
+			value = real_value.substr(0, real_value.find('.'));
+			cout<<"Warning: Casting floating point value "<<real_value<<" to "<<value<<endl;
+		}
+
 		if (IntegerType * intType = dyn_cast<IntegerType>(type))
 			// Watch for the radix, right now we use radix 10 only
-			return cast<Value>(mBuilder.getInt(APInt(intType->getBitWidth(), real_value, 10)));
+			return cast<Value>(mBuilder.getInt(APInt(intType->getBitWidth(), value, 10)));
+	}
 		break;
 	case Type::TypeID::FloatTyID:
 	{
