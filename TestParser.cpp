@@ -147,11 +147,12 @@ int Tokenizer::nextToken()
 			tokenStream << mLastChar;
 			while (isdigit((mLastChar = mInput.get()))) {
 				tokenStream << mLastChar;
-				tokenStream >> mFloat;
-				mTokStrValue = tokenStream.str();
-				mIdType = ID_CONSTANT;
-				return mCurrentToken = TOK_FLOAT;
 			}
+			mInput.putback(mLastChar);
+			tokenStream >> mFloat;
+			mTokStrValue = tokenStream.str();
+			mIdType = ID_CONSTANT;
+			return mCurrentToken = TOK_FLOAT;
 		}
 	}
 
