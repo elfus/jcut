@@ -1,0 +1,31 @@
+# Positive testing
+sum(2,4) == 6;
+sum(-10,20) == 10;
+sum(10, -20) == -10;
+sum(-15,-15) == -30;
+
+sum(2.3, 3.68) > 4;
+sum(4.5678, 2.1) < 10;
+sum(2.3, 3.68) >= 5;
+sum(4.5678, 2.1) <= 6;
+
+
+mult(2.5,4) == 10;
+mult(2.5,3) == 7.5;
+mult(2.5,2) == 5;
+mult(-2.5,2) == -5;
+mult(2.5,-2) == -5;
+mult(-2.5,-2) == 5;
+mult(0, 10) == 0;
+mult(0, -10) == 0;
+mult(0, 10.5) == 0;
+mult(0, -10.5) == 0;
+mult(-1.0,1) == -1;
+mult(-1.0,1) == -1.0;
+
+# Negative testing
+
+# This test should fail, check what happens here
+# TODO Work on these ones
+#sum('0','1') == 1;
+#sum("hola", 2) == 2;
