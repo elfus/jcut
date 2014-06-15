@@ -377,7 +377,17 @@ protected:
 public:
 
     Argument(const string& str, Tokenizer::Token token) :
-    StringRepresentation(str), TokenType(token) { }
+    StringRepresentation(str), TokenType(token) {
+        if (TokenType == Tokenizer::TOK_CHAR) {
+            // Convert the char to its integer value
+            // then store that integer value as string
+            unsigned char c = StringRepresentation[0];
+            unsigned int tmp = static_cast<unsigned int>(c);
+            stringstream ss;
+            ss << tmp;
+            StringRepresentation = ss.str();
+        }
+    }
 
     ~Argument() {}
 
