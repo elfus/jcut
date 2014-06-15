@@ -30,12 +30,6 @@ unsigned char t0u(unsigned char a, unsigned char b) {
 	return a + b;	
 }
 
-int t1(int a, int *b, int c, int * d) {
-	*b += 1;
-	*d += 1;
-	return a + *b + c + *d;
-}
-
 unsigned t2(unsigned a, unsigned b) {
 	printf("%s: a: %u\n",__func__,a);
 	printf("%s: b: %u\n",__func__,b);

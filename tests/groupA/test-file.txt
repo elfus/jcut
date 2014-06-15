@@ -9,7 +9,6 @@ sum(4.5678, 2.1) < 10;
 sum(2.3, 3.68) >= 5;
 sum(4.5678, 2.1) <= 6;
 
-
 mult(2.5,4) == 10;
 mult(2.5,3) == 7.5;
 mult(2.5,2) == 5;
@@ -31,6 +30,7 @@ div(6,3) == 2.0;
 div(6.0,3.0) == 2.0;
 div(0, 3.0) == 0;
 div(3, 0) == 0; # debug this
+div(6,3.2) > 1.567;
 
 t0s(5,5) == 10;
 t0s('a','b') == 42;
@@ -38,7 +38,14 @@ t0s('0','1') == 1;
 t0u(5,5) == 10;
 t0u('a','b') == 42;
 t0u('0','1') == 97;
-# Negative testing
+
+t2(-1, -1) == -2;
+t3(-255,-255) == -510;
+t4(10,20) == 30;
+t5('a',0) == 'a';
+t6(-1,-1) != 'b';
+t7('a',0) == 'a';
+t8(-1,-1) != 'b';# Negative testing
 
 # This test should fail, check what happens here
 # TODO Work on these ones
