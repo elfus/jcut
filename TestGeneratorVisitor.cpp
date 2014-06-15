@@ -135,6 +135,7 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	else if (returnedType->getTypeID() == Type::FloatTyID) {
 		i = createFloatComparison(ER->getComparisonOperator()->getType(), call, c);
 		mInstructions.push_back((llvm::Instruction*)i);
+		mReturnValue = i;
 	}
 	else
 		assert(false && "Unsupported type for comparison operator!");
