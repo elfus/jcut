@@ -64,7 +64,7 @@ public:
         TOK_IDENTIFIER = -4, // An identifier is a string representing a function or variable name
         TOK_EQ_OP = -5,
         TOK_INT = -6,
-        TOK_DOUBLE = -7, // Will handle floats too
+        TOK_FLOAT = -7, // Will handle floats too
         TOK_CHAR = -8,
         TOK_STRING = -9,
         TOK_BUFF_ALLOC = -10,
@@ -102,7 +102,7 @@ public:
 
     int getInteger() { return mInt; }
 
-    float getDouble() { return mDouble; }
+    float getFloat() { return mFloat; }
 
     string getBuffAlloc() { return mBuffAlloc;  }
 
@@ -120,7 +120,7 @@ private:
     string mFunction;
     char mEqOp;
     int mInt;
-    float mDouble;
+    float mFloat; /// @note WE may want to add more precision by using double
     string mBuffAlloc;
     string mTokStrValue;
     char mLastChar;

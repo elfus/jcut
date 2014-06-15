@@ -8,7 +8,7 @@ using namespace tp;
 int TestGroup::group_count = 0;
 
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
-mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mDouble(0.0),
+mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0),
 mBuffAlloc(""), mTokStrValue(""), mLastChar('\0')
 {
 	if (!mInput) {
@@ -137,11 +137,22 @@ int Tokenizer::nextToken()
 		while (isdigit((mLastChar = mInput.get()))) {
 			tokenStream << mLastChar;
 		}
-		mInput.putback(mLastChar);
-		tokenStream >> mInt;
-		mTokStrValue = tokenStream.str();
-		mIdType = ID_CONSTANT;
-		return mCurrentToken = TOK_INT;
+		if (mLastChar != '.') {
+			mInput.putback(mLastChar);
+			tokenStream >> mInt;
+			mTokStrValue = tokenStream.str();
+			mIdType = ID_CONSTANT;
+			return mCurrentToken = TOK_INT;
+		} else { // when equals to '.' it's floating type value
+			tokenStream << mLastChar;
+			while (isdigit((mLastChar = mInput.get()))) {
+				tokenStream << mLastChar;
+				tokenStream >> mFloat;
+				mTokStrValue = tokenStream.str();
+				mIdType = ID_CONSTANT;
+				return mCurrentToken = TOK_FLOAT;
+			}
+		}
 	}
 
 	//////
@@ -419,8 +430,8 @@ Constant* TestDriver::ParseConstant()
 	if (mCurrentToken == Tokenizer::TOK_INT)
 		C = new Constant(new NumericConstant(mTokenizer.getInteger()));
 	else
-    if(mCurrentToken == Tokenizer::TOK_DOUBLE)// @TODO Refactor name double to float
-		C = new Constant(new NumericConstant(mTokenizer.getDouble()));
+    if(mCurrentToken == Tokenizer::TOK_FLOAT)
+		C = new Constant(new NumericConstant(mTokenizer.getFloat()));
 	else
     if(mCurrentToken == Tokenizer::TOK_STRING)
 		C = new Constant(new StringConstant(mTokenizer.getTokenStringValue()));
