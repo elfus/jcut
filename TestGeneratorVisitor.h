@@ -113,6 +113,9 @@ private:
     void extractInitializerValues(llvm::GlobalVariable* global_struct,
                                   const StructInitializer* init,
                                   vector<llvm::Value*>* ndxs);
+
+    llvm::Value* createIntComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
+    llvm::Value* createFloatComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
 public:
     TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;

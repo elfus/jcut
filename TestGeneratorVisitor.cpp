@@ -111,7 +111,8 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
     if(call == nullptr)
         throw Exception("Invalid CallInst!");
 
-	if(call->getCalledFunction()->getReturnType()->getTypeID() == Type::TypeID::VoidTyID) {
+	Type* returnedType = call->getCalledFunction()->getReturnType();
+	if(returnedType->getTypeID() == Type::TypeID::VoidTyID) {
 		cerr<<"Warning: Trying compare a value against a function with no return value"<<endl;
 		return;
 	}
@@ -123,36 +124,23 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 
 	string InstName = "ComparisonInstruction";
     Value* i = nullptr;
-    switch(ER->getComparisonOperator()->getType()) {
-        case ComparisonOperator::EQUAL_TO:
-			i = mBuilder.CreateICmpEQ(call, c, InstName);
-            break;
-        case ComparisonOperator::NOT_EQUAL_TO:
-			i = mBuilder.CreateICmpNE(call, c, InstName);
-            break;
-        case ComparisonOperator::GREATER_OR_EQUAL:
-            i = mBuilder.CreateICmpSGE(call, c, InstName);
-            break;
-        case ComparisonOperator::LESS_OR_EQUAL:
-            i = mBuilder.CreateICmpSLE(call, c, InstName);
-            break;
-        case ComparisonOperator::GREATER:
-            i = mBuilder.CreateICmpSGT(call, c, InstName);
-            break;
-        case ComparisonOperator::LESS:
-            i = mBuilder.CreateICmpSLT(call, c, InstName);
-            break;
-        case ComparisonOperator::INVALID:
-            break;
-    }
-
-    mInstructions.push_back((llvm::Instruction*)i);
-    // Convert the i1 integer to a i32 integer
-    llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,c->getType());
-    mInstructions.push_back(zext);
-    mReturnValue = zext;
+	if (returnedType->getTypeID() == Type::IntegerTyID) {
+		i = createIntComparison(ER->getComparisonOperator()->getType(), call, c);
+		mInstructions.push_back((llvm::Instruction*)i);
+		// Convert the i1 integer to a i32 integer
+		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,c->getType());
+		mInstructions.push_back(zext);
+		mReturnValue = zext;
+	}
+	else if (returnedType->getTypeID() == Type::FloatTyID) {
+		i = createFloatComparison(ER->getComparisonOperator()->getType(), call, c);
+		mInstructions.push_back((llvm::Instruction*)i);
+	}
+	else
+		assert(false && "Unsupported type for comparison operator!");
 }
 
+/// @todo @bug Add support for comparing float types
 void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 {
 	Operand* LHS = EE->getLHSOperand();
@@ -348,6 +336,9 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 			return cast<Value>(mBuilder.getInt(APInt(intType->getBitWidth(), real_value, 10)));
 		break;
 	case Type::TypeID::FloatTyID:
+	{
+		return ConstantFP::get(type,real_value);
+	}
 		break;
 	case Type::TypeID::PointerTyID:
 		if (PointerType * ptrType = dyn_cast<PointerType>(type)) {
@@ -510,6 +501,52 @@ void TestGeneratorVisitor::extractInitializerValues(GlobalVariable* global_struc
 			cout << endl;
 		}
 	}
+}
+
+Value* TestGeneratorVisitor::createIntComparison(ComparisonOperator::Type type,
+										llvm::Value* LHS, llvm::Value* RHS)
+{
+	string InstName = "IntComparison";
+	switch(type) {
+        case ComparisonOperator::EQUAL_TO:
+			return mBuilder.CreateICmpEQ(LHS, RHS, InstName);
+        case ComparisonOperator::NOT_EQUAL_TO:
+			return mBuilder.CreateICmpNE(LHS, RHS, InstName);
+        case ComparisonOperator::GREATER_OR_EQUAL:
+			return mBuilder.CreateICmpSGE(LHS, RHS, InstName);
+        case ComparisonOperator::LESS_OR_EQUAL:
+			return mBuilder.CreateICmpSLE(LHS, RHS, InstName);
+        case ComparisonOperator::GREATER:
+			return mBuilder.CreateICmpSGT(LHS, RHS, InstName);
+        case ComparisonOperator::LESS:
+			return mBuilder.CreateICmpSLT(LHS, RHS, InstName);
+        case ComparisonOperator::INVALID:
+			return nullptr;
+    }
+	return nullptr;
+}
+
+Value* TestGeneratorVisitor::createFloatComparison(ComparisonOperator::Type type,
+										llvm::Value* LHS, llvm::Value* RHS)
+{
+	string InstName = "FloatComparison";
+	switch(type) {
+        case ComparisonOperator::EQUAL_TO:
+			return mBuilder.CreateFCmpOEQ(LHS, RHS, InstName);
+        case ComparisonOperator::NOT_EQUAL_TO:
+			return mBuilder.CreateFCmpONE(LHS, RHS, InstName);
+        case ComparisonOperator::GREATER_OR_EQUAL:
+			return mBuilder.CreateFCmpOGE(LHS, RHS, InstName);
+        case ComparisonOperator::LESS_OR_EQUAL:
+			return mBuilder.CreateFCmpOLE(LHS, RHS, InstName);
+        case ComparisonOperator::GREATER:
+			return mBuilder.CreateFCmpOGT(LHS, RHS, InstName);
+        case ComparisonOperator::LESS:
+			return mBuilder.CreateFCmpOLT(LHS, RHS, InstName);
+        case ComparisonOperator::INVALID:
+			return nullptr;
+    }
+	return nullptr;
 }
 
 
