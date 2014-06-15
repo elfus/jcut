@@ -131,20 +131,19 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
     Value* i = nullptr;
 	if (returnedType->getTypeID() == Type::IntegerTyID) {
 		i = createIntComparison(ER->getComparisonOperator()->getType(), call, c);
-		mInstructions.push_back((llvm::Instruction*)i);
-		// Convert the i1 integer to a i32 integer
-		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,c->getType());
-		mInstructions.push_back(zext);
-		mReturnValue = zext;
 	}
 	else if (returnedType->getTypeID() == Type::FloatTyID or
 			returnedType->getTypeID() == Type::DoubleTyID) {
 		i = createFloatComparison(ER->getComparisonOperator()->getType(), call, c);
-		mInstructions.push_back((llvm::Instruction*)i);
-		mReturnValue = i;
 	}
 	else
 		assert(false && "Unsupported type for comparison operator!");
+
+	mInstructions.push_back((llvm::Instruction*)i);
+	// convert an i1 type to an i32 type for proper comparison to bool.
+	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());
+	mInstructions.push_back(zext);
+	mReturnValue = zext;
 }
 
 /// @todo @bug Add support for comparing float types
