@@ -260,6 +260,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	// TODO: Handle the rest of token types
 	switch (tokenType) {
 		case Tokenizer::TOK_INT:
+		case Tokenizer::TOK_FLOAT:
 		{
 			// Watch for the real type of a global variable, there might be a @bug
 			Value * v = createValue(global_variable->getType()->getPointerElementType(), real_value);
