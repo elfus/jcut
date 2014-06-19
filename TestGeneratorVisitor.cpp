@@ -124,15 +124,11 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 
 	if(EC->isNumericConstant()) {
-		if(EC->getNumericConstant()->isInt()) {
-			int tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getInt();//workaround, convert int to string
-			ss << tmp;
-		} else if(EC->getNumericConstant()->isFloat()) {
-			float tmp = ER->getExpectedConstant()->getConstant()->getNumericConstant()->getFloat();
-			ss << tmp;
-		}
+		ss << ER->getExpectedConstant()->getConstant()->getAsStr();
+		assert(ss.str().size() && "Invalid numeric string!");
 	}
-	llvm::Value* c = createValue(call->getType(), ss.str());
+
+	llvm::Value* c = createValue(returnedType, ss.str());
 
 	string InstName = "ComparisonInstruction";
     Value* i = nullptr;
@@ -146,6 +142,7 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	else
 		assert(false && "Unsupported type for comparison operator!");
 
+	assert(i && "Invalid comparison instruction");
 	mInstructions.push_back((llvm::Instruction*)i);
 	// convert an i1 type to an i32 type for proper comparison to bool.
 	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());
@@ -358,16 +355,27 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 			return cast<Value>(mBuilder.getInt(APInt(intType->getBitWidth(), value, 10)));
 	}
 		break;
+	// Even though this might look a repeated case like DoubleTyID, I will just
+	// leave it here to remember that I need to do more research on how LLVM API
+	// handles floating point values
 	case Type::TypeID::FloatTyID:
+	{
+		llvm::Constant* c = ConstantFP::get(type, real_value);
+		return c;
+	}
+		break;
 	case Type::TypeID::DoubleTyID:
 	{
-		return ConstantFP::get(type,real_value);
+		llvm::Constant* c = ConstantFP::get(type, real_value);
+		return c;
 	}
 		break;
 	case Type::TypeID::PointerTyID:
 		if (PointerType * ptrType = dyn_cast<PointerType>(type)) {
 			return ConstantPointerNull::get(ptrType);
 		}
+	case Type::TypeID::VoidTyID:
+		assert(false && "Cannot create a void value!");
 	default:
 		return nullptr;
 	}
