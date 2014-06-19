@@ -62,6 +62,9 @@ Group F - Pointers type:
 		4. Pointers to functions
 		5. Pointers to pointers.
 		6. Check values for output arguments in after statement
+		7. Create global variables that are pointers
+		8. Create global variables that are pointers to pointers
+		9. Create global variables that are pointers to functions.
 
 Group G - Structures:
 	  Tests:
