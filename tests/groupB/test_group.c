@@ -27,7 +27,6 @@ void print_gvar()
 }
 
 float getgfloat() {
-	gfloat = 5;
 	return gfloat;
 }
 

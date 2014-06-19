@@ -13,9 +13,10 @@ before {
     gdouble = 2.52340;
     print_gvar();
 }
-getgfloat() > 3.141;
-after { gdouble >= 2.0; } # printing the value of gfloat is 5.00 debug later
+getgfloat() == 3.141592;
+after { gdouble == 2.52340; print_gvar(); }
 
 print_gvar();
 
+# Improve the test implementation here.
 
