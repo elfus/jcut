@@ -441,7 +441,10 @@ Constant* TestDriver::ParseConstant()
 		C = new Constant(new CharConstant(mTokenizer.getTokenStringValue()[0]));
 	else
 		throw Exception("Expected a Constant but received token " + mTokenizer.getTokenStringValue());
-
+	// This is a workaround for float and double values. Let LLVM do the work
+	// on what type of precision to choose, we will just pass a string representing
+	// the floating point value.
+	C->setAsStr(mTokenizer.getTokenStringValue());
 	mCurrentToken = mTokenizer.nextToken(); // Consume the constant
 	return C;
 }

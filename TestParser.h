@@ -35,7 +35,7 @@ public:
     void setLLVMFunction(llvm::Function* f) { mFunction = f; }
     llvm::Function* getLLVMFunction() const { return mFunction; }
     void setReturnValue(llvm::GenericValue GV) { mReturnValue = GV; }
-    llvm::GenericValue getReturnValue () const { return mReturnValue; }
+    const llvm::GenericValue& getReturnValue () const { return mReturnValue; }
     string getGroupName() const { return mGroupName; }
     void setGroupName(const string& name) { mGroupName = name; }
 };
@@ -187,29 +187,26 @@ private:
 
 class NumericConstant : public TestExpr{
 private:
-    union {
-        int ic;
-        float fc;
-    } mNC;
+    int mIC;
+    float mFC;
     bool mIsInt;
 public:
-    explicit NumericConstant(int i) : mIsInt(true) {
-        mNC.ic = i;
-    }
-    explicit NumericConstant(float f) : mIsInt(false) {
-        mNC.fc = f;
-    }
+    explicit NumericConstant(int i) : mIC(i), mFC(0), mIsInt(true) { }
+    explicit NumericConstant(float f) : mIC(0), mFC(f), mIsInt(false) { }
     ~NumericConstant() {}
 
     void dump() {
-        cout << "int = " << mNC.ic << ", float = " << mNC.fc;
+        if (isInt())
+            cout << "int = " << mIC;
+        if (isFloat())
+            cout << "float = " << mFC;
     }
     void accept(Visitor* v) {
         v->VisitNumericConstant(this);
     }
 
-    int getInt() const { return mNC.ic; }
-    float getFloat() const { return mNC.fc; }
+    int getInt() const { return mIC; }
+    float getFloat() const { return mFC; }
     bool isInt() const { return mIsInt; }
     bool isFloat() const { return !mIsInt; }
 };
@@ -258,6 +255,7 @@ private:
     StringConstant* mSC;
     CharConstant* mCC;
     Type    mType;
+    string mStr; // String representation of this constant regardless its type
 public:
     Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr), mType(NUMERIC) {}
     Constant(StringConstant *C) : mNC(nullptr), mSC(C), mCC(nullptr), mType(STRING) {}
@@ -295,6 +293,9 @@ public:
     NumericConstant* getNumericConstant() const { return mNC; }
 
     Type getType() const { return mType; }
+
+    string getAsStr() const { return mStr; }
+    void setAsStr(const string& str) { mStr = str; }
 };
 
 class Identifier : public TestExpr {
