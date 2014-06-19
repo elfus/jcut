@@ -137,6 +137,8 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 	else if (returnedType->getTypeID() == Type::FloatTyID or
 			returnedType->getTypeID() == Type::DoubleTyID) {
+		call->dump();
+		c->dump();
 		i = createFloatComparison(ER->getComparisonOperator()->getType(), call, c);
 	}
 	else
@@ -176,7 +178,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	if (LHS->isConstant()) {
 		if (R != nullptr) {
 			stringstream ss;
-			ss <<  LHS->getConstant()->getValue();
+			ss <<  LHS->getConstant()->getAsStr();
 			L = createValue(R->getType(),ss.str());
 		}
 	}
@@ -184,35 +186,26 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	if (RHS->isConstant()) {
 		if (L != nullptr) {
 			stringstream ss;
-			ss <<  RHS->getConstant()->getValue();
+			ss <<  RHS->getConstant()->getAsStr();
 			R = createValue(L->getType(),ss.str());
 		}
 	}
 
 	string InstName = "ExpExprComp";
 	Value* i = nullptr;
-    switch(CO->getType()) {
-        case ComparisonOperator::EQUAL_TO:
-			i = mBuilder.CreateICmpEQ(L, R, InstName);
-            break;
-        case ComparisonOperator::NOT_EQUAL_TO:
-			i = mBuilder.CreateICmpNE(L, R, InstName);
-            break;
-        case ComparisonOperator::GREATER_OR_EQUAL:
-            i = mBuilder.CreateICmpSGE(L, R, InstName);
-            break;
-        case ComparisonOperator::LESS_OR_EQUAL:
-            i = mBuilder.CreateICmpSLE(L, R, InstName);
-            break;
-        case ComparisonOperator::GREATER:
-            i = mBuilder.CreateICmpSGT(L, R, InstName);
-            break;
-        case ComparisonOperator::LESS:
-            i = mBuilder.CreateICmpSLT(L, R, InstName);
-            break;
-        case ComparisonOperator::INVALID:
-            break;
-    }
+    switch(L->getType()->getTypeID()) {
+		case Type::IntegerTyID:
+			i = createIntComparison(CO->getType(),L,R);
+			break;
+		case Type::FloatTyID:
+			i = createFloatComparison(CO->getType(),L,R);
+			break;
+		case Type::DoubleTyID:
+			i = createFloatComparison(CO->getType(),L,R);
+			break;
+		default:
+			assert(false && "Invalid case not supported");
+	}
 	assert(i && "Invalid ComparisonOperator");
 
 	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mReturnValue->getType());

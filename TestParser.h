@@ -278,6 +278,7 @@ public:
         v->VisitConstant(this);
     }
 
+    // @deprecated do not use
     int getValue() const {
         // @bug remove mNC->getInt()
         if(mNC) return mNC->getInt();
