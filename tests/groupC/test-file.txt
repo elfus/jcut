@@ -1,0 +1,122 @@
+before_all {
+    gchar = 1;
+    guchar = 2;
+    gshort = 3;
+    gushort = 4;
+    gint = 5;
+    guint = 6;
+    glint = 7;
+    gulint = 8;
+	gfloat = 3.141592;
+    gdouble = 2.52340;
+}
+# bug when we have before_all bot not after_all @todo fix it!
+after_all {
+    gchar = 1;
+    guchar = 2;
+    gshort = 3;
+    gushort = 4;
+    gint = 5;
+    guint = 6;
+    glint = 7;
+    gulint = 8;
+	gfloat = 3.141592;
+    gdouble = 2.52340;
+}
+
+print_gvar();
+
+before { gchar = 255; }
+getgchar() == 255;
+after { gchar == 255; }
+
+before { guchar = -1; }
+getguchar() == -1;
+after { guchar == -1; }
+
+before { gshort = 998877; }
+getgshort() == 998877;
+after { gshort == 998877; }
+
+before { gushort = 12345; }
+getgushort() == 12345;
+after { gushort == 12345; }
+
+before { gint = 65000; }
+getgint() == 65000;
+after { gint == 65000; }
+
+before { guint = -77777; }
+getguint() == -77777;
+after { guint == -77777; }
+
+before { glint = -123456789; }
+getglint() == -123456789;
+after { glint == -123456789; }
+
+before { gulint = -123456789; }
+getgulint() == -123456789;
+after { gulint == -123456789; }
+
+before { gfloat = 3.14159212345; }
+getgfloat() == 3.14159212345;
+after { gfloat == 3.14159212345; }
+
+before { gdouble = 2.52349876; }
+getgdouble() == 2.52349876;
+after { gdouble == 2.52349876; }
+
+
+before {
+    gchar = 0;
+    guchar = 0;
+    gshort = 0;
+    gushort = 0;
+    gint = 0;
+    guint = 0;
+    glint = 0;
+    gulint = 0;
+	gfloat = 0;
+    gdouble = 0;
+}
+print_gvar();
+after {
+    gchar == 0;
+    guchar == 0;
+    gshort == 0;
+    gushort == 0;
+    gint == 0;
+    guint == 0;
+    glint == 0;
+    gulint == 0;
+	gfloat == 0;
+    gdouble == 0;
+}
+
+getgchar() == 1;
+getguchar() == 2;
+getgshort() == 3;
+getgushort() == 4;
+getgint() == 5;
+getguint() == 6;
+getglint() == 7;
+getgulint() == 8;
+getgfloat() == 3.141592;
+getgdouble() == 2.52340;
+
+print_gvar();
+after {
+    gchar == 1;
+    guchar == 2;
+    gshort == 3;
+    gushort == 4;
+    gint == 5;
+    guint == 6;
+    glint == 7;
+    gulint == 8;
+	gfloat == 3.141592;
+    gdouble == 2.52340;
+}
+
+# Todo add a test by calling functions in the after statement and comparing its
+# return value
