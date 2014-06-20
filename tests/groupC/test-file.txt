@@ -12,16 +12,16 @@ before_all {
 }
 # bug when we have before_all bot not after_all @todo fix it!
 after_all {
-    gchar = 1;
-    guchar = 2;
-    gshort = 3;
-    gushort = 4;
-    gint = 5;
-    guint = 6;
-    glint = 7;
-    gulint = 8;
-	gfloat = 3.141592;
-    gdouble = 2.52340;
+    gchar == 1;
+    guchar == 2;
+    gshort == 3;
+    gushort == 4;
+    gint == 5;
+    guint == 6;
+    glint == 7;
+    gulint == 8;
+	gfloat == 3.141592;
+    gdouble == 2.52340;
 }
 
 print_gvar();
