@@ -91,6 +91,9 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 {
 	string func_name = FC->getIdentifier()->getIdentifierStr();
 	Function *funcToBeCalled = mModule->getFunction(func_name);
+	if( funcToBeCalled == nullptr) {
+		cout << "Function not found!: " << func_name << endl;
+	}
 	assert(funcToBeCalled != nullptr && "Function not found!");
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
