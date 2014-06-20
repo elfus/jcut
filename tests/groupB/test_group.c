@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 char gchar;
-unsigned guchar;
+unsigned char guchar;
 short gshort;
 unsigned short gushort;
 int gint;
@@ -26,10 +26,13 @@ void print_gvar()
 	printf("gdouble = %f\n",gdouble);
 }
 
-float getgfloat() {
-	return gfloat;
-}
-
-double getdouble() {
-	return gdouble;
-}
+char getgchar() { return gchar; }
+unsigned char getguchar() { return guchar; }
+short getgshort() { return gshort; }
+unsigned short getgushort() { return gushort; }
+int getgint() { return gint; }
+unsigned int getguint() { return guint; }
+long int getglint() { return glint; }
+unsigned long int getgulint() { return gulint; }
+float getgfloat() {	return gfloat; }
+double getgdouble() { return gdouble; }
