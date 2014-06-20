@@ -211,15 +211,28 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	}
 	assert(i && "Invalid ComparisonOperator");
 
-	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mReturnValue->getType());
-	llvm::Value* mainBool = mBuilder.CreateICmpEQ(mReturnValue, zext);
-	llvm::ZExtInst* zext2 = (llvm::ZExtInst*) mBuilder.CreateZExt(mainBool,mReturnValue->getType());
+	// It means this is an ExpectedExpression in a unit test (NOT in GlobalTeardown)
+	if(mReturnValue != nullptr) {
+		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mReturnValue->getType());
+		// We perform this comparison for the cases in which we called a unit test
+		// (function) and we use its return value to chain it with the rest of
+		// comparisons. For the global teardown this does not apply and we should
+		// avoid creating these.
+		llvm::Value* mainBool = mBuilder.CreateICmpEQ(mReturnValue, zext);
+		llvm::ZExtInst* zext2 = (llvm::ZExtInst*) mBuilder.CreateZExt(mainBool,mReturnValue->getType());
 
-	mInstructions.push_back((llvm::Instruction*)i);
-	mInstructions.push_back(zext);
-    mInstructions.push_back((llvm::Instruction*)mainBool);
-	mInstructions.push_back(zext2);
-	mReturnValue = zext2;
+		mInstructions.push_back((llvm::Instruction*)i);
+		mInstructions.push_back(zext);
+		mInstructions.push_back((llvm::Instruction*)mainBool);
+		mInstructions.push_back(zext2);
+		mReturnValue = zext2;
+	} else {
+		// It means we are in a GlobalTeardown or GlobalSetup
+		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());// We know we always return int32
+		mInstructions.push_back((llvm::Instruction*)i);
+		mInstructions.push_back(zext);
+		mReturnValue = zext;
+	}
 }
 
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
@@ -298,15 +311,15 @@ void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
 	string func_name = "setup_"+GS->getGroupName();
 	saveGlobalVariables();
-	Function *testFunction = generateFunction(func_name);
+	Function *testFunction = generateFunction(func_name, true);
 	GS->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
-	string func_name = "teardown_"+GT->getGroupName();
+	string func_name = "global_teardown_"+GT->getGroupName();
 	restoreGlobalVariables();
-	Function *testFunction = generateFunction(func_name);
+	Function *testFunction = generateFunction(func_name, true);
 	GT->setLLVMFunction(testFunction);
 }
 
@@ -316,9 +329,10 @@ void TestGeneratorVisitor::VisitTestGroup(TestGroup *TG)
 	GlobalTeardown* GT = TG->getGlobalTeardown();
 	// Restore the global variables of this group only if there is a GlobalSetup
 	// and no GlobalTeardown was provided
+	// @bug What happens when we have a GlobalTeardown only?
 	if (nullptr == GT && nullptr != GS) {
 		GT = new GlobalTeardown();
-		string func_name = "teardown_"+TG->getGroupName();
+		string func_name = "group_teardown_"+TG->getGroupName();
 		restoreGlobalVariables();
 		Function *testFunction = generateFunction(func_name);
 		GT->setLLVMFunction(testFunction);
@@ -397,8 +411,11 @@ llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
 	}
 
 	ReturnInst *ret = nullptr;
-	if(use_mReturnValue)
+	if(use_mReturnValue && mReturnValue) {
 		ret = mBuilder.CreateRet(mReturnValue);
+	}
+	else if(use_mReturnValue && mReturnValue==nullptr)
+		ret = mBuilder.CreateRet(mBuilder.getInt32(1));// the setup/teardown passed
 	else
 		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
 
@@ -411,6 +428,7 @@ llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
 	mInstructions.clear();
 	mBackup.clear();
 	mBuilder.ClearInsertionPoint();
+	mReturnValue = nullptr;
 
 	return function;
 }
