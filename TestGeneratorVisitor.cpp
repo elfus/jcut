@@ -36,6 +36,10 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 	FunctionCall* parent = arg->getParent();
 	string func_name = parent->getIdentifier()->getIdentifierStr();
 	llvm::Function *currentFunction = mModule->getFunction(func_name);
+	if( currentFunction == nullptr) {
+		cout << "Function not found!: " << func_name << endl;
+	}
+	assert(currentFunction != nullptr && "Function not found!");
 	llvm::Function::arg_iterator arg_it = currentFunction->arg_begin();
 
 	unsigned i = 0;
