@@ -616,32 +616,96 @@ public:
     ComparisonOperator* getComparisonOperator() const { return mCO; }
 };
 
+class BufferAlloc : public TestExpr {
+private:
+    string StringRepresentation;
+    string BufferSize;
+    string DefaultValue;
+    unsigned mIntBuffSize;
+    int mIntDefaultValue;
+public:
+
+    BufferAlloc(const string& str) : StringRepresentation(str) ,
+            BufferSize("1"), DefaultValue("0"),
+            mIntBuffSize(1), mIntDefaultValue(0) {
+        if(StringRepresentation[0] != '[' or StringRepresentation.back() != ']')
+            throw Exception("Malformed buffer allocation");
+
+        size_t pos = StringRepresentation.find(":");
+        if(pos == string::npos) {
+            pos = StringRepresentation.find("]");
+            BufferSize = StringRepresentation.substr(1,pos-1);
+
+        } else {
+            BufferSize = StringRepresentation.substr(1,pos-1);
+            size_t pos2 = StringRepresentation.find("]");
+            DefaultValue = StringRepresentation.substr(pos+1,pos2-pos-1);
+        }
+        stringstream ss1;
+        ss1 << BufferSize;
+        ss1 >> mIntBuffSize;
+        stringstream ss2;
+        ss2 << DefaultValue;
+        ss2 >> mIntDefaultValue;
+    }
+
+    ~BufferAlloc() { }
+
+
+    string getBufferSizeAsString() const { return BufferSize; }
+    string getDefaultValueAsString() const { return DefaultValue; }
+    unsigned getBufferSize() const { return mIntBuffSize; }
+    int getDefaultValue() const { return mIntDefaultValue; }
+
+    void dump() {
+        cout << StringRepresentation;
+    }
+
+    void accept(Visitor *v) {
+        v->VisitBufferAlloc(this); // Doesn't have any children
+    }
+};
+
 class VariableAssignment : public TestExpr {
 private:
     Identifier *mIdentifier;
     Argument *mArgument;
     StructInitializer *mStructInitializer;
+    BufferAlloc *mBufferAlloc;
 public:
 
-    VariableAssignment(Identifier *id, Argument *arg) :
-    mIdentifier(id), mArgument(arg), mStructInitializer(nullptr) {  }
+    explicit VariableAssignment(Identifier *id, Argument *arg) :
+    mIdentifier(id), mArgument(arg), mStructInitializer(nullptr), mBufferAlloc(nullptr) {  }
 
-    VariableAssignment(Identifier *id, StructInitializer *arg) :
-    mIdentifier(id), mArgument(nullptr), mStructInitializer(arg) {  }
+    explicit  VariableAssignment(Identifier *id, StructInitializer *arg) :
+    mIdentifier(id), mArgument(nullptr), mStructInitializer(arg), mBufferAlloc(nullptr) {  }
+
+    explicit VariableAssignment(Identifier *id, BufferAlloc *ba) :
+    mIdentifier(id), mArgument(nullptr), mStructInitializer(nullptr), mBufferAlloc(ba) { }
 
     ~VariableAssignment() {
         delete mIdentifier;
         if (mArgument) delete mArgument;
         if (mStructInitializer) delete mStructInitializer;
+        if (mBufferAlloc) delete mBufferAlloc;
     }
 
     Identifier* getIdentifier() const { return mIdentifier; }
     Argument* getArgument() const { return mArgument; }
     StructInitializer* getStructInitializer() const { return mStructInitializer; }
+    BufferAlloc* getBufferAlloc() const { return mBufferAlloc; }
+
+    bool isArgument() const { return (mArgument) ? true : false; }
+    bool isStructInitializer() const { return (mStructInitializer) ? true : false; }
+    bool isBufferAlloc() const { return (mBufferAlloc) ? true : false; }
     Tokenizer::Token getTokenType() const {
         if (mArgument)
             return mArgument->getTokenType();
-        return Tokenizer::TOK_STRUCT_INIT;
+        if (mBufferAlloc)
+            return Tokenizer::TOK_BUFF_ALLOC;
+        if (mStructInitializer)
+            return Tokenizer::TOK_STRUCT_INIT;
+        return Tokenizer::TOK_ERR;
     }
 
     void dump() {
@@ -649,12 +713,14 @@ public:
         cout << " = ";
         if (mArgument) mArgument->dump();
         if (mStructInitializer) mStructInitializer->dump();
+        if (mBufferAlloc) mBufferAlloc->dump();
     }
 
     void accept(Visitor *v){
         mIdentifier->accept(v);
         if (mArgument) mArgument->accept(v);
         if (mStructInitializer) mStructInitializer->accept(v);
+        if (mBufferAlloc) mBufferAlloc->accept(v);
         v->VisitVariableAssignment(this);
     }
 };
@@ -1190,56 +1256,6 @@ public:
     void accept(Visitor *v) {
         mUnitTest->accept(v);
         v->VisitTestFile(this);
-    }
-};
-
-class BufferAlloc : public TestExpr {
-private:
-    string StringRepresentation;
-    string BufferSize;
-    string DefaultValue;
-    unsigned mIntBuffSize;
-    int mIntDefaultValue;
-public:
-
-    BufferAlloc(const string& str) : StringRepresentation(str) ,
-            BufferSize("1"), DefaultValue("0"),
-            mIntBuffSize(1), mIntDefaultValue(0) {
-        if(StringRepresentation[0] != '[' or StringRepresentation.back() != ']')
-            throw Exception("Malformed buffer allocation");
-
-        size_t pos = StringRepresentation.find(":");
-        if(pos == string::npos) {
-            pos = StringRepresentation.find("]");
-            BufferSize = StringRepresentation.substr(1,pos-1);
-
-        } else {
-            BufferSize = StringRepresentation.substr(1,pos-1);
-            size_t pos2 = StringRepresentation.find("]");
-            DefaultValue = StringRepresentation.substr(pos+1,pos2-pos-1);
-        }
-        stringstream ss1;
-        ss1 << BufferSize;
-        ss1 >> mIntBuffSize;
-        stringstream ss2;
-        ss2 << DefaultValue;
-        ss2 >> mIntDefaultValue;
-    }
-
-    ~BufferAlloc() { }
-
-
-    string getBufferSizeAsString() const { return BufferSize; }
-    string getDefaultValueAsString() const { return DefaultValue; }
-    unsigned getBufferSize() const { return mIntBuffSize; }
-    int getDefaultValue() const { return mIntDefaultValue; }
-
-    void dump() {
-        cout << StringRepresentation;
-    }
-
-    void accept(Visitor *v) {
-        v->VisitBufferAlloc(this); // Doesn't have any children
     }
 };
 

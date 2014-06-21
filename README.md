@@ -63,7 +63,7 @@ Test File Grammar
 <comparison-operator> := "==" | "!=" | ">=" | "<=" | "<" | ">"
 
 # Until here
-<var-assignment> := <identifier> = <argument> | <struct-initializer>
+<var-assignment> := <identifier> = <argument> | <struct-initializer> | <buffer-alloc>
 
 <function-call> := <function-name>"(" <function-argument>* ")"
 

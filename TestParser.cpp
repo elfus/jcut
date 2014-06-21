@@ -361,6 +361,11 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 		return new VariableAssignment(identifier, struct_init);
 	}
 
+	if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
+		BufferAlloc* ba = ParseBufferAlloc();
+		return new VariableAssignment(identifier, ba);
+	}
+
 	Argument *arg = ParseArgument();
 	return new VariableAssignment(identifier, arg);
 }
