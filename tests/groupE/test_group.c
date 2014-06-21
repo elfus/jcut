@@ -132,3 +132,27 @@ void reverse_buffer(void *buf, unsigned size) {
 	printf("AFTER\n");
 	print_buffer(buf,size);
 }
+#include <stdlib.h>
+//testing with global pointers
+int* gptr_int = 0;
+int gint = 0;
+
+void print_gptr_int() {
+	printf("%p (0x%x)\n",gptr_int,(unsigned)gptr_int);
+}
+
+unsigned get_gptr_adrr() {
+	return (unsigned)gptr_int;
+}
+
+int math_gptr_int() {
+	if (gptr_int) {
+		printf("%s: Valid pointer!\n",__func__);
+		do_math(gptr_int);
+		return 0;
+	} else {
+		printf("%s: Invalid pointer!\n",__func__);
+	}
+	printf("Returning 1\n");
+	return 1;
+}

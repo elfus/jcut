@@ -40,3 +40,21 @@ is_initialized([256:0], 256, 0) == 0;
 is_initialized([256:0], 256, 10) == 1;
 
 reverse_buffer([10],10) == 0;
+
+print_gptr_int();
+
+math_gptr_int() == 1;
+
+before { gptr_int = [1]; }
+math_gptr_int() == 0;
+after { gptr_int != 0; }
+
+before { gptr_int = [1]; }
+get_gptr_adrr() != 0;
+after { gptr_int != 0; }
+
+get_gptr_adrr() == 0;
+
+get_gptr_adrr() == 0;
+after { gptr_int = [1]; gptr_int != 0; }
+
