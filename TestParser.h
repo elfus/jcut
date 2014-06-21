@@ -1198,10 +1198,13 @@ private:
     string StringRepresentation;
     string BufferSize;
     string DefaultValue;
+    unsigned mIntBuffSize;
+    int mIntDefaultValue;
 public:
 
     BufferAlloc(const string& str) : StringRepresentation(str) ,
-            BufferSize("1"), DefaultValue("0"){
+            BufferSize("1"), DefaultValue("0"),
+            mIntBuffSize(1), mIntDefaultValue(0) {
         if(StringRepresentation[0] != '[' or StringRepresentation.back() != ']')
             throw Exception("Malformed buffer allocation");
 
@@ -1209,18 +1212,27 @@ public:
         if(pos == string::npos) {
             pos = StringRepresentation.find("]");
             BufferSize = StringRepresentation.substr(1,pos-1);
+
         } else {
             BufferSize = StringRepresentation.substr(1,pos-1);
             size_t pos2 = StringRepresentation.find("]");
             DefaultValue = StringRepresentation.substr(pos+1,pos2-pos-1);
         }
+        stringstream ss1;
+        ss1 << BufferSize;
+        ss1 >> mIntBuffSize;
+        stringstream ss2;
+        ss2 << DefaultValue;
+        ss2 >> mIntDefaultValue;
     }
 
     ~BufferAlloc() { }
 
 
-    string getBufferSize() const { return BufferSize; }
-    string getDefaultValue() const { return DefaultValue; }
+    string getBufferSizeAsString() const { return BufferSize; }
+    string getDefaultValueAsString() const { return DefaultValue; }
+    unsigned getBufferSize() const { return mIntBuffSize; }
+    int getDefaultValue() const { return mIntDefaultValue; }
 
     void dump() {
         cout << StringRepresentation;

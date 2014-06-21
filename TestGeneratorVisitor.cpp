@@ -48,20 +48,31 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 				assert(ba != nullptr && "Invalid BufferAlloc pointer");
 				AllocaInst *alloc1 = mBuilder.CreateAlloca(
 						llvm_arg.getType()->getPointerElementType(),
-						mBuilder.getInt(APInt(32, ba->getBufferSize(), 10))
+						mBuilder.getInt(APInt(32, ba->getBufferSizeAsString(), 10))
 						); // Allocate memory for the element type pointed to
 
-				Value *v = createValue(llvm_arg.getType()->getPointerElementType(), ba->getDefaultValue());
-				StoreInst *store1 = mBuilder.CreateStore(v, alloc1);
+				mInstructions.push_back(alloc1);
+
+				Value *v = createValue(llvm_arg.getType()->getPointerElementType(), ba->getDefaultValueAsString());
+				// Initialize the whole buffer to the default value
+				// at the momento I didn't come up with a better idea other than
+				// iterate over the whole buffer.
+				for(unsigned i = 0; i < ba->getBufferSize(); i++) {
+					Value* gep =
+						mBuilder.CreateGEP(alloc1,
+						mBuilder.getInt32(i),
+						Twine("array_"+i));
+					mInstructions.push_back(static_cast<llvm::Instruction*>(gep));
+					StoreInst *S = mBuilder.CreateStore(v, gep);
+					mInstructions.push_back(S);
+				}
+				/////
 
 				// Allocate memory for a pointer type
 				AllocaInst *alloc2 = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "AllocPtr" + Twine(i)); // Allocate a pointer type
-				alloc2->setAlignment(8);
 				StoreInst *store2 = mBuilder.CreateStore(alloc1, alloc2); // Store an already allocated variable address to our pointer
 				LoadInst *load = mBuilder.CreateLoad(alloc2, "value3"); // Load whatever address is in alloc3 into load3 'value3'
 
-				mInstructions.push_back(alloc1);
-				mInstructions.push_back(store1);
 				mInstructions.push_back(alloc2);
 				mInstructions.push_back(store2);
 				mInstructions.push_back(load);
