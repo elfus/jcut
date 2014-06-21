@@ -41,6 +41,7 @@ is_initialized([256:0], 256, 10) == 1;
 
 reverse_buffer([10],10) == 0;
 
+# These test global pointers (normal pointers)
 print_gptr_int();
 
 math_gptr_int() == 1;
@@ -58,3 +59,20 @@ get_gptr_adrr() == 0;
 get_gptr_adrr() == 0;
 after { gptr_int = [1]; gptr_int != 0; }
 
+# pointers to pointers
+get_gpp_addr() == 0;
+
+before { gpp_int = [1]; }
+get_gpp_addr() != 0;
+
+math_gpp_int() == 1;
+
+math_gpp_int() == 1;
+after { gpp_int == 0; }
+
+before { gpp_int = [1]; }
+math_gpp_int() == 0;
+after { gpp_int != 0; }
+
+math_gpp_int() == 1;
+after { gpp_int = [1]; gpp_int != 0; }

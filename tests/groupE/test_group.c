@@ -16,9 +16,13 @@ void print_bfr(void *b, unsigned size)
 }
 
 void do_cmath(char *x) {
-  printf("%s: X before: %d\n",__func__,*x);
-  *x += 5;
-  printf("%s: X after: %d\n",__func__,*x);
+	printf("%s: X = %p\n", __func__, x);
+	if (x) {
+		printf("%s: X before: %d\n",__func__,*x);
+		*x += 5;
+		printf("%s: X after: %d\n",__func__,*x);
+	} else
+		printf("%s: Invalid pointer to do math!\n",__func__);
 }
 
 void do_math(int *x) {
@@ -132,10 +136,10 @@ void reverse_buffer(void *buf, unsigned size) {
 	printf("AFTER\n");
 	print_buffer(buf,size);
 }
-#include <stdlib.h>
 //testing with global pointers
 int* gptr_int = 0;
 int gint = 0;
+int** gpp_int = 0;
 
 void print_gptr_int() {
 	printf("%p (0x%x)\n",gptr_int,(unsigned)gptr_int);
@@ -155,4 +159,23 @@ int math_gptr_int() {
 	}
 	printf("Returning 1\n");
 	return 1;
+}
+
+unsigned get_gpp_addr() {
+	return (unsigned)gpp_int;
+}
+
+int math_gpp_int() {
+	printf("%s: gpp_int = %p\n",__func__,gpp_int);
+	if (gpp_int) {
+		printf("%s: Valid pointer to pointer!\n",__func__);
+		printf("%s: (*gpp_int) == %p\n",__func__,*gpp_int);
+		if (*gpp_int != 0) {
+			do_math(*gpp_int);
+		}
+		return 0;
+	} else {
+		printf("%s: Invalid pointer to pointer!\n",__func__);
+		return 1;
+	}
 }
