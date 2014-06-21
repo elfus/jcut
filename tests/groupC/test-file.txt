@@ -10,7 +10,6 @@ before_all {
 	gfloat = 3.141592;
     gdouble = 2.52340;
 }
-# bug when we have before_all bot not after_all @todo fix it!
 after_all {
     gchar == 1;
     guchar == 2;
@@ -104,6 +103,10 @@ getgulint() == 8;
 getgfloat() == 3.141592;
 getgdouble() == 2.52340;
 
+# TODO Add some ExpectedExpressions 'before' and see what happens
+# TODO Add the ability to execute a test when a condition is met
+# Right now code is generated but the result is not being used
+before { gchar == 1; }
 print_gvar();
 after {
     gchar == 1;
@@ -116,6 +119,7 @@ after {
     gulint == 8;
 	gfloat == 3.141592;
     gdouble == 2.52340;
+# TODO Call functions and check their return value
 }
 
 # Todo add a test by calling functions in the after statement and comparing its

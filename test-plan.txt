@@ -17,7 +17,7 @@ logical groups named with letters starting with A...until Z.
 Group A - Basic functions only:
 	  Create a C file with functions receiving data types by value for all
 	  primitive data types.
-	  
+
 	  Tests:
 		1. Run some simple tests on them in the default group.
 		2. Expected results from functions
@@ -39,12 +39,12 @@ Group B - Basic global variables only:
 	     before statement
 		 after statement
 
-Group D - before_all/after_all
+Group C - before_all/after_all
 	  Tests:
 		1. Create global states and combine with Group B.3
 		2. Check global post conditions
 
-Group E - mockup and mockup_all:
+Group D - mockup and mockup_all:
 	  Tests:
 		1. Create basic function mockups
 		2. Create basic variable mockups
@@ -54,7 +54,7 @@ Group E - mockup and mockup_all:
 	  Features to be tests:
 	     mockup statement
 
-Group F - Pointers type:
+Group E - Pointers type:
 	  Tests:
 		1. Create functions that take pointers type to single element
 		2. Create functions that take pointers to arrays
@@ -66,7 +66,7 @@ Group F - Pointers type:
 		8. Create global variables that are pointers to pointers
 		9. Create global variables that are pointers to functions.
 
-Group G - Structures:
+Group F - Structures:
 	  Tests:
 		1. Structures passed by value
 		2. Structures returned by value
@@ -74,6 +74,6 @@ Group G - Structures:
 		4. Structures returned by functions
 		5. Structures initialization
 
-Group H - Groups:
+Group G - Groups:
 	  Tests:
 		1. Pick tests from previous groups and create several test groups in a file
