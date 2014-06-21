@@ -1,0 +1,42 @@
+print_ptr_char([10:26]);
+
+print_bfr([8:0],8);
+
+do_cmath([1]);
+do_cmath([1:10]);
+
+do_ucmath([1]);
+do_ucmath([1:10]);
+
+do_math([1]);
+do_math([1:10]);
+
+do_umath([1]);
+do_umath([1:10]);
+
+do_short_math([1]);
+do_short_math([1:10]);
+
+do_ushort_math([1]);
+do_ushort_math([1:10]);
+
+do_long_math([1]);
+do_long_math([1:10]);
+
+do_ulong_math([1]);
+do_ulong_math([1:10]);
+
+do_float_math([1]);
+do_float_math([1:3.141592]);
+
+do_double_math([1]);
+do_double_math([1:6.78965]);
+
+is_initialized([32], 32, 0) == 0;
+is_initialized([32], 32, 1) == 1;
+is_initialized([64:10], 64, 10) == 0;
+is_initialized([64:10], 64, 18) == 1;
+is_initialized([256:0], 256, 0) == 0;
+is_initialized([256:0], 256, 10) == 1;
+
+reverse_buffer([10],10) == 0;
