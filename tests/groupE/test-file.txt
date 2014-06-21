@@ -80,3 +80,4 @@ after { gpp_int = [1]; gpp_int != 0; }
 
 get_ptr_func_addr() == 0;
 
+pp_math([1]);

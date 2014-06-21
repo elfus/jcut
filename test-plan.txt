@@ -59,9 +59,9 @@ Group E - Pointers type:
 		1. Create functions that take pointers type to single element
 		2. Create functions that take pointers to arrays
 		3. Initialization of memory allocated
-		4. Pointers to functions
+		4. Pointers to functions (NOT Going to support)
 		5. Pointers to pointers.
-		6. Check values for output arguments in after statement
+		6. Check values for output arguments in after statement (access to input values)
 		7. Create global variables that are pointers
 		8. Create global variables that are pointers to pointers
 		9. Create global variables that are pointers to functions.

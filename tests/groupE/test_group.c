@@ -180,6 +180,24 @@ int math_gpp_int() {
 	}
 }
 
+#include <stdlib.h>
+
+void pp_math(int **x)
+{
+	printf("%s: x = %p\n", __func__,x);
+	printf("%s: *x = %p\n", __func__,*x);
+	if (*x == 0) {
+		printf("Allocation 1 pointer\n");
+		*x = (int*) malloc(sizeof(int));
+		printf("%s: *x = %p [malloc]\n", __func__,*x);
+		if ( *x != 0) {
+			**x = 0;
+			do_math(*x);
+			free(*x);
+		}
+	}
+}
+
 // Pointers to functions
 typedef int (*ptr_func) ();
 
