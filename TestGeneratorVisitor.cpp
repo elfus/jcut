@@ -603,6 +603,9 @@ Value* TestGeneratorVisitor::createFloatComparison(ComparisonOperator::Type type
 
 llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba)
 {
+	assert(ptrType && "Invalid ptrType");
+	assert(ptrType->getTypeID() == Type::PointerTyID && "ptrType has to be a pointer type");
+	assert(ptrType->getPointerElementType()->getTypeID() != Type::FunctionTyID && "Pointers to functions not supported");
 	AllocaInst *alloc1 = mBuilder.CreateAlloca(
 						ptrType->getPointerElementType(), // @note watch for bug here when type is not a pointer type
 						mBuilder.getInt(APInt(32, ba->getBufferSizeAsString(), 10)) // @todo Add support to hex and octal bases

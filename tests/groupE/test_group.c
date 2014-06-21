@@ -179,3 +179,12 @@ int math_gpp_int() {
 		return 1;
 	}
 }
+
+// Pointers to functions
+typedef int (*ptr_func) ();
+
+ptr_func pf;
+
+unsigned get_ptr_func_addr() {
+	return (unsigned)pf;
+}
