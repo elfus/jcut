@@ -50,27 +50,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			if (llvm_arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
 				BufferAlloc *ba = arg->getBufferAlloc();
 				assert(ba != nullptr && "Invalid BufferAlloc pointer");
-				AllocaInst *alloc1 = mBuilder.CreateAlloca(
-						llvm_arg.getType()->getPointerElementType(),
-						mBuilder.getInt(APInt(32, ba->getBufferSizeAsString(), 10))
-						); // Allocate memory for the element type pointed to
-
-				mInstructions.push_back(alloc1);
-
-				Value *v = createValue(llvm_arg.getType()->getPointerElementType(), ba->getDefaultValueAsString());
-				// Initialize the whole buffer to the default value
-				// at the momento I didn't come up with a better idea other than
-				// iterate over the whole buffer.
-				for(unsigned i = 0; i < ba->getBufferSize(); i++) {
-					Value* gep =
-						mBuilder.CreateGEP(alloc1,
-						mBuilder.getInt32(i),
-						Twine("array_"+i));
-					mInstructions.push_back(static_cast<llvm::Instruction*>(gep));
-					StoreInst *S = mBuilder.CreateStore(v, gep);
-					mInstructions.push_back(S);
-				}
-				/////
+				AllocaInst *alloc1 = bufferAllocInitialization(llvm_arg.getType(),ba);
 
 				// Allocate memory for a pointer type
 				AllocaInst *alloc2 = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "AllocPtr" + Twine(i)); // Allocate a pointer type
@@ -212,6 +192,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	string InstName = "ExpExprComp";
 	Value* i = nullptr;
     switch(L->getType()->getTypeID()) {
+		case Type::PointerTyID: // Workaround, keep an eye on this case for pointers
 		case Type::IntegerTyID:
 			i = createIntComparison(CO->getType(),L,R);
 			break;
@@ -297,6 +278,16 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 			extractInitializerValues(global_variable, str_init,&values);
 		}
 			break;
+		case Tokenizer::TOK_BUFF_ALLOC:
+		{
+			tp::BufferAlloc* ba = VA->getBufferAlloc();
+			// global_variable is a pointer to a pointer.
+			AllocaInst* alloc = bufferAllocInitialization(global_variable->getType()->getElementType(), ba);
+			StoreInst *store2 = mBuilder.CreateStore(alloc, global_variable); // Store an already allocated variable address to our pointer
+			// alloc was already pushed inside bufferAllocInitialization
+			mInstructions.push_back(store2);
+		}
+		break;
 		default:
 			assert(false && "Unhandled case! FIX ME");
 			break;
@@ -610,4 +601,28 @@ Value* TestGeneratorVisitor::createFloatComparison(ComparisonOperator::Type type
 	return nullptr;
 }
 
+llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba)
+{
+	AllocaInst *alloc1 = mBuilder.CreateAlloca(
+						ptrType->getPointerElementType(), // @note watch for bug here when type is not a pointer type
+						mBuilder.getInt(APInt(32, ba->getBufferSizeAsString(), 10)) // @todo Add support to hex and octal bases
+						); // Allocate memory for the element type pointed to
 
+	mInstructions.push_back(alloc1);
+
+	// @note watch for bug here when type is not a pointer type
+	Value *v = createValue(ptrType->getPointerElementType(), ba->getDefaultValueAsString());
+	// Initialize the whole buffer to the default value
+	// at the momento I didn't come up with a better idea other than
+	// iterate over the whole buffer.
+	for(unsigned i = 0; i < ba->getBufferSize(); i++) {
+		Value* gep =
+			mBuilder.CreateGEP(alloc1,
+			mBuilder.getInt32(i),
+			Twine("array_"+i));
+		mInstructions.push_back(static_cast<llvm::Instruction*>(gep));
+		StoreInst *S = mBuilder.CreateStore(v, gep);
+		mInstructions.push_back(S);
+	}
+	return alloc1; //alloc1 is a pointer type to type.
+}

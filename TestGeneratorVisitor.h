@@ -110,12 +110,31 @@ private:
      */
     void restoreGlobalVariables();
 
+    /**
+     * Extracts the initializer values in a recursive fashion and stores them
+     * in the global_struct.
+     *
+     * @note This method only support Initialization Lists, designated initializers
+     * are NOT supported.
+     *
+     * @param global_struct The global structure we are pointing to.
+     * @param init The values we want to extract
+     * @param ndxs Indices used by the GEP instruction to store the correct values.
+     */
     void extractInitializerValues(llvm::GlobalVariable* global_struct,
                                   const StructInitializer* init,
                                   vector<llvm::Value*>* ndxs);
 
     llvm::Value* createIntComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
     llvm::Value* createFloatComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
+
+    /**
+     * Allocates and initializes a buffer of type ptrType->elementType using BufferAlloc information.
+     * @param ptrType
+     * @param ba
+     * @return
+     */
+    llvm::AllocaInst* bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba);
 public:
     TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
