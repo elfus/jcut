@@ -643,6 +643,10 @@ public:
         if (mStructInit) delete mStructInit;
     }
 
+    bool isAllocatingStruct() const { return (mStructInit) ? true : false; }
+
+    const StructInitializer* getStructInitializer() const { return mStructInit; }
+
     void dump() {
         mIntBuffSize->dump();
         if (mIntDefaultValue) mIntDefaultValue->dump();

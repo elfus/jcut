@@ -393,6 +393,7 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	case Type::TypeID::VoidTyID:
 		assert(false && "Cannot create a void value!");
 	default:
+		cout << "Could not create value for typeID: " << typeID << endl;
 		return nullptr;
 	}
 	return nullptr;
@@ -481,7 +482,7 @@ void TestGeneratorVisitor::restoreGlobalVariables()
 	}
 }
 
-void TestGeneratorVisitor::extractInitializerValues(GlobalVariable* global_struct,
+void TestGeneratorVisitor::extractInitializerValues(Value* global_struct,
 		const StructInitializer* init,
 		vector<Value*>* ndxs)
 {
@@ -492,10 +493,17 @@ void TestGeneratorVisitor::extractInitializerValues(GlobalVariable* global_struc
 		for(tp::InitializerValue* arg : args) {
 			ndxs->push_back(mBuilder.getInt32(i));
 			ArrayRef<Value*> arr(*ndxs);
-			Value* gep =
+			GetElementPtrInst* gep =
+					static_cast<GetElementPtrInst*> (
 					mBuilder.CreateGEP(global_struct,
 					arr,
-					Twine("struct_"+i));
+					"struct_"+Twine(i))
+					);
+
+			// @bug Add only if gep instruction is not already in the container.
+			// @todo investigate why is gep instruction already in a container
+			if(gep->getParent() == nullptr)
+				mInstructions.push_back(gep);
 
 			string str_value;
 			if (arg->isArgument()) {
@@ -537,7 +545,7 @@ void TestGeneratorVisitor::extractInitializerValues(GlobalVariable* global_struc
 			init_val->dump();
 			cout << endl;
 			//global_struct->dump();
-			Type* struct_type = global_struct->getType()->getElementType();
+			Type* struct_type = global_struct->getType()->getPointerElementType();
 			cout<<"Num of contained types: "<<struct_type->getNumContainedTypes()<<endl;
 			cout<<"getStructNumElements(): "<<struct_type->getStructNumElements()<<endl;
 			cout<<"Struct name: "<<struct_type->getStructName().str()<<endl;
@@ -613,19 +621,29 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 
 	mInstructions.push_back(alloc1);
 
-	// @note watch for bug here when type is not a pointer type
-	Value *v = createValue(ptrType->getPointerElementType(), ba->getDefaultValueAsString());
-	// Initialize the whole buffer to the default value
-	// at the momento I didn't come up with a better idea other than
-	// iterate over the whole buffer.
-	for(unsigned i = 0; i < ba->getBufferSize(); i++) {
-		Value* gep =
-			mBuilder.CreateGEP(alloc1,
-			mBuilder.getInt32(i),
-			Twine("array_"+i));
-		mInstructions.push_back(static_cast<llvm::Instruction*>(gep));
-		StoreInst *S = mBuilder.CreateStore(v, gep);
-		mInstructions.push_back(S);
+	if(ptrType->getPointerElementType()->getTypeID() == Type::TypeID::StructTyID) {
+		assert(ba->isAllocatingStruct() && "Expected a struct initialization");
+		const StructInitializer* init = ba->getStructInitializer();
+		Value* val = cast<Value>(alloc1);
+		assert(val && "Invalid Value type");
+		vector<Value*> indices;
+		indices.push_back(mBuilder.getInt32(0));
+		extractInitializerValues(val, init, &indices);
+	} else {
+		// @note watch for bug here when type is not a pointer type
+		Value *v = createValue(ptrType->getPointerElementType(), ba->getDefaultValueAsString());
+		// Initialize the whole buffer to the default value
+		// at the moment I didn't come up with a better idea other than
+		// iterate over the whole buffer.
+		for(unsigned i = 0; i < ba->getBufferSize(); i++) {
+			Value* gep =
+				mBuilder.CreateGEP(alloc1,
+				mBuilder.getInt32(i),
+				Twine("array_"+i));
+			mInstructions.push_back(static_cast<llvm::Instruction*>(gep));
+			StoreInst *S = mBuilder.CreateStore(v, gep);
+			mInstructions.push_back(S);
+		}
 	}
 	return alloc1; //alloc1 is a pointer type to type.
 }

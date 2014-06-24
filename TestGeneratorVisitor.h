@@ -121,7 +121,7 @@ private:
      * @param init The values we want to extract
      * @param ndxs Indices used by the GEP instruction to store the correct values.
      */
-    void extractInitializerValues(llvm::GlobalVariable* global_struct,
+    void extractInitializerValues(llvm::Value* global_struct,
                                   const StructInitializer* init,
                                   vector<llvm::Value*>* ndxs);
 
