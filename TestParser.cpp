@@ -102,11 +102,11 @@ int Tokenizer::nextToken()
 		}
 	}
 
+	// @todo remove this condition, this should be returned as a char constant
+	// at the very end of this function. We have to replace the usage of
+	// TOK_BUFF_ALLOC
 	if (mLastChar == '[') {
 		mTokStrValue = mLastChar;
-		while ((mLastChar = mInput.get()) != ']') {
-			mTokStrValue += mLastChar;
-		}
 		mTokStrValue += mLastChar;
 		return mCurrentToken = TOK_BUFF_ALLOC;
 	}
@@ -235,9 +235,31 @@ Argument* TestDriver::ParseArgument()
 
 BufferAlloc* TestDriver::ParseBufferAlloc()
 {
-	BufferAlloc *Number = new BufferAlloc(mTokenizer.getTokenStringValue());
-	mCurrentToken = mTokenizer.nextToken(); // eat current argument, move to next
-	return Number;
+	if (mCurrentToken != Tokenizer::TOK_BUFF_ALLOC) // @todo change to '['
+		throw Exception("BufferAlloc",mTokenizer.getTokenStringValue());
+	mCurrentToken = mTokenizer.nextToken(); // eat up the '['
+
+	if (mCurrentToken != Tokenizer::TOK_INT)
+		throw Exception("buffer size",mTokenizer.getTokenStringValue());
+	// @todo Create an integer class and stop using argument
+	Argument* buff_size = ParseArgument();// Buffer Size
+
+	BufferAlloc *ba = nullptr;
+	if (mCurrentToken == ':') {
+		mCurrentToken = mTokenizer.nextToken(); // eat up the ':'
+		if (mCurrentToken == Tokenizer::TOK_STRUCT_INIT) {
+			StructInitializer* struct_init = ParseStructInitializer();
+			ba = new BufferAlloc(buff_size, struct_init);
+		} else {
+			Argument* default_val = ParseArgument();
+			ba = new BufferAlloc(buff_size, default_val);
+		}
+		mCurrentToken = mTokenizer.nextToken(); // eat up the ']'
+		return ba;
+	}
+	mCurrentToken = mTokenizer.nextToken(); // eat up the ']'
+	ba = new BufferAlloc(buff_size);// default value to 0
+	return ba;
 }
 
 Identifier* TestDriver::ParseIdentifier()

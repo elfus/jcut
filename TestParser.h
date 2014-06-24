@@ -46,6 +46,10 @@ public:
 
     Exception(const string& msg) : mMsg(msg) {}
 
+    Exception(const string& expected, const string& received) : mMsg("") {
+        mMsg = "Expected "+expected+" but received: "+received;
+    }
+
     const char* what() const throw () {
         return mMsg.c_str();
     }
@@ -618,51 +622,53 @@ public:
 
 class BufferAlloc : public TestExpr {
 private:
-    string StringRepresentation;
-    string BufferSize;
-    string DefaultValue;
-    unsigned mIntBuffSize;
-    int mIntDefaultValue;
+    // @todo Create and Integer class.
+    Argument* mIntBuffSize;
+    Argument* mIntDefaultValue;
+    StructInitializer* mStructInit;
 public:
-
-    BufferAlloc(const string& str) : StringRepresentation(str) ,
-            BufferSize("1"), DefaultValue("0"),
-            mIntBuffSize(1), mIntDefaultValue(0) {
-        if(StringRepresentation[0] != '[' or StringRepresentation.back() != ']')
-            throw Exception("Malformed buffer allocation");
-
-        size_t pos = StringRepresentation.find(":");
-        if(pos == string::npos) {
-            pos = StringRepresentation.find("]");
-            BufferSize = StringRepresentation.substr(1,pos-1);
-
-        } else {
-            BufferSize = StringRepresentation.substr(1,pos-1);
-            size_t pos2 = StringRepresentation.find("]");
-            DefaultValue = StringRepresentation.substr(pos+1,pos2-pos-1);
-        }
-        stringstream ss1;
-        ss1 << BufferSize;
-        ss1 >> mIntBuffSize;
-        stringstream ss2;
-        ss2 << DefaultValue;
-        ss2 >> mIntDefaultValue;
+    BufferAlloc(Argument* size, Argument* default_value = nullptr) :
+            mIntBuffSize(size), mIntDefaultValue(default_value),
+            mStructInit(nullptr) {
+                if (default_value == nullptr)
+                    mIntDefaultValue = new Argument("0", Tokenizer::TOK_INT);
     }
 
-    ~BufferAlloc() { }
+    BufferAlloc(Argument* size, StructInitializer* init):
+            mIntBuffSize(size), mIntDefaultValue(nullptr),  mStructInit(init)  {
 
+    }
 
-    string getBufferSizeAsString() const { return BufferSize; }
-    string getDefaultValueAsString() const { return DefaultValue; }
-    unsigned getBufferSize() const { return mIntBuffSize; }
-    int getDefaultValue() const { return mIntDefaultValue; }
+    ~BufferAlloc() {
+        if (mStructInit) delete mStructInit;
+    }
 
     void dump() {
-        cout << StringRepresentation;
+        mIntBuffSize->dump();
+        if (mIntDefaultValue) mIntDefaultValue->dump();
+        if (mStructInit) mStructInit->dump();
     }
 
     void accept(Visitor *v) {
+        mIntBuffSize->accept(v);
+        if (mIntDefaultValue) mIntDefaultValue->accept(v);
+        if (mStructInit) mStructInit->accept(v);
         v->VisitBufferAlloc(this); // Doesn't have any children
+    }
+
+    unsigned getBufferSize() const {
+        stringstream ss;
+        ss << mIntBuffSize->getStringRepresentation();
+        unsigned tmp;
+        ss >> tmp;
+        return tmp;
+    }
+    string getBufferSizeAsString() const {
+        return mIntBuffSize->getStringRepresentation();
+    }
+
+    string getDefaultValueAsString() const {
+        return mIntDefaultValue->getStringRepresentation();
     }
 };
 

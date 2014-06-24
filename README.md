@@ -73,7 +73,7 @@ Test File Grammar
 
 <number> := int | double |  float
 
-<buffer-alloc> := "[" int [":" int] "]"
+<buffer-alloc> := "[" int [":" [int | <struct-initializer> ]] "]"
 
 <array-initializer> := { <number>+ }
 
