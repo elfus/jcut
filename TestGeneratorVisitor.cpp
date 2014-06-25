@@ -622,13 +622,35 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 	mInstructions.push_back(alloc1);
 
 	if(ptrType->getPointerElementType()->getTypeID() == Type::TypeID::StructTyID) {
-		assert(ba->isAllocatingStruct() && "Expected a struct initialization");
-		const StructInitializer* init = ba->getStructInitializer();
-		Value* val = cast<Value>(alloc1);
-		assert(val && "Invalid Value type");
-		vector<Value*> indices;
-		indices.push_back(mBuilder.getInt32(0));
-		extractInitializerValues(val, init, &indices);
+		////////////////////////////////////////
+		// This code is used to initialize the memory allocated for the
+		// local struct to 0. If there is an initializer specified, it will
+		// overwrite the 0s, which is what we want.
+		DataLayout dl(mModule->getDataLayout());
+		uint64_t size = dl.getTypeAllocSize(ptrType->getPointerElementType());
+		assert(size && "Invalid structure size");
+		Value* bitcast = mBuilder.CreateBitCast(alloc1,mBuilder.getInt8PtrTy());
+		assert(bitcast && "Invalid bitcast instruction");
+		ConstantInt* zero_value = mBuilder.getInt8(0);
+		mInstructions.push_back(cast<Instruction>(bitcast));
+		for(unsigned i = 0; i < size; i++) {
+			GetElementPtrInst* gep = cast<GetElementPtrInst>(mBuilder.CreateGEP(bitcast,mBuilder.getInt64(i)));
+			StoreInst* store = mBuilder.CreateStore(zero_value, gep);
+			mInstructions.push_back(gep);
+			mInstructions.push_back(store);
+		}
+		// End of initialization.
+		/////////////////////////////////////////
+
+		if(ba->isAllocatingStruct()) {
+			const StructInitializer* init = ba->getStructInitializer();
+			Value* val = cast<Value>(alloc1);
+			assert(val && "Invalid Value type");
+			vector<Value*> indices;
+			indices.push_back(mBuilder.getInt32(0));
+			extractInitializerValues(val, init, &indices);
+		}
+
 	} else {
 		// @note watch for bug here when type is not a pointer type
 		Value *v = createValue(ptrType->getPointerElementType(), ba->getDefaultValueAsString());
@@ -636,10 +658,7 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 		// at the moment I didn't come up with a better idea other than
 		// iterate over the whole buffer.
 		for(unsigned i = 0; i < ba->getBufferSize(); i++) {
-			Value* gep =
-				mBuilder.CreateGEP(alloc1,
-				mBuilder.getInt32(i),
-				Twine("array_"+i));
+			Value* gep = mBuilder.CreateGEP(alloc1,	mBuilder.getInt32(i), Twine("array_"+i));
 			mInstructions.push_back(static_cast<llvm::Instruction*>(gep));
 			StoreInst *S = mBuilder.CreateStore(v, gep);
 			mInstructions.push_back(S);
