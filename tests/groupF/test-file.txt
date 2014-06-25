@@ -1,0 +1,32 @@
+sum_gpixel() == 0;
+
+before { gpixel = {-2,6} }
+sum_gpixel() == 4;
+
+before { gpixel = {2,6} }
+sum_gpixel() == 8;
+
+sum_super_pixel() == 0;
+
+# Nested structures
+before { gsuper = {2} }
+sum_super_pixel() == 2;
+
+before { gsuper = {2, 2} }
+sum_super_pixel() == 4;
+
+before { gsuper = {2, 2, {4}} }
+sum_super_pixel() == 8;
+
+before { gsuper = {2, 2, {4, 4}} }
+sum_super_pixel() == 12;
+
+sum_pixel_struct([1]) == 0;
+sum_pixel_struct([1:{5}]) == 5;
+sum_pixel_struct([1:{5,5}]) == 10;
+sum_pixel_struct([1:{-5,105}]) == 100;
+
+sum_super_pixel_struct([1]) == 0;
+sum_super_pixel_struct([1:{1,2}]) == 3;
+sum_super_pixel_struct([1:{1,2, {3}}]) == 6;
+sum_super_pixel_struct([1:{1,2, {3,4}}]) == 10;
