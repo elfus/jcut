@@ -14,9 +14,13 @@ struct SuperPixel {
 struct Pixel gpixel;
 struct SuperPixel gsuper;
 
-void print_gpixel() {
-	printf("%s: gpixel.x = %d\n", __func__, gpixel.x);
-	printf("%s: gpixel.y = %d\n", __func__, gpixel.y);
+void print_pixel(struct Pixel* p, unsigned size) {
+	while (size--) {
+		printf("-------------------------\n");
+		printf("%s: pixel->x = %d\n", __func__, p->x);
+		printf("%s: pixel->y = %d\n", __func__, p->y);
+		p++;
+	}
 }
 
 int sum_gpixel() {
