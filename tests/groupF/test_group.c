@@ -23,6 +23,12 @@ void print_pixel(struct Pixel* p, unsigned size) {
 	}
 }
 
+void print_pixel_by_value(struct Pixel p) {
+	printf("-------------------------\n");
+	printf("%s: pixel->x = %d\n", __func__, p.x);
+	printf("%s: pixel->y = %d\n", __func__, p.y);
+}
+
 void print_super_pixel(struct SuperPixel* p, unsigned size) {
 	while (size--) {
 		printf("-------------------------\n");
