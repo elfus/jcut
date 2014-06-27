@@ -642,15 +642,19 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 		// End of initialization.
 		/////////////////////////////////////////
 
-		// @bug We are only initializing the first struct allocated. We need
-		// to initialize the rest of the memory allocated.
 		if(ba->isAllocatingStruct()) {
 			const StructInitializer* init = ba->getStructInitializer();
-			Value* val = cast<Value>(alloc1);
-			assert(val && "Invalid Value type");
-			vector<Value*> indices;
-			indices.push_back(mBuilder.getInt32(0));
-			extractInitializerValues(val, init, &indices);
+			for(unsigned i=0; i < ba->getBufferSize(); i++) {
+				GetElementPtrInst* gep = cast<GetElementPtrInst>(mBuilder.CreateGEP(bitcast,mBuilder.getInt64(i*size)));
+				mInstructions.push_back(gep);
+				BitCastInst* bc = cast<BitCastInst>(mBuilder.CreateBitCast(gep,ptrType));
+				mInstructions.push_back(bc);
+				Value* val = cast<Value>(bc);
+				assert(val && "Invalid Value type");
+				vector<Value*> indices;
+				indices.push_back(mBuilder.getInt32(0));
+				extractInitializerValues(val, init, &indices);
+			}
 		}
 
 	} else {
