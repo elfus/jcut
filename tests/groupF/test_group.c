@@ -23,6 +23,17 @@ void print_pixel(struct Pixel* p, unsigned size) {
 	}
 }
 
+void print_super_pixel(struct SuperPixel* p, unsigned size) {
+	while (size--) {
+		printf("-------------------------\n");
+		printf("%s: pixel->x = %d\n", __func__, p->x);
+		printf("%s: pixel->y = %d\n", __func__, p->y);
+		printf("%s: pixel->z.x = %d\n", __func__, p->z.x);
+		printf("%s: pixel->z.y = %d\n", __func__, p->z.y);
+		p++;
+	}
+}
+
 int sum_gpixel() {
 	return gpixel.x + gpixel.y;
 }
