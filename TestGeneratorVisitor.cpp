@@ -633,7 +633,7 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 		assert(bitcast && "Invalid bitcast instruction");
 		ConstantInt* zero_value = mBuilder.getInt8(0);
 		mInstructions.push_back(cast<Instruction>(bitcast));
-		for(unsigned i = 0; i < size; i++) {
+		for(unsigned i = 0; i < size * ba->getBufferSize(); i++) {
 			GetElementPtrInst* gep = cast<GetElementPtrInst>(mBuilder.CreateGEP(bitcast,mBuilder.getInt64(i)));
 			StoreInst* store = mBuilder.CreateStore(zero_value, gep);
 			mInstructions.push_back(gep);
@@ -642,6 +642,8 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 		// End of initialization.
 		/////////////////////////////////////////
 
+		// @bug We are only initializing the first struct allocated. We need
+		// to initialize the rest of the memory allocated.
 		if(ba->isAllocatingStruct()) {
 			const StructInitializer* init = ba->getStructInitializer();
 			Value* val = cast<Value>(alloc1);
