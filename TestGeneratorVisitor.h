@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <map>
 
 namespace llvm {
     class Function;
@@ -47,6 +48,7 @@ private:
     /// (original) variable
     std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupGroup;
     llvm::Value *mReturnValue;
+    std::map<string,bool> mMockupNames;//used to create unique mockup names
 
     /**
  * Creates a new Value of the same Type as type with real_value
@@ -145,6 +147,7 @@ public:
     void VisitExpectedResult(ExpectedResult *);
     void VisitExpectedExpression(ExpectedExpression *);
     void VisitTestFunction(TestFunction *);
+    void VisitMockupFunction(MockupFunction*);
     void VisitVariableAssignment(VariableAssignment *);
     void VisitTestDefinition(TestDefinition *);
     void VisitGlobalSetup(GlobalSetup *);

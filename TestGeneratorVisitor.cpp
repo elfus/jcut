@@ -236,6 +236,54 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 
 }
 
+void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
+{
+	FunctionCall* FC = MF->getFunctionCall();
+	string func_name = FC->getIdentifier()->getIdentifierStr();
+	string mockup_name = func_name+ "_mockup";
+
+	while(mModule->getFunction(mockup_name)) {
+		stringstream ss;
+		ss <<"_";
+		ss << mMockupNames.size();
+		mockup_name = mockup_name + ss.str();
+	}
+	mMockupNames[mockup_name] = true;
+	llvm::Function *llvm_func = mModule->getFunction(func_name);
+	if( llvm_func == nullptr) {
+		cout << "Function NOT found...creating declaration and definition" << endl;
+		// If no declaration is found we need to figure out the return type somehow
+		assert(false && "TODO: Implement this!");
+	} else {
+		// Function definition or declaration
+		cout << "Function found: " << func_name << endl;
+		
+		tp::Argument* expected = MF->getArgument();
+		vector<Type*> params;
+		for(llvm::Argument& arg : llvm_func->getArgumentList()) {
+			params.push_back(arg.getType());
+		}
+
+		FunctionType* FT = FunctionType::get(llvm_func->getReturnType(),ArrayRef<Type*>(params),false);
+		Function* F = cast<Function>(mModule->getOrInsertFunction(mockup_name, FT, llvm_func->getAttributes()));
+		
+		// create unique name
+		BasicBlock* MB = BasicBlock::Create(mModule->getContext(),"mockup_block",F);
+		// The expected value has to match the return value type from the llvm_func
+		llvm::Value* val = createValue(llvm_func->getReturnType(), expected->getStringRepresentation());
+		ReturnInst* ret = mBuilder.CreateRet(val);
+		MB->getInstList().push_back(ret);
+			/// WE WILL NEED TO CREATE A NEW FUNCTION EACH TIME BECAUSE OF THE
+			/// WAY THE VISITOR PATTERN IS IMPLEMENTED.
+			/// WE CREATE THE FUNCTIONS FIRST, THEN CALL THEM
+			/// THIS MEANS WE CANNOT WORK ON THE SAME FUNCTION OVER AND OVER AGAIN.
+			/// WE NEED TO BORROW IT'S ORIGINAL DECLARATION OR DEFINITION
+			/// CREATE A NEW NAME, STORE IN tp::Argument AND THEN CREATE A FUNCTION
+			/// WITH THAT NAME. THUS WE'LL HAVE TO REPLACE THE CALL OF EACH OF
+			/// THE ORIGINAL FUNCTIONS WITH A CALL TO A MOCKUP
+	}
+}
+
 /**
  * Creates LLVM IR code for a single global variable assignment.
  *

@@ -18,6 +18,7 @@
 
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
 
 using namespace std;
 
@@ -778,6 +779,9 @@ public:
             throw Exception("Invalid Argument type");
     }
 
+    FunctionCall* getFunctionCall() const { return mFunctionCall; }
+    Argument* getArgument() const { return mArgument; }
+
     ~MockupFunction() {
         if (mFunctionCall)
             delete mFunctionCall;
@@ -793,7 +797,14 @@ public:
     }
 
     void accept(Visitor *v) {
-        mFunctionCall->accept(v);
+        // @note This is a workaround. When processing a mockup function we have
+        // two options: 1. generate a function body for a declaration or 2. change
+        // the return value of a function which already has a function body.
+        // Thus we don't want to generate code for a function call from a
+        // MockupFunction. This workaround might need to be changed if there
+        // is a Visitor which needs to visit a FunctionCall before or after a
+        // MockupFunction
+        // mFunctionCall->accept(v);
         v->VisitMockupFunction(this);
     }
 };
@@ -1049,6 +1060,7 @@ public:
     }
 
     TestFunction * getTestFunction() const {return FunctionCall;}
+    TestMockup* getTestMockup() const { return mTestMockup; }
 
     virtual ~TestDefinition() {
         if (mTestInfo) delete mTestInfo;
@@ -1220,6 +1232,7 @@ public:
     string getGroupName() const { return mName->getIdentifierStr(); }
     GlobalSetup* getGlobalSetup() const { return mGlobalSetup; }
     GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown; }
+    GlobalMockup* getGlobalMockup() const { return mGlobalMockup; }
     void setGlobalTeardown(GlobalTeardown* gt) { mGlobalTeardown = gt; }
 };
 
