@@ -19,19 +19,26 @@ private:
     llvm::ExecutionEngine* mEE;
     std::vector<llvm::GenericValue> mArgs;//Dummy arguments
     bool mDumpFunctions;
-
+    llvm::Module* mModule;
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
-        if (mDumpFunctions)
+        if (mDumpFunctions) {
             f->dump();
+//            cout << "======================================================="<<endl;
+//            mModule->dump();
+//            cout << "======================================================="<<endl;
+        }
+
         llvm::GenericValue rval = mEE->runFunction(f,mArgs);
+        mEE->clearAllGlobalMappings();
+        mEE->freeMachineCodeForFunction(f);
         FW->setReturnValue(rval);
     }
 public:
     TestRunnerVisitor() = delete;
     TestRunnerVisitor(const TestRunnerVisitor& orig) = delete;
-    TestRunnerVisitor(llvm::ExecutionEngine *EE, bool dump_func = false) : mEE(EE),
-        mDumpFunctions(dump_func) {}
+    TestRunnerVisitor(llvm::ExecutionEngine *EE, bool dump_func = false, llvm::Module* mM=nullptr) : mEE(EE),
+        mDumpFunctions(dump_func), mModule(mM) {}
     virtual ~TestRunnerVisitor() { delete mEE; }
 
     bool isValidExecutionEngine() const { return mEE != nullptr; }
@@ -50,7 +57,19 @@ public:
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
+        TestMockup* TM = TD->getTestMockup();
+        if (TM) {
+            TM->useMockupFunction();
+             string target_func = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+            llvm::Function* f = mModule->getFunction(target_func);
+            assert(f && "Could not get target function");
+            f->dump();
+            mEE->recompileAndRelinkFunction(f);
+        }
         runFunction(TD);
+        if (TM) {
+            TM->useOriginalFunction(mEE);
+        }
     }
 
 };

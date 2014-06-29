@@ -303,11 +303,11 @@ int main(int argc, const char **argv, char * const *envp)
 				TestExpr *tests = driver.ParseTestExpr(); // Parse file
 				TestGeneratorVisitor visitor(Module);
 				tests->accept(&visitor); // Generate object structure tree
-
+//				Module->dump();
 				// Initialize the JIT Engine only once
 				llvm::InitializeNativeTarget();
 				std::string Error;
-				TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(Module, &Error),dump_functions);
+				TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(Module, &Error),dump_functions,Module);
 				if (runner.isValidExecutionEngine() == false) {
 					llvm::errs() << "unable to make execution engine: " << Error << "\n";
 					return 255;

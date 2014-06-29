@@ -16,6 +16,7 @@
 
 #include "Visitor.h"
 
+#include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
@@ -766,10 +767,13 @@ class MockupFunction : public TestExpr {
 private:
     FunctionCall *mFunctionCall;
     Argument *mArgument;
+    llvm::Function *mOriginalFunction;
+    llvm::Function *mMockupFunction;
 public:
 
     MockupFunction(FunctionCall *call, Argument *arg) :
-    mFunctionCall(nullptr), mArgument(nullptr) {
+    mFunctionCall(nullptr), mArgument(nullptr),
+    mOriginalFunction(nullptr), mMockupFunction(nullptr) {
         mFunctionCall = dynamic_cast<FunctionCall*> (call);
         if (mFunctionCall == nullptr)
             throw Exception("Invalid FunctionCallExpr type");
@@ -806,6 +810,34 @@ public:
         // MockupFunction
         // mFunctionCall->accept(v);
         v->VisitMockupFunction(this);
+    }
+
+    llvm::Function* getMockupFunction() const {
+        return mMockupFunction;
+    }
+
+    void setMockupFunction(llvm::Function* mMockupFunction) {
+        this->mMockupFunction = mMockupFunction;
+    }
+
+    llvm::Function* getOriginalFunction() const {
+        return mOriginalFunction;
+    }
+
+    void setOriginalFunction(llvm::Function* mOriginalFunction) {
+        this->mOriginalFunction = mOriginalFunction;
+    }
+
+    void useMockupFunction() {
+        mOriginalFunction->replaceAllUsesWith(mMockupFunction);
+    }
+
+    void useOriginalFunction(llvm::ExecutionEngine *ee) {
+//        ee->freeMachineCodeForFunction(mOriginalFunction);
+        mMockupFunction->replaceAllUsesWith(mOriginalFunction);
+        mMockupFunction->dump();
+//        ee->freeMachineCodeForFunction(mMockupFunction);
+//        ee->recompileAndRelinkFunction(mOriginalFunction);
     }
 };
 
@@ -852,6 +884,16 @@ public:
 
         v->VisitMockupFixture(this);
     }
+
+    void useMockupFunction() {
+        for(MockupFunction* f : mMockupFunctions)
+            f->useMockupFunction();
+    }
+
+    void useOriginalFunction(llvm::ExecutionEngine *ee) {
+        for(MockupFunction* f : mMockupFunctions)
+            f->useOriginalFunction(ee);
+    }
 };
 
 class TestMockup : public TestExpr {
@@ -875,6 +917,14 @@ public:
     void accept(Visitor *v) {
         mMockupFixture->accept(v);
         v->VisitTestMockup(this);
+    }
+
+    void useMockupFunction() {
+        mMockupFixture->useMockupFunction();
+    }
+
+    void useOriginalFunction(llvm::ExecutionEngine *ee) {
+        mMockupFixture->useOriginalFunction(ee);
     }
 };
 

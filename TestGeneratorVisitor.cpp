@@ -281,6 +281,10 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 			/// CREATE A NEW NAME, STORE IN tp::Argument AND THEN CREATE A FUNCTION
 			/// WITH THAT NAME. THUS WE'LL HAVE TO REPLACE THE CALL OF EACH OF
 			/// THE ORIGINAL FUNCTIONS WITH A CALL TO A MOCKUP
+		// this line does what I want, but I need to understand how to change it back.
+
+		MF->setMockupFunction(F);
+		MF->setOriginalFunction(llvm_func);
 	}
 }
 
