@@ -24,9 +24,6 @@ private:
         llvm::Function* f = FW->getLLVMFunction();
         if (mDumpFunctions) {
             f->dump();
-//            cout << "======================================================="<<endl;
-//            mModule->dump();
-//            cout << "======================================================="<<endl;
         }
 
         llvm::GenericValue rval = mEE->runFunction(f,mArgs);
