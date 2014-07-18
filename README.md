@@ -14,15 +14,13 @@ Test File Grammar
 
 <test-expr> := <test-file>
 
-<test-file> :=  <unit-tests>
+<test-file> :=  <test-group>
 
 <global-mockup> := mockup_all "{" <mockup-fixture> "}"
 
 <global-setup> := before_all "{" <test-fixture> "}"
 
 <global-teardown> := after_all "{" <test-fixture> "}"
-
-<unit-tests> := <test-group>
 
 <test-group> := [<global-mockup> | <global-setup> | <global-teardown> ] <test-definition>+ | group [<identifier>] "{" <test-group>+ "}"
 

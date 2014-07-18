@@ -1286,15 +1286,18 @@ public:
     void setGlobalTeardown(GlobalTeardown* gt) { mGlobalTeardown = gt; }
 };
 
-class UnitTests : public TestExpr {
+class TestFile : public TestExpr {
 private:
     TestGroup* mTestGroups;
 public:
 
-    UnitTests(TestGroup* groups) : mTestGroups(groups) { }
+    TestFile(TestGroup *tg) :
+    mTestGroups(tg) {
 
-    virtual ~UnitTests() {
-        delete mTestGroups;
+    }
+
+    ~TestFile() {
+        if (mTestGroups) delete mTestGroups;
     }
 
     void dump() {
@@ -1302,32 +1305,7 @@ public:
     }
 
     void accept(Visitor *v) {
-        v->VisitUnitTestFirst(this);
         mTestGroups->accept(v);
-        v->VisitUnitTest(this);
-    }
-};
-
-class TestFile : public TestExpr {
-private:
-    UnitTests *mUnitTest;
-public:
-
-    TestFile(UnitTests *ut) :
-    mUnitTest(ut) {
-
-    }
-
-    ~TestFile() {
-        if (mUnitTest) delete mUnitTest;
-    }
-
-    void dump() {
-        mUnitTest->dump();
-    }
-
-    void accept(Visitor *v) {
-        mUnitTest->accept(v);
         v->VisitTestFile(this);
     }
 };
@@ -1425,7 +1403,6 @@ private:
     TestDefinition* ParseTestDefinition();
     // @arg name The name of the group to be parsed
     TestGroup* ParseTestGroup(Identifier* name = nullptr);
-    UnitTests* ParseUnitTest();
     GlobalMockup* ParseGlobalMockup();
     GlobalSetup* ParseGlobalSetup();
     GlobalTeardown* ParseGlobalTeardown();

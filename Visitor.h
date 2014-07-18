@@ -42,7 +42,6 @@ class MockupFixture;
 class TestMockup;
 class TestDefinition;
 class TestGroup;
-class UnitTests;
 class GlobalMockup;
 class GlobalSetup;
 class GlobalTeardown;
@@ -89,7 +88,6 @@ public:
     virtual void VisitTestMockup(TestMockup *) {}
     virtual void VisitTestDefinition(TestDefinition *) {}
     virtual void VisitTestGroup(TestGroup *) {}
-    virtual void VisitUnitTest(UnitTests *) {}
     virtual void VisitGlobalMockup(GlobalMockup *) {}
     virtual void VisitGlobalSetup(GlobalSetup *) {}
     virtual void VisitGlobalTeardown(GlobalTeardown *) {}
@@ -101,7 +99,7 @@ public:
      * pre-order fashion, meaning that all the current node is visited first
      * and then all its children.
      */
-    virtual void VisitUnitTestFirst(UnitTests *) {}
+    virtual void VisitTestFileFirst(TestFile *) {}
     virtual void VisitGlobalSetupFirst(GlobalSetup *) {}
     virtual void VisitGlobalTeardownFirst(GlobalTeardown *) {}
     virtual void VisitTestGroupFirst(TestGroup *) {}

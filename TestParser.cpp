@@ -698,12 +698,6 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	return new TestGroup(name, tests, gm, gs, gt);
 }
 
-UnitTests* TestDriver::ParseUnitTest()
-{
-	TestGroup* group = ParseTestGroup();
-	return new UnitTests(group);
-}
-
 GlobalMockup* TestDriver::ParseGlobalMockup()
 {
 	if (mCurrentToken == Tokenizer::TOK_MOCKUP_ALL) {
@@ -751,8 +745,8 @@ GlobalTeardown* TestDriver::ParseGlobalTeardown()
 
 TestFile* TestDriver::ParseTestFile()
 {
-	UnitTests *test = ParseUnitTest();
-	return new TestFile(test);
+	TestGroup* group = ParseTestGroup();
+	return new TestFile(group);
 }
 
 TestExpr* TestDriver::ParseTestExpr()

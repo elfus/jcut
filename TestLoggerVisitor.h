@@ -24,7 +24,7 @@ public:
     TestLoggerVisitor() {}
     ~TestLoggerVisitor() {}
 
-    void VisitUnitTestFirst(UnitTests* UT)
+    void VisitTestFileFirst(TestFile* TF)
     {   cout << setw(60) << setfill('=') << '=' << endl;
         cout << "Test name\t\tResult\tExpected result"<<endl;
         cout << setw(60) << setfill('-') << '-' << endl;
@@ -58,7 +58,7 @@ public:
                     break;
                 case Constant::Type::CHAR:
                 {
-                    
+
                 }
                     break;
                 default:
