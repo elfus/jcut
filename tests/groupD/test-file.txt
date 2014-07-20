@@ -1,0 +1,4 @@
+mockup { sum() = 10; }
+get_int(5,6) == 10;
+mockup { sum() = 5; }
+get_int(5,6) == 5;
