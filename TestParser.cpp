@@ -9,7 +9,7 @@ int TestGroup::group_count = 0;
 
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
 mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0),
-mBuffAlloc(""), mTokStrValue(""), mLastChar('\0')
+mBuffAlloc(""), mTokStrValue(""), mLastChar('\0'), mLineNum(1), mColumnNum(1)
 {
 	if (!mInput) {
 		throw Exception("Could not open file " + filename);
@@ -44,12 +44,22 @@ int Tokenizer::peekToken()
 int Tokenizer::nextToken()
 {
 	stringstream tokenStream;
+	static unsigned last_nl = 0;// Position of the last \n detected.
 	mTokStrValue = "";
 	mOldPos = mInput.tellg();
 	mIdType = ID_UNKNOWN;
-	mLastChar = mInput.get();
-	while (isspace(mLastChar) || isCharIgnored(mLastChar))
+
+	do {
+		mColumnNum = static_cast<unsigned>(mInput.tellg()) - last_nl + 1;
 		mLastChar = mInput.get();
+		if (mLastChar == '\n' ) {
+			++mLineNum;
+			mColumnNum = 1;
+			last_nl = mInput.tellg();
+		}
+		if (mLastChar == EOF)
+			mColumnNum = 1;
+	} while (isspace(mLastChar) || isCharIgnored(mLastChar));
 
 	if (mLastChar == '"') {
 		while ((mLastChar = mInput.get()) != '"') {

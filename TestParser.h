@@ -120,6 +120,8 @@ public:
 
     bool isCharIgnored(char);
 
+    unsigned getLineNumber() const { return mLineNum; }
+    unsigned getColumnNumber() const { return mColumnNum; }
 private:
     std::ifstream mInput;
     Token mCurrentToken;
@@ -132,6 +134,8 @@ private:
     char mLastChar;
     Identifier mIdType;
     unsigned mOldPos;
+    unsigned mLineNum;
+    unsigned mColumnNum;
 };
 
 class TestExpr {
@@ -1372,6 +1376,7 @@ public:
     }
 
     TestExpr* ParseTestExpr();
+    const Tokenizer& getTokenizer() const { return mTokenizer; }
 
 private:
     Identifier* ParseIdentifier();
