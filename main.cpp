@@ -178,6 +178,7 @@ int main(int argc, const char **argv, char * const *envp)
 	if (llvm::Module * Module = Act->takeModule()) {
 		if (file_name.empty() == false) {
 			try {
+				Exception::mCurrentFile = file_name; // quick workaround
 				TestDriver driver(file_name);
 				TestExpr *tests = driver.ParseTestExpr(); // Parse file
 				TestGeneratorVisitor visitor(Module);
@@ -195,7 +196,8 @@ int main(int argc, const char **argv, char * const *envp)
 
 				TestLoggerVisitor results_logger;
 				tests->accept(&results_logger);
-
+				cout << "Number of lines in file: " << driver.getTokenizer().line() << endl;
+				cout << "Column: " << driver.getTokenizer().column() << endl ;
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";
 			}

@@ -6,6 +6,7 @@ using namespace std;
 using namespace tp;
 
 int TestGroup::group_count = 0;
+string Exception::mCurrentFile;
 
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
 mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0),
@@ -414,7 +415,9 @@ FunctionCall* TestDriver::ParseFunctionCall()
 	Identifier* functionName = ParseFunctionName();
 
 	if (mCurrentToken != '(')
-		throw Exception("Expected ( but received " + mTokenizer.getTokenStringValue());
+		throw Exception(mTokenizer.line(),mTokenizer.column(),
+				"Expected a left parenthesis in function call but received " + mTokenizer.getTokenStringValue(),
+				functionName->getIdentifierStr()+mTokenizer.getTokenStringValue());
 
 	mCurrentToken = mTokenizer.nextToken(); // eat the (
 	vector<FunctionArgument*> Args;
@@ -428,7 +431,9 @@ FunctionCall* TestDriver::ParseFunctionCall()
 		if (mCurrentToken != ',') {
 			for (auto*& ptr : Args)
 				delete ptr;
-			throw Exception("Expected , or ) but received " + mTokenizer.getTokenStringValue());
+			throw Exception(mTokenizer.line(), mTokenizer.column(),
+					"Expected a comma or right parenthesis in function call but received "
+					+ mTokenizer.getTokenStringValue());
 		}
 
 		mCurrentToken = mTokenizer.nextToken(); // eat the ','
@@ -453,7 +458,9 @@ ComparisonOperator* TestDriver::ParseComparisonOperator()
 		mCurrentToken = mTokenizer.nextToken(); // consume TOK_COMPARISON_OP
 		return cmp;
 	}
-	throw Exception("Expected 'ComparisonOperator' but received token " + mTokenizer.getTokenStringValue());
+	throw Exception(mTokenizer.line(), mTokenizer.column(),
+			"Expected 'ComparisonOperator' but received " + mTokenizer.getTokenStringValue(),
+			"ComparisonOperators are: ==, !=, >=, <=, <, or >");
 }
 
 ExpectedConstant* TestDriver::ParseExpectedConstant()

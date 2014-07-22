@@ -44,19 +44,38 @@ public:
 
 class Exception : public std::exception {
 public:
-    Exception() = delete;
+    enum Severity {
+        ERROR = 0,
+        WARNING
+    };
 
-    Exception(const string& msg) : mMsg(msg) {}
+    Exception(const string& msg) : mMsg(msg) {};
 
-    Exception(const string& expected, const string& received) : mMsg("") {
+    Exception(const string& expected, const string& received)
+        : mMsg(""), mLine(0), mColumn(0) {
         mMsg = "Expected "+expected+" but received: "+received;
+    }
+
+    Exception(unsigned line, unsigned column, const string& msg,
+               const string& extra = "", Severity s=Severity::ERROR) {
+        stringstream ss;
+        ss << mCurrentFile <<":"<<line<<":"<<column<<": "<<
+                ((s==Severity::ERROR)?"error":"warning") << ": " << msg;
+        if (extra.size()) {
+            ss << endl << "\t" << extra;
+        }
+        mMsg = ss.str();
     }
 
     const char* what() const throw () {
         return mMsg.c_str();
     }
+
+    static string mCurrentFile;
 private:
     string mMsg;
+    unsigned mLine;
+    unsigned mColumn;
 };
 
 namespace tp { // tp stands for test parser
@@ -120,8 +139,10 @@ public:
 
     bool isCharIgnored(char);
 
-    unsigned getLineNumber() const { return mLineNum; }
-    unsigned getColumnNumber() const { return mColumnNum; }
+    /// Gets the line number of the current token
+    unsigned line() const { return mLineNum; }
+    /// Gets the column number of the current column
+    unsigned column() const { return mColumnNum; }
 private:
     std::ifstream mInput;
     Token mCurrentToken;
