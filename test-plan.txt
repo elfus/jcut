@@ -77,3 +77,7 @@ Group F - Structures:
 Group G - Groups:
 	  Tests:
 		1. Pick tests from previous groups and create several test groups in a file
+
+Group H - Errors:
+      Tests:
+        1. Used to detect test parser errors on a test file
