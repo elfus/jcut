@@ -213,6 +213,9 @@ int Tokenizer::nextToken()
 		while (mLastChar != '\n' && mLastChar != EOF && mLastChar != '\r') {
 			mLastChar = mInput.get();
 		}
+		++mLineNum;
+		mColumnNum = 1;
+		last_nl = mInput.tellg();
 
 		if (mLastChar != EOF)
 			return nextToken();
@@ -482,7 +485,9 @@ Constant* TestDriver::ParseConstant()
     if(mCurrentToken == Tokenizer::TOK_CHAR)
 		C = new Constant(new CharConstant(mTokenizer.getTokenStringValue()[0]));
 	else
-		throw Exception("Expected a Constant but received token " + mTokenizer.getTokenStringValue());
+		throw Exception(mTokenizer.line(), mTokenizer.column(),
+				"Expected a Constant (int, float, string or char).",
+				"Received "+ mTokenizer.getTokenStringValue()+" instead.");
 	// This is a workaround for float and double values. Let LLVM do the work
 	// on what type of precision to choose, we will just pass a string representing
 	// the floating point value.
@@ -720,13 +725,13 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		} catch (const exception& e) {
 			cerr << e.what() << endl;
 			// Let's try to recover until the next test inside this group
-			do {
-				mCurrentToken = mTokenizer.nextToken();
-			} while(mCurrentToken != Tokenizer::TOK_TEST_INFO and
+			while(mCurrentToken != Tokenizer::TOK_TEST_INFO and
 					mCurrentToken != Tokenizer::TOK_MOCKUP and
 					mCurrentToken != Tokenizer::TOK_BEFORE and
 					mCurrentToken != Tokenizer::TOK_IDENTIFIER and
-					mCurrentToken != Tokenizer::TOK_EOF);
+					mCurrentToken != Tokenizer::TOK_EOF) {
+				mCurrentToken = mTokenizer.nextToken();
+			}
 			
 
 		}
