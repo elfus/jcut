@@ -24,6 +24,8 @@ Test File Grammar
 
 <test-group> := [<global-mockup> | <global-setup> | <global-teardown> ] <test-definition>+ | group [<identifier>] "{" <test-group>+ "}"
 
+# TODO Right we are forcing the user to use this order, however it would be better
+# if we let the use define test-info, test-mockup, and test-setup in whatever order
 <test-definition> := [<test-info> | <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
 
 <test-info> := test <identifier>
@@ -32,14 +34,14 @@ Test File Grammar
 
 <test-setup> :=  before "{"  <test-fixture> "}"
 
-<test-function> := <function-call> [<expected-result>]
+<test-function> := <function-call> [<expected-result>] ;
 
 
 <test-teardown> := after "{" <test-fixture> "}"
 
-<test-fixture> := <function-call>*  <var-assignment>* <expected-expression>*
+<test-fixture> := <function-call>;* | <var-assignment>;* | <expected-expression>;*
 
-<mockup-fixture> := <mockup-function>*  <mockup-variable>*
+<mockup-fixture> := <mockup-function>;* | <mockup-variable>;*
 
 <mockup-function> :=  <function-call> = <argument>
 

@@ -22,8 +22,6 @@ mBuffAlloc(""), mTokStrValue(""), mLastChar('\0'), mLineNum(1), mColumnNum(1)
 bool Tokenizer::isCharIgnored(char c)
 {
 	switch (c) {
-	case ';':
-		return true;
 	default: return false;
 	}
 	return false;
@@ -515,6 +513,11 @@ TestFunction* TestDriver::ParseTestFunction()
 	ExpectedResult* ER = nullptr;
 	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP)
 		ER = ParseExpectedResult();
+	if (mCurrentToken != ';') 
+		throw Exception(mTokenizer.line(),mTokenizer.column(),
+				"Expected a semi colon ';' at the end of the test expression",
+				"Received "+mTokenizer.getTokenStringValue());
+	mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	return new TestFunction(FunctionCall, ER);
 }
 
@@ -566,6 +569,12 @@ TestFixture* TestDriver::ParseTestFixture()
 
 		if (mCurrentToken == '}')
 			break;
+
+		if (mCurrentToken != ';')
+			throw Exception(mTokenizer.line(),mTokenizer.column(),
+					"Expected a semi colon ';' at the end of the test fixture",//@todo improve message
+					"Received "+mTokenizer.getTokenStringValue());
+		mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	}
 	return new TestFixture(functions, assignments, expected);
 }
@@ -630,6 +639,12 @@ MockupFixture* TestDriver::ParseMockupFixture()
 
 		if (mCurrentToken == '}')
 			break;
+
+		if (mCurrentToken != ';')
+			throw Exception(mTokenizer.line(),mTokenizer.column(),
+					"Expected a semi colon ';' at the end of the test mockup",//@todo improve message
+					"Received "+mTokenizer.getTokenStringValue());
+		mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	}
 	return new MockupFixture(MockupFunctions, MockupVariables);
 }
@@ -705,9 +720,15 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		} catch (const exception& e) {
 			cerr << e.what() << endl;
 			// Let's try to recover until the next test inside this group
-			while (mCurrentToken != Tokenizer::TOK_IDENTIFIER and
-					mCurrentToken != Tokenizer::TOK_EOF)
+			do {
 				mCurrentToken = mTokenizer.nextToken();
+			} while(mCurrentToken != Tokenizer::TOK_TEST_INFO and
+					mCurrentToken != Tokenizer::TOK_MOCKUP and
+					mCurrentToken != Tokenizer::TOK_BEFORE and
+					mCurrentToken != Tokenizer::TOK_IDENTIFIER and
+					mCurrentToken != Tokenizer::TOK_EOF);
+			
+
 		}
 	}
 
