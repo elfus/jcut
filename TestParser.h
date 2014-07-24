@@ -141,8 +141,13 @@ public:
 
     /// Gets the line number of the current token
     unsigned line() const { return mLineNum; }
-    /// Gets the column number of the current column
+    /// Gets the column number of the current token
     unsigned column() const { return mColumnNum; }
+
+    /// Gets the line number of the PREVIOUS token
+    unsigned previousLine() const { return mPrevLine; }
+    /// Gets the column number of the PREVIOUS token
+    unsigned previousColumn() const { return mPrevCol; }
 private:
     std::ifstream mInput;
     Token mCurrentToken;
@@ -157,6 +162,8 @@ private:
     unsigned mOldPos;
     unsigned mLineNum;
     unsigned mColumnNum;
+    unsigned mPrevLine;
+    unsigned mPrevCol;
 };
 
 class TestExpr {

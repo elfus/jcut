@@ -10,7 +10,8 @@ string Exception::mCurrentFile;
 
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
 mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0),
-mBuffAlloc(""), mTokStrValue(""), mLastChar('\0'), mLineNum(1), mColumnNum(1)
+mBuffAlloc(""), mTokStrValue(""), mLastChar('\0'), mLineNum(1), mColumnNum(1),
+mPrevLine(0), mPrevCol(0)
 {
 	if (!mInput) {
 		throw Exception("Could not open file " + filename);
@@ -52,7 +53,8 @@ int Tokenizer::nextToken()
 		mColumnNum = static_cast<unsigned>(mInput.tellg()) - last_nl + 1;
 		mLastChar = mInput.get();
 		if (mLastChar == '\n' ) {
-			++mLineNum;
+			mPrevLine = mLineNum++;
+			mPrevCol = mColumnNum;
 			mColumnNum = 1;
 			last_nl = mInput.tellg();
 		}
@@ -213,7 +215,8 @@ int Tokenizer::nextToken()
 		while (mLastChar != '\n' && mLastChar != EOF && mLastChar != '\r') {
 			mLastChar = mInput.get();
 		}
-		++mLineNum;
+		mPrevLine = mLineNum++;
+		mPrevCol = mColumnNum;
 		mColumnNum = 1;
 		last_nl = mInput.tellg();
 
@@ -407,7 +410,9 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 Identifier* TestDriver::ParseFunctionName()
 {
 	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER)
-		throw Exception("Expected an identifier name but received " + mTokenizer.getTokenStringValue());
+		throw Exception(mTokenizer.line(),mTokenizer.column(),
+				"Expected a valid function name.",
+				"Received "+ mTokenizer.getTokenStringValue()+" instead.");
 	return ParseIdentifier(); // Missing a 'FunctionName' class that wraps an Identifier
 }
 
@@ -519,7 +524,7 @@ TestFunction* TestDriver::ParseTestFunction()
 	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP)
 		ER = ParseExpectedResult();
 	if (mCurrentToken != ';') 
-		throw Exception(mTokenizer.line(),mTokenizer.column(),
+		throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
 				"Expected a semi colon ';' at the end of the test expression",
 				"Received "+mTokenizer.getTokenStringValue());
 	mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
