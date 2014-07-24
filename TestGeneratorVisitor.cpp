@@ -135,8 +135,6 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 	else if (returnedType->getTypeID() == Type::FloatTyID or
 			returnedType->getTypeID() == Type::DoubleTyID) {
-		call->dump();
-		c->dump();
 		i = createFloatComparison(ER->getComparisonOperator()->getType(), call, c);
 	}
 	else

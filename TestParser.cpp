@@ -734,6 +734,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					mCurrentToken != Tokenizer::TOK_MOCKUP and
 					mCurrentToken != Tokenizer::TOK_BEFORE and
 					mCurrentToken != Tokenizer::TOK_IDENTIFIER and
+					mCurrentToken != Tokenizer::TOK_GROUP and
 					mCurrentToken != Tokenizer::TOK_EOF) {
 				mCurrentToken = mTokenizer.nextToken();
 			}
