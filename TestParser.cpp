@@ -721,13 +721,19 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				if (mCurrentToken != '{') {
 					group_exception = true;
 					throw Exception(mTokenizer.previousLine(), mTokenizer.previousLine(),
-							"Expected a left curly bracket '{' for the given group",
+							"Invalid group definition. Expected a left curly bracket '{' for the given group",
 							"Received: "+mTokenizer.getTokenStringValue()+" instead.");
 				}
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
 				TestGroup* group = ParseTestGroup(new_group_name);
 				tests.push_back(group);
+
+				if(mCurrentToken != '}')
+					throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
+							"Invalid group definition. Expected a right curly bracket '}'",
+							"Received "+mTokenizer.getTokenStringValue()+" instead.");
+				mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
 			} else {
 				TestDefinition *TestDefinition = ParseTestDefinition();
 				tests.push_back(TestDefinition);
@@ -754,7 +760,6 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		}
 	}
 
-	mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
 	return new TestGroup(name, tests, gm, gs, gt);
 }
 
