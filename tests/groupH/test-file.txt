@@ -14,12 +14,37 @@ group A {
     mult(2.5,4) > -10;
 }
 
-group B 
+group B
     mult(2.5,4) > -10;
 }
 
+group B
+    mult(2.5,4) > -10;
+}
 
-mult(2.5,4) == 10;
+group B {
+    mult(2.5,4) > -10;
+}
+
+group C {
+    mult(2.5,4) == 111;
+    group B
+        mult(2.5,4) > -10;
+    }
+
+    group B {
+         group B
+            mult(2.5,4) > -10;
+        }
+        mult(2.5,4) > 222;
+    }
+
+     group B
+        mult(2.5,4) > 999;
+     }
+}
+
+
 mult(2.5,3) == 7.5;
 mult(2.5,2) == 5;
 mult(-2.5,2) == -5;
