@@ -718,7 +718,9 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					new_group_name = ParseIdentifier();
 
 				if (mCurrentToken != '{')
-					throw Exception("Expected a '{'  for the given group, but received: "+mTokenizer.getTokenStringValue());
+					throw Exception(mTokenizer.previousLine(), mTokenizer.previousLine(),
+							"Expected a left curly bracket '{' for the given group",
+							"Received: "+mTokenizer.getTokenStringValue()+" instead.");
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
 				TestGroup* group = ParseTestGroup(new_group_name);
