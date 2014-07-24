@@ -41,4 +41,4 @@ print_super_pixel([2:{1,2}],2);
 print_super_pixel([2:{1,2,{3}}],2);
 print_super_pixel([2:{1,2,{3,4}}],2);
 
-print_pixel_by_value({1,2}); # We will leave this one until later
+print_pixel_by_value({1,2}); # We will leave this one until later, this one causes an error in the parser
