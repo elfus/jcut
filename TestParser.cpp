@@ -704,6 +704,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	GlobalTeardown *gt = ParseGlobalTeardown();
 	vector<TestExpr*> tests;
 	Identifier* new_group_name = nullptr;
+	bool group_exception = false;
 
 	while (true) {
 		try {
@@ -717,10 +718,12 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				if (mCurrentToken == Tokenizer::TOK_IDENTIFIER)
 					new_group_name = ParseIdentifier();
 
-				if (mCurrentToken != '{')
+				if (mCurrentToken != '{') {
+					group_exception = true;
 					throw Exception(mTokenizer.previousLine(), mTokenizer.previousLine(),
 							"Expected a left curly bracket '{' for the given group",
 							"Received: "+mTokenizer.getTokenStringValue()+" instead.");
+				}
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
 				TestGroup* group = ParseTestGroup(new_group_name);
@@ -732,7 +735,8 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		} catch (const exception& e) {
 			cerr << e.what() << endl;
 			// Let's try to recover until the next test inside this group
-			while(mCurrentToken != Tokenizer::TOK_TEST_INFO and
+			while(group_exception == false and
+					mCurrentToken != Tokenizer::TOK_TEST_INFO and
 					mCurrentToken != Tokenizer::TOK_MOCKUP and
 					mCurrentToken != Tokenizer::TOK_BEFORE and
 					mCurrentToken != Tokenizer::TOK_IDENTIFIER and
@@ -741,7 +745,12 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				mCurrentToken = mTokenizer.nextToken();
 			}
 			
-
+			if(group_exception) {
+				while(mCurrentToken != '}')
+					mCurrentToken = mTokenizer.nextToken();
+				mCurrentToken = mTokenizer.nextToken();// eat up the '}'
+				group_exception = false;
+			}
 		}
 	}
 
