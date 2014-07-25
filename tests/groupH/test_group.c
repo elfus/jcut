@@ -1,5 +1,14 @@
 #include <stdio.h>
 
+int gint;
+
+void msg() {
+	printf("%s: hello\n",__func__);
+}
+int get_gint() {
+	return gint;
+}
+
 short sum(int a, int b) {
 	return a+b;
 }

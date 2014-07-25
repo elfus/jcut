@@ -42,8 +42,33 @@ group C {
      group B
         mult(2.5,4) > 999;
      }
+
+     mult(2.5,4) > 333;
 }
 
+# continue detecting errors on test-fixtures
+# Whenever we detect an error in a test fixture we must abort current test definition
+before {
+    msg()
+}
+get_gint() == 0;
+
+before {
+    gint = 7
+}
+get_gint() == 0;
+
+before {
+    gint = 7
+    msg() # msg() is picked up as a valid identifier, we must skip it
+}
+get_gint() == 0;
+
+before {
+    msg() # msg() is picked up as a valid identifier, we must skip it
+    gint = 7 # in this case this expression is detected as a function call
+}
+get_gint() == 0;
 
 mult(2.5,3) == 7.5;
 mult(2.5,2) == 5;
