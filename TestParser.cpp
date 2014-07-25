@@ -33,7 +33,15 @@ int Tokenizer::peekToken()
 	Token oldToken = mCurrentToken;
 	char oldChar = mLastChar;
 	string oldStr = mTokStrValue;
+	unsigned oldPrevLine = mPrevLine;
+	unsigned oldPrevCol = mPrevCol;
+	unsigned oldLine = mLineNum;
+	unsigned oldCol = mColumnNum;
 	int peek_token = nextToken();
+	mColumnNum = oldCol;
+	mLineNum = oldLine;
+	mPrevCol = oldPrevCol;
+	mPrevLine = oldPrevLine;
 	mInput.seekg(mOldPos);
 	mCurrentToken = oldToken;
 	mLastChar = oldChar;
@@ -577,14 +585,15 @@ TestFixture* TestDriver::ParseTestFixture()
 			exp = nullptr;
 		}
 
-		if (mCurrentToken == '}')
-			break;
-
 		if (mCurrentToken != ';')
-			throw Exception(mTokenizer.line(),mTokenizer.column(),
-					"Expected a semi colon ';' at the end of the test fixture",//@todo improve message
+			throw Exception(mTokenizer.previousLine(),mTokenizer.previousColumn(),
+					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
 					"Received "+mTokenizer.getTokenStringValue());
-		mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
+
+		if (mCurrentToken == '}') {
+			mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
+			break;
+		}
 	}
 	return new TestFixture(functions, assignments, expected);
 }
