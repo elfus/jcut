@@ -70,6 +70,23 @@ before {
 }
 get_gint() == 0;
 
+before {
+    msg(); # msg() is picked up as a valid identifier, we must skip it
+    gint = 7 # in this case this expression is detected as a function call
+}
+get_gint() == 0;
+
+before {
+    msg()
+    gint = 7; # in this case this expression is detected as a function call
+}
+get_gint() == 0;
+
+before {
+    gint = 7; # in this case this expression is detected as a function call
+}
+get_gint() == 0;
+
 mult(2.5,3) == 7.5;
 mult(2.5,2) == 5;
 mult(-2.5,2) == -5;

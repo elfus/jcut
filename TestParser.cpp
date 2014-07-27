@@ -590,8 +590,11 @@ TestFixture* TestDriver::ParseTestFixture()
 					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
 					"Received "+mTokenizer.getTokenStringValue());
 
+		if (mCurrentToken == ';')
+			mCurrentToken = mTokenizer.nextToken(); // eat up the ';'
+		
 		if (mCurrentToken == '}') {
-			mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
+			mCurrentToken = mTokenizer.nextToken(); // eat up the '}'
 			break;
 		}
 	}
