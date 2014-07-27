@@ -585,6 +585,11 @@ TestFixture* TestDriver::ParseTestFixture()
 			exp = nullptr;
 		}
 
+		if (mCurrentToken == '}') {
+			mCurrentToken = mTokenizer.nextToken(); // eat up the '}'
+			break;
+		}
+
 		if (mCurrentToken != ';')
 			throw Exception(mTokenizer.previousLine(),mTokenizer.previousColumn(),
 					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
@@ -593,10 +598,6 @@ TestFixture* TestDriver::ParseTestFixture()
 		if (mCurrentToken == ';')
 			mCurrentToken = mTokenizer.nextToken(); // eat up the ';'
 		
-		if (mCurrentToken == '}') {
-			mCurrentToken = mTokenizer.nextToken(); // eat up the '}'
-			break;
-		}
 	}
 	return new TestFixture(functions, assignments, expected);
 }
