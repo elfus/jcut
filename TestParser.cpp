@@ -585,10 +585,8 @@ TestFixture* TestDriver::ParseTestFixture()
 			exp = nullptr;
 		}
 
-		if (mCurrentToken == '}') {
-			mCurrentToken = mTokenizer.nextToken(); // eat up the '}'
+		if (mCurrentToken == '}')
 			break;
-		}
 
 		if (mCurrentToken != ';')
 			throw Exception(mTokenizer.previousLine(),mTokenizer.previousColumn(),
