@@ -48,6 +48,9 @@ group C {
 
 # continue detecting errors on test-fixtures
 # Whenever we detect an error in a test fixture we must abort current test definition
+
+#the following statements test one failing setup one after another, put more where
+# we alternate passing and failing case.
 before {
     msg()
 }
@@ -87,3 +90,135 @@ before {
 }
 get_gint() == 7;
 
+# Alternate failing and success cases
+# DEBUG FROM HERE, FOR SOME REASON WE ARE RECEIVING WRONG VALUES ON THE SUCCESS
+# IT MAY HAVE TO DO WITH THE PREVIOUS SUCCESFUL ONE.
+
+before {
+    msg()
+}
+get_gint() == 0;
+
+before { gint = 255; msg();}
+get_gint() == 255; # DEBUG THIS ONE, IT'S NOT RETURNING 255
+
+before {
+    gint = 7
+}
+get_gint() == 0;
+
+before { gint = 255; msg();}
+get_gint() == 255;
+
+before {
+    gint = 7
+    msg() # msg() is picked up as a valid identifier, we must skip it
+}
+get_gint() == 0;
+
+before { gint = 255; msg();}
+get_gint() == 255;
+
+before {
+    msg() # msg() is picked up as a valid identifier, we must skip it
+    gint = 7 # in this case this expression is detected as a function call
+}
+get_gint() == 0;
+
+before { gint = 255; msg();}
+get_gint() == 255;
+
+before {
+    msg(); # msg() is picked up as a valid identifier, we must skip it
+    gint = 7 # in this case this expression is detected as a function call
+}
+get_gint() == 0;
+
+before { gint = 255; msg();}
+get_gint() == 255;
+
+before {
+    msg()
+    gint = 7; # in this case this expression is detected as a function call
+}
+get_gint() == 0;
+
+before { gint = 255; msg();}
+get_gint() == 255;
+
+#######
+# Tests for after statements
+
+msg(); #PASS
+after { gint = 20; gint == 20; }
+
+msg();
+after { gint = 20 gint == 20; }
+
+msg();
+after { gint = 20; gint == 20 }
+
+msg();
+after { gint = 20 gint == 20 }
+
+# alternate
+msg(); #PASS
+after { gint = 10; gint == 10; }
+
+msg();
+after { gint = 20 gint == 20; }
+
+msg(); #PASS
+after { gint = 15; gint == 15; }
+
+msg();
+after { gint = 20; gint == 20 }
+
+msg(); #PASS
+after { gint = 30; gint == 30; }
+
+msg();
+after { gint = 20 gint == 20 }
+
+msg(); #PASS
+after { gint = 35; gint == 35; }
+
+######
+# Combine before with after
+
+# PASSING CASE
+before { gint = 10; }
+msg(); # 6th (5)
+after { gint == 10; }
+
+before { gint = 20 }
+msg();
+after { gint == 20; }
+
+before { gint = 10; }
+msg(); # 7th (6)
+after { gint == 10; }
+
+before { gint = 20; }
+msg();
+after { gint == 20 }
+
+before { gint = 10; }
+msg(); # 8th (7)
+after { gint == 10; }
+
+before { gint = 20; }
+msg();
+after { gint == 20; msg() }
+
+before { gint = 10; }
+msg(); # 9th (8)
+after { gint == 10; }
+
+before { gint = 20; msg()}
+msg();
+after { gint == 20;  }
+
+before { gint = 20; }
+msg()
+after { gint == 20;  }

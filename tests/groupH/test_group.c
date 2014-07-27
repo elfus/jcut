@@ -3,9 +3,10 @@
 int gint;
 
 void msg() {
-	printf("%s: hello\n",__func__);
+	printf("%s: hello, gint = %d\n",__func__,gint);
 }
 int get_gint() {
+	printf("%s: gint == %d\n",__func__, gint);
 	return gint;
 }
 
