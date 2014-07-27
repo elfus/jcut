@@ -716,12 +716,38 @@ TestDefinition* TestDriver::ParseTestDefinition()
 
 TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 {
-	GlobalMockup *gm = ParseGlobalMockup();
-	GlobalSetup *gs = ParseGlobalSetup();
-	GlobalTeardown *gt = ParseGlobalTeardown();
+	GlobalMockup *gm = nullptr;
+	GlobalSetup *gs = nullptr;
+	GlobalTeardown *gt = nullptr;
 	vector<TestExpr*> tests;
 	Identifier* new_group_name = nullptr;
 	bool group_exception = false;
+
+	try {
+		gm = ParseGlobalMockup();
+		gs = ParseGlobalSetup();
+		gt = ParseGlobalTeardown();
+	} catch (const Exception& e) {
+		cerr << e.what() << endl;
+		cerr << "Skipping all tests in current group "<<
+				((name)?name->getIdentifierStr():"")
+			 << endl;
+		unsigned parenthesis = 2; // the one from the group and the test-fixture
+		while(parenthesis and mCurrentToken!=Tokenizer::TOK_EOF)  {
+			if (mCurrentToken == '}')
+				parenthesis--;
+			if (mCurrentToken == '{')
+				parenthesis++;
+			mCurrentToken = mTokenizer.nextToken();
+		}
+		mTestFixtureException = false;
+		mParsingSetup = false;
+		mParsingTearDown = false;
+		// @BUG: When a there is a problem with mockup_all, before_all or after_all
+		// statements stop parsing current group. Right now I implemented a basic
+		// algorithm, but it might contain bugs. Look at the hardcoded 2.
+		return nullptr;
+	}
 
 	while (true) {
 		try {
@@ -744,7 +770,8 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
 				TestGroup* group = ParseTestGroup(new_group_name);
-				tests.push_back(group);
+				if (group)
+					tests.push_back(group);
 
 				if(mCurrentToken != '}')
 					throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
@@ -850,7 +877,10 @@ GlobalTeardown* TestDriver::ParseGlobalTeardown()
 TestFile* TestDriver::ParseTestFile()
 {
 	TestGroup* group = ParseTestGroup();
-	return new TestFile(group);
+	if (group)
+		return new TestFile(group);
+	else
+		throw Exception("Invalid test file");
 }
 
 TestExpr* TestDriver::ParseTestExpr()

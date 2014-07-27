@@ -10,6 +10,14 @@ int get_gint() {
 	return gint;
 }
 
+void global_setup() {
+	printf("%s: hello global setup\n",__func__);
+}
+
+void global_teardown() {
+	printf("%s: hello global teardown\n",__func__);
+}
+
 short sum(int a, int b) {
 	return a+b;
 }

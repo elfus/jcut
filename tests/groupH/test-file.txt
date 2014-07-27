@@ -1,4 +1,12 @@
 # Positive testing
+before_all {
+    global_setup();
+}
+after_all {
+    global_teardown();
+}
+
+
 sum2,4) == 6;
 sum(-10 20) == 10;
 sum(10, -20 == -10;
@@ -220,5 +228,35 @@ msg();
 after { gint == 20;  }
 
 before { gint = 20; }
-msg()
+msg() # NEED TO DEBUG THIS CASE, WHEN SETUP AND TEARDOWN ARE FINE BUT THIS ONE NOT
 after { gint == 20;  }
+
+group X {
+    before_all {
+        global_setup()
+    }
+    after_all {
+        global_teardown();
+    }
+    msg();
+}
+
+group Y {
+    before_all {
+        global_setup();
+    }
+    after_all {
+        global_teardown()
+    }
+    msg();
+}
+
+group Z {
+    before_all {
+        global_setup();
+    }
+    after_all {
+        global_teardown();
+    }
+    msg();
+}
