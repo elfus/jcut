@@ -517,9 +517,11 @@ TestTeardown* TestDriver::ParseTestTearDown()
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword 'after'
 
 	if (mCurrentToken == '{') {
+		mParsingTearDown = true;
 		mCurrentToken = mTokenizer.nextToken(); // eat the '{'
 		TestFixture* testFixture = ParseTestFixture();
 		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'
+		mParsingTearDown = false;
 		return new TestTeardown(testFixture);
 	}
 	throw Exception("Expected { but received " + mTokenizer.getTokenStringValue() + " after keyword 'after'");
@@ -547,9 +549,11 @@ TestSetup* TestDriver::ParseTestSetup()
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword 'before'
 
 	if (mCurrentToken == '{') {
+		mParsingSetup = true;
 		mCurrentToken = mTokenizer.nextToken(); // eat the '{'
 		TestFixture* testFixture = ParseTestFixture();
 		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'
+		mParsingSetup = false;
 		return new TestSetup(testFixture);
 	}
 	throw Exception("Expected { but received " + mTokenizer.getTokenStringValue() + " after keyword 'before'");
@@ -585,16 +589,18 @@ TestFixture* TestDriver::ParseTestFixture()
 			exp = nullptr;
 		}
 
-		if (mCurrentToken == '}')
-			break;
-
-		if (mCurrentToken != ';')
+		if (mCurrentToken != ';') {
+			mTestFixtureException = true;
 			throw Exception(mTokenizer.previousLine(),mTokenizer.previousColumn(),
 					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
 					"Received "+mTokenizer.getTokenStringValue());
+		}
 
 		if (mCurrentToken == ';')
 			mCurrentToken = mTokenizer.nextToken(); // eat up the ';'
+
+		if (mCurrentToken == '}')
+			break;
 		
 	}
 	return new TestFixture(functions, assignments, expected);
@@ -751,6 +757,28 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 			}
 		} catch (const exception& e) {
 			cerr << e.what() << endl;
+
+			if (mTestFixtureException) {
+				while(mCurrentToken != '}')
+					mCurrentToken = mTokenizer.nextToken();
+				mCurrentToken = mTokenizer.nextToken();// eat up the '}'
+				mTestFixtureException = false;
+				// If an exception was thrown in a setup statement ignore current test
+				if(mParsingSetup) {
+					while(mCurrentToken != ';')
+						mCurrentToken = mTokenizer.nextToken();
+					mCurrentToken = mTokenizer.nextToken(); // eat up the ';'
+					// if the test has an after statement, ignore.
+					if(mTokenizer.peekToken() == Tokenizer::TOK_AFTER) {
+						while(mCurrentToken != '}')
+							mCurrentToken = mTokenizer.nextToken();
+						mCurrentToken = mTokenizer.nextToken();// eat up the '}'
+					}
+					mParsingSetup = false;
+				}
+				mParsingTearDown = false;
+			}
+			
 			// Let's try to recover until the next test inside this group
 			while(group_exception == false and
 					mCurrentToken != Tokenizer::TOK_TEST_INFO and

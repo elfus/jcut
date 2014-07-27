@@ -1393,12 +1393,19 @@ class TestDriver {
 private:
     Tokenizer mTokenizer;
     int mCurrentToken;
+    // This variable is used to detect the condition in which an error is found
+    // in a test-fixture (either before or after statement), so we can use it
+    // to ignore the rest of the statements in the test-fixture statement.
+    bool mTestFixtureException;
+    bool mParsingSetup;
+    bool mParsingTearDown;
 public:
 
     TestDriver() = delete;
     TestDriver(const TestDriver&) = delete;
 
-    TestDriver(const string& file) : mTokenizer(file) { }
+    TestDriver(const string& file) : mTokenizer(file), mCurrentToken(0),
+    mTestFixtureException(false), mParsingSetup(false), mParsingTearDown(false) { }
 
     ~TestDriver() {
     }
