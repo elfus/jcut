@@ -8,6 +8,12 @@ Compiling
 ==========
 This tool assumes is compiled within the clang source tree.
 
+Compiling windows binaries:
+When configuring your llvm project issue the following command line:
+CC=i686-w64-mingw32-gcc CXX=i686-w64-mingw32-g++ CPP=i686-w64-mingw32-cpp CXXCPP=i686-w64-mingw32-cpp LDFLAGS="-static -static-libgcc -static-libstdc++" ../llvm34/configure --prefix=$HOME/llvm-win --enable-optimized --enable-doxygen --host=i686-w64-mingw32
+
+This assumes you have installed a cross compiler. Also note the linker flags
+(LDFLAGS) are important to link statically to any library the tool may need.
 ---------
 Test File Grammar
 ========
