@@ -80,6 +80,12 @@ public:
             cout << setw(mColumnWidth[column]) << getColumnString(column, TD);
         cout << endl;
     }
+
+    /// @note In order for the new column width to take effect this method has
+    /// to be called before visiting any of the nodes.
+    void setColumnWidth(ColumnName column, unsigned width) {
+        mColumnWidth[column] = width;
+    }
 };
 
 #endif	/* TESTLOGGERVISITOR_H */
