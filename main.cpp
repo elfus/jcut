@@ -95,6 +95,11 @@ bool extractDumpFlag(SmallVector<const char *, 16> & Args)
 
 int main(int argc, const char **argv, char * const *envp)
 {
+    if (argc < 4) {
+        cerr << "Wrong command line." << endl;
+        cerr << "Usage:\n\t"<<argv[0]<<" <c files> --test-file <test-file> [--dump]"<<endl;
+        return -1;
+    }
 	void *MainAddr = (void*) (intptr_t) GetExecutablePath;
 	std::string Path = GetExecutablePath(argv[0]);
 	IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
