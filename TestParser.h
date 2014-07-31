@@ -1337,6 +1337,7 @@ public:
     }
 
     void accept(Visitor *v) {
+        v->VisitTestFileFirst(this);
         mTestGroups->accept(v);
         v->VisitTestFile(this);
     }
