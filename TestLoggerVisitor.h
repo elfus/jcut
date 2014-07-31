@@ -20,35 +20,46 @@ using namespace tp;
  * Logs the results of the tests ran in standard output
  */
 class TestLoggerVisitor : public Visitor {
+private:
+    unsigned WIDTH = 80;
+    unsigned TN_WIDTH = 20; // TEST NAME WIDTH
+    unsigned RESULT_WIDTH = 8;
+    unsigned EXP_WIDTH = 20;
 public:
     TestLoggerVisitor() {}
     ~TestLoggerVisitor() {}
 
     void VisitTestFileFirst(TestFile* TF)
-    {   cout << setw(60) << setfill('=') << '=' << endl;
-        cout << "Test name\t\tResult\tExpected result"<<endl;
-        cout << setw(60) << setfill('-') << '-' << endl;
+    {
+        cout << setw(WIDTH) << setfill('=') << '=' << setfill(' ') << endl;
+        cout << setw(TN_WIDTH) << left << "Test name";
+        cout << setw(RESULT_WIDTH) << "Result";
+        cout << setw(EXP_WIDTH) << "Expected result"<<endl;
+        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
 
     void VisitTestDefinition(TestDefinition *TD) {
-        cout << TD->getTestName() << "\t\t";
-        cout << (TD->getReturnValue().IntVal.getBoolValue()?
-                "PASSED" : "FAILED") << "\t";
+        cout << setw(TN_WIDTH) << TD->getTestName();
+        cout << setw(RESULT_WIDTH) << 
+                (TD->getReturnValue().IntVal.getBoolValue()?
+                "PASSED" : "FAILED");
+
         // @todo Get the actual outcome from the call function
         // @todo detect what failed, after conditions?
         ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
         if (ER) {
+            stringstream ss;
             Constant* C = ER->getExpectedConstant()->getConstant();
-            cout << ER->getComparisonOperator()->getTypeStr() << " ";
+            ss << ER->getComparisonOperator()->getTypeStr() << " ";
             switch(C->getType()){
                 case Constant::Type::NUMERIC:
                 {
                     NumericConstant* nc = C->getNumericConstant();
                     if(nc->isFloat())
-                        cout << nc->getFloat();
+                        ss << nc->getFloat();
                     if(nc->isInt())
-                        cout << nc->getInt();
+                        ss << nc->getInt();
                 }
                     break;
                 case Constant::Type::STRING:
@@ -62,11 +73,11 @@ public:
                 }
                     break;
                 default:
-                    cerr<<"Invalid Constant!"<<endl;
+                    ss<<"Invalid Constant!"<<endl;
                     break;
             }
+            cout << setw(EXP_WIDTH) << ss.str() << endl;
         }
-        cout << endl;
     }
 };
 
