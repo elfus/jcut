@@ -10,8 +10,10 @@
 
 #include <iostream>
 #include <iomanip>
+#include <map>
 #include "Visitor.h"
 #include "TestParser.h"
+#include "TestGeneratorVisitor.h"
 
 using namespace std;
 using namespace tp;
@@ -20,64 +22,63 @@ using namespace tp;
  * Logs the results of the tests ran in standard output
  */
 class TestLoggerVisitor : public Visitor {
+public:
+    enum ColumnName {
+        TEST_NAME = 0,
+        RESULT,
+        EXPECTED_RES,
+        MAX_COLUMN
+    };
+
 private:
     unsigned WIDTH = 80;
     unsigned TN_WIDTH = 20; // TEST NAME WIDTH
     unsigned RESULT_WIDTH = 8;
     unsigned EXP_WIDTH = 20;
+    // Column Name and its width
+    map<ColumnName,unsigned> mColumnWidth;
+    map<ColumnName,string> mColumnName;
+    vector<ColumnName> mOrder;
+
+    string getColumnString(ColumnName name, TestDefinition *TD);
+    string getExpectedResultString(TestDefinition *TD);
 public:
-    TestLoggerVisitor() {}
+
+    TestLoggerVisitor() {
+        /////////////////////////////////////////
+        // These ones have to be maintained manually.
+        mColumnWidth[TEST_NAME] = TN_WIDTH;
+        mColumnWidth[RESULT] = RESULT_WIDTH;
+        mColumnWidth[EXPECTED_RES] = EXP_WIDTH;
+        mColumnName[TEST_NAME] = "Test name";
+        mColumnName[RESULT] = "Result";
+        mColumnName[EXPECTED_RES] = "Expected result";
+        /////////////////////////////////////////
+
+        // The order in which we will print the columns.
+        mOrder.push_back(TEST_NAME);
+        mOrder.push_back(RESULT);
+        mOrder.push_back(EXPECTED_RES);
+    }
+    TestLoggerVisitor(const TestLoggerVisitor&) = delete;
+    TestLoggerVisitor& operator=(const TestGeneratorVisitor&) = delete;
     ~TestLoggerVisitor() {}
 
     void VisitTestFileFirst(TestFile* TF)
     {
+        cout << left;
         cout << setw(WIDTH) << setfill('=') << '=' << setfill(' ') << endl;
-        cout << setw(TN_WIDTH) << left << "Test name";
-        cout << setw(RESULT_WIDTH) << "Result";
-        cout << setw(EXP_WIDTH) << "Expected result"<<endl;
+        for(auto column : mOrder)
+            cout << setw(mColumnWidth[column]) << mColumnName[column];
+        cout << endl;
         cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
 
     void VisitTestDefinition(TestDefinition *TD) {
-        cout << setw(TN_WIDTH) << TD->getTestName();
-        cout << setw(RESULT_WIDTH) << 
-                (TD->getReturnValue().IntVal.getBoolValue()?
-                "PASSED" : "FAILED");
-
-        // @todo Get the actual outcome from the call function
-        // @todo detect what failed, after conditions?
-        ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
-        if (ER) {
-            stringstream ss;
-            Constant* C = ER->getExpectedConstant()->getConstant();
-            ss << ER->getComparisonOperator()->getTypeStr() << " ";
-            switch(C->getType()){
-                case Constant::Type::NUMERIC:
-                {
-                    NumericConstant* nc = C->getNumericConstant();
-                    if(nc->isFloat())
-                        ss << nc->getFloat();
-                    if(nc->isInt())
-                        ss << nc->getInt();
-                }
-                    break;
-                case Constant::Type::STRING:
-                {
-
-                }
-                    break;
-                case Constant::Type::CHAR:
-                {
-
-                }
-                    break;
-                default:
-                    ss<<"Invalid Constant!"<<endl;
-                    break;
-            }
-            cout << setw(EXP_WIDTH) << ss.str() << endl;
-        }
+        for(auto column : mOrder)
+            cout << setw(mColumnWidth[column]) << getColumnString(column, TD);
+        cout << endl;
     }
 };
 

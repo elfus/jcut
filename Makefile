@@ -11,7 +11,7 @@ CLANG_LEVEL := ../..
 
 TOOLNAME = jit-testing
 
-SOURCES = main.cpp TestGeneratorVisitor.cpp TestParser.cpp
+SOURCES = main.cpp TestGeneratorVisitor.cpp TestParser.cpp TestLoggerVisitor.cpp
 
 # No plugins, optimize startup time.
 TOOL_NO_EXPORTS = 1
