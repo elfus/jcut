@@ -46,7 +46,7 @@ string TestLoggerVisitor::getExpectedResultString(TestDefinition *TD)
 			}
 				break;
 			default:
-				ss<<"Invalid Constant!"<<endl;
+				ss<<"Invalid Constant!";
 				break;
 		}
 		return ss.str();

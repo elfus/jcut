@@ -351,8 +351,12 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 	unsigned i = 0;
 
 	do {
-		test_name.pop_back();
-		test_name = test_name + ((char) (((int) '0') + i));
+		unsigned pos = test_name.find_last_of("_");
+		unsigned discard = test_name.size() - (++pos);
+		while(discard--) test_name.pop_back();
+		stringstream ss;
+		ss << i;
+		test_name = test_name + ss.str();
 		++i;
 	} while (mModule->getFunction(test_name));
 
