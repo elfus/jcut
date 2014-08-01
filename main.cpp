@@ -200,6 +200,8 @@ int main(int argc, const char **argv, char * const *envp)
 				tests->accept(&runner);
 
 				TestLoggerVisitor results_logger;
+				if(tests->warning_count)
+					results_logger.enableWarningColumn();
 				tests->accept(&results_logger);
 				cout << "Number of lines in file: " << driver.getTokenizer().line() << endl;
 				cout << "Column: " << driver.getTokenizer().column() << endl ;

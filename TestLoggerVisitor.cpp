@@ -10,6 +10,8 @@ string TestLoggerVisitor::getColumnString(ColumnName name, TestDefinition *TD)
 			return (TD->getReturnValue().IntVal.getBoolValue()?"PASSED" : "FAILED");
 		case EXPECTED_RES:
 			return getExpectedResultString(TD);
+		case WARNING:
+			return getWarningString(TD);
 		default:
 			return "Invalid column";
 	}
@@ -52,4 +54,17 @@ string TestLoggerVisitor::getExpectedResultString(TestDefinition *TD)
 		return ss.str();
 	}
 	return "Invalid expected result";
+}
+
+string TestLoggerVisitor::getWarningString(TestDefinition *TD)
+{
+	const vector<Exception>& warnings = TD->getWarnings();
+	if(warnings.size()) {
+		stringstream ss;
+		ss << "[" << warnings.size() << "] ";
+		for(auto w : warnings)
+			ss << "[" << w.what() << "] ";
+		return ss.str();
+	}
+	return "";
 }

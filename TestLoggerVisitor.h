@@ -27,14 +27,15 @@ public:
         TEST_NAME = 0,
         RESULT,
         EXPECTED_RES,
+        WARNING,
         MAX_COLUMN
     };
-
 private:
     unsigned WIDTH = 80;
     unsigned TN_WIDTH = 20; // TEST NAME WIDTH
     unsigned RESULT_WIDTH = 8;
     unsigned EXP_WIDTH = 20;
+    unsigned WARN_WIDTH = 30;
     // Column Name and its width
     map<ColumnName,unsigned> mColumnWidth;
     map<ColumnName,string> mColumnName;
@@ -42,6 +43,7 @@ private:
 
     string getColumnString(ColumnName name, TestDefinition *TD);
     string getExpectedResultString(TestDefinition *TD);
+    string getWarningString(TestDefinition *TD);
 public:
 
     TestLoggerVisitor() {
@@ -78,13 +80,19 @@ public:
     void VisitTestDefinition(TestDefinition *TD) {
         for(auto column : mOrder)
             cout << setw(mColumnWidth[column]) << getColumnString(column, TD);
-        cout << endl;
+        cout << endl;// << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
     /// @note In order for the new column width to take effect this method has
     /// to be called before visiting any of the nodes.
     void setColumnWidth(ColumnName column, unsigned width) {
         mColumnWidth[column] = width;
+    }
+
+    void enableWarningColumn() {
+        mColumnWidth[WARNING] = WARN_WIDTH;
+        mColumnName[WARNING] = "Warning";
+        mOrder.push_back(WARNING);
     }
 };
 

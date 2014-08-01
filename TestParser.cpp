@@ -248,6 +248,7 @@ int Tokenizer::nextToken()
 //
 
 int TestExpr::leaks = 0;
+unsigned TestExpr::warning_count = 0;
 
 Argument* TestDriver::ParseArgument()
 {
@@ -259,11 +260,15 @@ Argument* TestDriver::ParseArgument()
 BufferAlloc* TestDriver::ParseBufferAlloc()
 {
 	if (mCurrentToken != Tokenizer::TOK_BUFF_ALLOC) // @todo change to '['
-		throw Exception("BufferAlloc",mTokenizer.getTokenStringValue());
+		throw Exception(mTokenizer.line(), mTokenizer.column(),
+			"Expected a '['BufferAlloc",
+			"Received "+mTokenizer.getTokenStringValue()+" instead.");
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '['
 
 	if (mCurrentToken != Tokenizer::TOK_INT)
-		throw Exception("buffer size",mTokenizer.getTokenStringValue());
+		throw Exception(mTokenizer.line(), mTokenizer.column(),
+			"Expected an integer constant stating the buffer size.",
+			"Received "+mTokenizer.getTokenStringValue()+" instead.");
 	// @todo Create an integer class and stop using argument
 	Argument* buff_size = ParseArgument();// Buffer Size
 
@@ -333,7 +338,7 @@ DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 			}
 			throw Exception("Unexpected token: "+mTokenizer.getTokenStringValue());
 		}
-		
+
 		mCurrentToken = mTokenizer.nextToken(); // eat up the '.'
 		id = ParseIdentifier();
 		if (mCurrentToken != '=') {
@@ -533,7 +538,7 @@ TestFunction* TestDriver::ParseTestFunction()
 	ExpectedResult* ER = nullptr;
 	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP)
 		ER = ParseExpectedResult();
-	if (mCurrentToken != ';') 
+	if (mCurrentToken != ';')
 		throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
 				"Expected a semi colon ';' at the end of the test expression",
 				"Received "+mTokenizer.getTokenStringValue());
@@ -601,7 +606,7 @@ TestFixture* TestDriver::ParseTestFixture()
 
 		if (mCurrentToken == '}')
 			break;
-		
+
 	}
 	return new TestFixture(functions, assignments, expected);
 }
@@ -805,7 +810,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				}
 				mParsingTearDown = false;
 			}
-			
+
 			// Let's try to recover until the next test inside this group
 			while(group_exception == false and
 					mCurrentToken != Tokenizer::TOK_TEST_INFO and
@@ -816,7 +821,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					mCurrentToken != Tokenizer::TOK_EOF) {
 				mCurrentToken = mTokenizer.nextToken();
 			}
-			
+
 			if(group_exception) {
 				while(mCurrentToken != '}')
 					mCurrentToken = mTokenizer.nextToken();

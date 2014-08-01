@@ -49,22 +49,23 @@ public:
         WARNING
     };
 
-    Exception(const string& msg) : mMsg(msg) {};
-
     Exception(const string& expected, const string& received)
-        : mMsg(""), mLine(0), mColumn(0) {
+        : mMsg(""), mExtraMsg(""), mLine(0), mColumn(0), mSeverity(ERROR) {
         mMsg = "Expected "+expected+" but received: "+received;
     }
 
+    /// Used for warnings
+    Exception(const string& msg,
+               const string& extra = "", Severity s=Severity::ERROR)
+        : mMsg(msg), mExtraMsg(extra), mLine(0), mColumn(0), mSeverity(s) {
+        init();
+    }
+
+    /// Used for errors
     Exception(unsigned line, unsigned column, const string& msg,
-               const string& extra = "", Severity s=Severity::ERROR) {
-        stringstream ss;
-        ss << mCurrentFile <<":"<<line<<":"<<column<<": "<<
-                ((s==Severity::ERROR)?"error":"warning") << ": " << msg;
-        if (extra.size()) {
-            ss << endl << "\t" << extra;
-        }
-        mMsg = ss.str();
+               const string& extra = "", Severity s=Severity::ERROR)
+        : mMsg(msg), mExtraMsg(extra), mLine(line), mColumn(column),mSeverity(s) {
+        init();
     }
 
     const char* what() const throw () {
@@ -74,8 +75,22 @@ public:
     static string mCurrentFile;
 private:
     string mMsg;
+    string mExtraMsg;
     unsigned mLine;
     unsigned mColumn;
+    Severity mSeverity;
+
+    void init() {
+        stringstream ss;
+        if(mSeverity == Severity::ERROR)
+            ss << mCurrentFile <<":"<<mLine<<":"<<mColumn<<": error: " << mMsg;
+        else if(mSeverity == Severity::WARNING)
+            ss << "warning" << ": " << mMsg;
+        if (mExtraMsg.size()) {
+            ss << endl << "\t" << mExtraMsg;
+        }
+        mMsg = ss.str();
+    }
 };
 
 namespace tp { // tp stands for test parser
@@ -178,6 +193,7 @@ public:
     virtual ~TestExpr() {--leaks;}
 
     static int leaks;
+    static unsigned warning_count;
 };
 
 class ComparisonOperator : public TestExpr {
@@ -1128,6 +1144,7 @@ private:
     TestTeardown *mTestTeardown;
     TestMockup *mTestMockup;
     string mTestName;
+    vector<Exception> mWarnings;
 
 public:
 
@@ -1177,6 +1194,11 @@ public:
 
     void setTestName(const string& name) { mTestName = name; }
     string getTestName() const { return mTestName; }
+    void setWarnings(const vector<Exception>& warnings) {
+        mWarnings = warnings;
+        warning_count += mWarnings.size();
+    }
+    const vector<Exception>& getWarnings() const { return mWarnings; }
 };
 
 class GlobalMockup : public TestExpr {
@@ -1452,4 +1474,3 @@ private:
 
 } // namespace tp
 #endif	/* TESTPARSER_H */
-

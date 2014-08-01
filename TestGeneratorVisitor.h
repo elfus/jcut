@@ -49,6 +49,8 @@ private:
     std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupGroup;
     llvm::Value *mReturnValue;
     std::map<string,bool> mMockupNames;//used to create unique mockup names
+    /// Store all the warnings for a single TestDefinition.
+    std::vector<Exception> mWarnings;
 
     /**
  * Creates a new Value of the same Type as type with real_value

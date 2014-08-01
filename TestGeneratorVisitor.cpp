@@ -18,7 +18,8 @@ mModule(mod),
 mBuilder(mod->getContext()),
 mTestFunctionCall(nullptr),
 mCurrentBB(nullptr),
-mReturnValue(nullptr)
+mReturnValue(nullptr),
+mWarnings()
 {
 }
 
@@ -365,6 +366,10 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 	Function *testFunction = generateFunction(test_name,true,true);
 
 	TD->setLLVMFunction(testFunction);
+
+	TD->setWarnings(mWarnings);
+
+	mWarnings.clear();
 }
 
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
@@ -417,7 +422,9 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		string value = real_value;
 		if(real_value.find('.') != string::npos) {
 			value = real_value.substr(0, real_value.find('.'));
-			cout<<"Warning: Casting floating point value "<<real_value<<" to "<<value<<endl;
+			stringstream ss;
+			ss << "Casting floating point value "<<real_value<<" to "<<value;
+			mWarnings.push_back(Exception(ss.str(), "", Exception::WARNING));
 		}
 
 		if (IntegerType * intType = dyn_cast<IntegerType>(type))
