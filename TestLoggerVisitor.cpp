@@ -7,7 +7,7 @@ string TestLoggerVisitor::getColumnString(ColumnName name, TestDefinition *TD)
 			return TD->getTestName();
 			break;
 		case FUD:
-			return TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+			return TD->getTestFunction()->getFunctionCall()->getFunctionCalledString();
 		case RESULT:
 			return (TD->getReturnValue().IntVal.getBoolValue()?"PASSED" : "FAILED");
 		case EXPECTED_RES:

@@ -610,6 +610,8 @@ public:
     void dump();
 
     void accept(Visitor *v);
+
+    string getFunctionCalledString();
 };
 
 class ExpectedResult : public TestExpr {
@@ -1379,6 +1381,7 @@ protected:
     Argument *argArgument;
     BufferAlloc *argBuffAlloc;
     unsigned    ArgIndx;
+    // This parent is only used for the TestGeneratorVisitor
     FunctionCall *Parent;// Pointer to its parent
 public:
     explicit FunctionArgument(Argument *arg) :
@@ -1390,6 +1393,12 @@ public:
     Tokenizer::Token getTokenType() const {
         if(argArgument) return argArgument->getTokenType();
         return Tokenizer::TOK_BUFF_ALLOC;
+    }
+
+    string toString() {
+        if(argArgument)
+            return argArgument->getStringRepresentation();
+        return "BuffAlloc string";
     }
     unsigned getIndex() const { return ArgIndx; }
     FunctionCall* getParent() const { return Parent; }

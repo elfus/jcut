@@ -952,3 +952,18 @@ void InitializerValue::accept(Visitor *v) {
 	if (mStructValue) mStructValue->accept(v);
 	v->VisitInitializerValue(this);
 }
+
+
+string FunctionCall::getFunctionCalledString() {
+	string called = FunctionName->getIdentifierStr() +"(";
+	// @todo @bug We have to improve the way we detect and store the arguments.
+	// For instance when calling a function that receives a char, we need to
+	// print a character and not a number, and when calling a function that
+	// receives a numeric constant or integral type we have to display number.
+	for(FunctionArgument* fa : FunctionArguments)
+		called += fa->toString() + ", ";
+	called.pop_back();
+	called.pop_back();
+	called += ")";
+	return called;
+}

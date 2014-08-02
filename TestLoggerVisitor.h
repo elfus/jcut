@@ -34,7 +34,7 @@ public:
 private:
     unsigned WIDTH = 80; // The 'terminal' width
     unsigned TN_WIDTH = 20; // TEST NAME WIDTH
-    unsigned FUD_WIDTH = 20;
+    unsigned FUD_WIDTH = 30;
     unsigned RESULT_WIDTH = 8;
     unsigned EXP_WIDTH = 20;
     // Column Name and its width
