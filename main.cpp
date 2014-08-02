@@ -203,8 +203,7 @@ int main(int argc, const char **argv, char * const *envp)
 				if(tests->warning_count)
 					results_logger.enableWarningColumn();
 				tests->accept(&results_logger);
-				cout << "Number of lines in file: " << driver.getTokenizer().line() << endl;
-				cout << "Column: " << driver.getTokenizer().column() << endl ;
+
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";
 			}

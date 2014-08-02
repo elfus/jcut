@@ -11,8 +11,18 @@
 #include "TestParser.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
+#include "llvm/Support/raw_ostream.h"
+#include "OSRedirect.h"
 
 using namespace tp;
+
+// actually define vars.
+int StdCapture::m_pipe[2];
+int StdCapture::m_oldStdOut;
+int StdCapture::m_oldStdErr;
+bool StdCapture::m_capturing;
+std::mutex StdCapture::m_mutex;
+std::string StdCapture::m_captured;
 
 class TestRunnerVisitor : public Visitor {
 private:
@@ -63,7 +73,12 @@ public:
             f->dump();
             mEE->recompileAndRelinkFunction(f);
         }
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(TD);
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
+        TD->setTestOutput(std::move(StdCapture::GetCapture()));
         if (TM) {
             TM->useOriginalFunction(mEE);
         }

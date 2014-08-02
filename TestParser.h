@@ -1145,6 +1145,7 @@ private:
     TestMockup *mTestMockup;
     string mTestName;
     vector<Exception> mWarnings;
+    string mTestOutput;
 
 public:
 
@@ -1199,6 +1200,14 @@ public:
         warning_count += mWarnings.size();
     }
     const vector<Exception>& getWarnings() const { return mWarnings; }
+
+    void setTestOutput(string&& output) {
+        mTestOutput = output;
+    }
+
+    const string& getTestOutput() const {
+        return mTestOutput;
+    }
 };
 
 class GlobalMockup : public TestExpr {
