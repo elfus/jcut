@@ -37,7 +37,6 @@ private:
     unsigned FUD_WIDTH = 20;
     unsigned RESULT_WIDTH = 8;
     unsigned EXP_WIDTH = 20;
-    unsigned WARN_WIDTH = 30;
     // Column Name and its width
     map<ColumnName,unsigned> mColumnWidth;
     map<ColumnName,string> mColumnName;
@@ -87,7 +86,12 @@ public:
         // optionally print more information about the current test.
         for(auto column : mOrder)
             cout << setw(mColumnWidth[column]) << getColumnString(column, TD);
-        cout << endl;// << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+        cout << endl;
+        const vector<Exception>& warnings = TD->getWarnings();
+	if(warnings.size()) {
+		for(auto w : warnings)
+			cout << w.what() << endl;
+	}
         // If we want to print more information about a test, this is the place
         // for example we want print its output.
         if(TD->getTestOutput().size()) {
@@ -104,11 +108,6 @@ public:
         mColumnWidth[column] = width;
     }
 
-    void enableWarningColumn() {
-        mColumnWidth[WARNING] = WARN_WIDTH;
-        mColumnName[WARNING] = "Warning";
-        mOrder.push_back(WARNING);
-    }
 };
 
 #endif	/* TESTLOGGERVISITOR_H */

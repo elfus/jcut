@@ -200,8 +200,6 @@ int main(int argc, const char **argv, char * const *envp)
 				tests->accept(&runner);
 
 				TestLoggerVisitor results_logger;
-				if(tests->warning_count)
-					results_logger.enableWarningColumn();
 				tests->accept(&results_logger);
 
 			} catch (const Exception& e) {
