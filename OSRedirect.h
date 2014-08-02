@@ -42,7 +42,10 @@ public:
 /// The credit of the following code goes to that user!
 /// I dit not write this code.
 
-#ifdef _MSC_VER
+// For some reason Mingw32 did not defined this one, but I'll leave it here
+// for future reference
+// #ifdef _MSC_VER
+#ifdef __MINGW32__
 #include <io.h>
 #define popen _popen
 #define pclose _pclose
@@ -54,8 +57,10 @@ public:
 #define pipe _pipe
 #define read _read
 #define eof _eof
+#define MSG "WINDOWS!"
 #else
 #include <unistd.h>
+#define MSG "LINUX!"
 #endif
 #include <fcntl.h>
 #include <stdio.h>
@@ -68,7 +73,8 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
-#ifdef _MSC_VER
+// #ifdef _MSC_VER
+#ifdef __MINGW32__
         if (pipe(m_pipe, 65536, O_BINARY) == -1)
 #else
         if (pipe(m_pipe) == -1)
@@ -117,7 +123,8 @@ public:
         int bytesRead = 0;
         do
         {
-#ifdef _MSC_VER
+//#ifdef _MSC_VER
+#ifdef __MINGW32__
             bytesRead = 0;
             if (!eof(m_pipe[READ]))
                 bytesRead = read(m_pipe[READ], buf, bufSize); // windows can't handle read if file descriptor is at end of file
