@@ -24,7 +24,8 @@ using namespace tp;
 class TestLoggerVisitor : public Visitor {
 public:
     enum ColumnName {
-        TEST_NAME = 0,
+        GROUP_NAME = 0,
+        TEST_NAME,
         FUD, // Function Under Test
         RESULT,
         EXPECTED_RES,
@@ -33,6 +34,7 @@ public:
     };
 private:
     unsigned WIDTH = 80; // The 'terminal' width
+    unsigned GROUP_WIDTH = 15;
     unsigned TN_WIDTH = 20; // TEST NAME WIDTH
     unsigned FUD_WIDTH = 30;
     unsigned RESULT_WIDTH = 8;
@@ -50,10 +52,12 @@ public:
     TestLoggerVisitor() {
         /////////////////////////////////////////
         // These ones have to be maintained manually.
+        mColumnWidth[GROUP_NAME] = GROUP_WIDTH;
         mColumnWidth[TEST_NAME] = TN_WIDTH;
         mColumnWidth[FUD] = FUD_WIDTH;
         mColumnWidth[RESULT] = RESULT_WIDTH;
         mColumnWidth[EXPECTED_RES] = EXP_WIDTH;
+        mColumnName[GROUP_NAME] = "Group Name";
         mColumnName[TEST_NAME] = "Test name";
         mColumnName[FUD] = "Function called";
         mColumnName[RESULT] = "Result";
@@ -61,6 +65,7 @@ public:
         /////////////////////////////////////////
 
         // The order in which we will print the columns.
+        mOrder.push_back(GROUP_NAME);
         mOrder.push_back(TEST_NAME);
         mOrder.push_back(FUD);
         mOrder.push_back(RESULT);

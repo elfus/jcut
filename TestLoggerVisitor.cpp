@@ -3,6 +3,8 @@
 string TestLoggerVisitor::getColumnString(ColumnName name, TestDefinition *TD)
 {
 	switch(name) {
+		case GROUP_NAME:
+			return TD->getGroupName();
 		case TEST_NAME:
 			return TD->getTestName();
 			break;

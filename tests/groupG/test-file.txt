@@ -5,19 +5,19 @@ sum(-10,20) == 10;
 group A {
     sum(2,4) == 6;
     sum(-10,20) == 10;
-    group A {
+    group A1 {
         sum(2,4) == 6;
         sum(-10,20) == 10;
-        group A {
+        group A2 {
             sum(2,4) == 6;
             sum(-10,20) == 10;
-            group A {
+            group A3 {
                 sum(2,4) == 6;
                 sum(-10,20) == 10;
-                group A {
+                group A4 {
                     sum(2,4) == 6;
                     sum(-10,20) == 10;
-                    group A {
+                    group A5 {
                         sum(2,4) == 6;
                         sum(-10,20) == 10;
                     }
@@ -27,47 +27,12 @@ group A {
     }
 }
 
-group A {
-    group A {
-        group A {
-            group A {
-                group A {
-                    group A {
-                        sum(2,4) == 6;
-                        sum(-10,20) == 10;
-                    }
-                    sum(2,4) == 6;
-                    sum(-10,20) == 10;
-                }
-                sum(2,4) == 6;
-                sum(-10,20) == 10;
-            }
-            sum(2,4) == 6;
-            sum(-10,20) == 10;
-        }
-        sum(2,4) == 6;
-        sum(-10,20) == 10;
-    }
-    sum(2,4) == 6;
-    sum(-10,20) == 10;
-}
-
-group A {
-    sum(2,4) == 6;
-    sum(-10,20) == 10;
-    group A {
-        sum(2,4) == 6;
-        sum(-10,20) == 10;
-        group A {
-            sum(2,4) == 6;
-            sum(-10,20) == 10;
-            group A {
-                sum(2,4) == 6;
-                sum(-10,20) == 10;
-                group A {
-                    sum(2,4) == 6;
-                    sum(-10,20) == 10;
-                    group A {
+group B {
+    group B1 {
+        group B2 {
+            group B3 {
+                group B4 {
+                    group B5 {
                         sum(2,4) == 6;
                         sum(-10,20) == 10;
                     }
@@ -87,54 +52,22 @@ group A {
     sum(-10,20) == 10;
 }
 
-group A {
+group C {
     sum(2,4) == 6;
     sum(-10,20) == 10;
-    group A {
+    group C1 {
         sum(2,4) == 6;
         sum(-10,20) == 10;
-        group A {
+        group C2 {
             sum(2,4) == 6;
             sum(-10,20) == 10;
-            group A {
+            group C3 {
                 sum(2,4) == 6;
                 sum(-10,20) == 10;
-                group A {
+                group C4 {
                     sum(2,4) == 6;
                     sum(-10,20) == 10;
-                    group A {
-                        sum(2,4) == 6;
-                        sum(-10,20) == 10;
-                    }
-                    sum(2,4) == 6;
-                    sum(-10,20) == 10;
-                }
-                sum(2,4) == 6;
-                sum(-10,20) == 10;
-            }
-            sum(2,4) == 6;
-            sum(-10,20) == 10;
-        }
-        sum(2,4) == 6;
-        sum(-10,20) == 10;
-    }
-    sum(2,4) == 6;
-    sum(-10,20) == 10;
-    sum(2,4) == 6;
-    sum(-10,20) == 10;
-    group A {
-        sum(2,4) == 6;
-        sum(-10,20) == 10;
-        group A {
-            sum(2,4) == 6;
-            sum(-10,20) == 10;
-            group A {
-                sum(2,4) == 6;
-                sum(-10,20) == 10;
-                group A {
-                    sum(2,4) == 6;
-                    sum(-10,20) == 10;
-                    group A {
+                    group C5 {
                         sum(2,4) == 6;
                         sum(-10,20) == 10;
                     }
@@ -154,14 +87,81 @@ group A {
     sum(-10,20) == 10;
 }
 
-group A {
+group D {
+    sum(2,4) == 6;
+    sum(-10,20) == 10;
+    group D1 {
+        sum(2,4) == 6;
+        sum(-10,20) == 10;
+        group D2 {
+            sum(2,4) == 6;
+            sum(-10,20) == 10;
+            group D3 {
+                sum(2,4) == 6;
+                sum(-10,20) == 10;
+                group D4 {
+                    sum(2,4) == 6;
+                    sum(-10,20) == 10;
+                    group D5 {
+                        sum(2,4) == 6;
+                        sum(-10,20) == 10;
+                    }
+                    sum(2,4) == 6;
+                    sum(-10,20) == 10;
+                }
+                sum(2,4) == 6;
+                sum(-10,20) == 10;
+            }
+            sum(2,4) == 6;
+            sum(-10,20) == 10;
+        }
+        sum(2,4) == 6;
+        sum(-10,20) == 10;
+    }
+    sum(2,4) == 6;
+    sum(-10,20) == 10;
+    sum(2,4) == 6;
+    sum(-10,20) == 10;
+    group X1 {
+        sum(2,4) == 6;
+        sum(-10,20) == 10;
+        group X2 {
+            sum(2,4) == 6;
+            sum(-10,20) == 10;
+            group X3 {
+                sum(2,4) == 6;
+                sum(-10,20) == 10;
+                group X4 {
+                    sum(2,4) == 6;
+                    sum(-10,20) == 10;
+                    group X5 {
+                        sum(2,4) == 6;
+                        sum(-10,20) == 10;
+                    }
+                    sum(2,4) == 6;
+                    sum(-10,20) == 10;
+                }
+                sum(2,4) == 6;
+                sum(-10,20) == 10;
+            }
+            sum(2,4) == 6;
+            sum(-10,20) == 10;
+        }
+        sum(2,4) == 6;
+        sum(-10,20) == 10;
+    }
+    sum(2,4) == 6;
+    sum(-10,20) == 10;
+}
+
+group E {
     sum(2,4) == 6;
     sum(-10,20) == 10;
     sum(10, -20) == -10;
     sum(-15,-15) == -30;
 }
 
-group A {
+group F {
     sum(2,4) == 6;
     sum(-10,20) == 10;
     sum(10, -20) == -10;

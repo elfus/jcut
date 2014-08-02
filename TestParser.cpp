@@ -784,8 +784,12 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 							"Received "+mTokenizer.getTokenStringValue()+" instead.");
 				mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
 			} else {
-				TestDefinition *TestDefinition = ParseTestDefinition();
-				tests.push_back(TestDefinition);
+				TestDefinition *testDefinition = ParseTestDefinition();
+				if(name)
+					testDefinition->setGroupName(name->getIdentifierStr());
+				else
+					testDefinition->setGroupName("default");
+				tests.push_back(testDefinition);
 			}
 		} catch (const exception& e) {
 			cerr << e.what() << endl;
