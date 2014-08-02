@@ -33,56 +33,60 @@ public:
         MAX_COLUMN
     };
 private:
-    unsigned WIDTH = 80; // The 'terminal' width
-    unsigned GROUP_WIDTH = 15;
-    unsigned TN_WIDTH = 20; // TEST NAME WIDTH
-    unsigned FUD_WIDTH = 30;
-    unsigned RESULT_WIDTH = 8;
-    unsigned EXP_WIDTH = 20;
+    unsigned WIDTH; // The 'terminal' width
     // Column Name and its width
     map<ColumnName,unsigned> mColumnWidth;
     map<ColumnName,string> mColumnName;
     vector<ColumnName> mOrder;
+    string mPadding;
 
-    string getColumnString(ColumnName name, TestDefinition *TD);
     string getExpectedResultString(TestDefinition *TD);
     string getWarningString(TestDefinition *TD);
 public:
 
     TestLoggerVisitor() {
+        mPadding = " | ";
         /////////////////////////////////////////
         // These ones have to be maintained manually.
-        mColumnWidth[GROUP_NAME] = GROUP_WIDTH;
-        mColumnWidth[TEST_NAME] = TN_WIDTH;
-        mColumnWidth[FUD] = FUD_WIDTH;
-        mColumnWidth[RESULT] = RESULT_WIDTH;
-        mColumnWidth[EXPECTED_RES] = EXP_WIDTH;
-        mColumnName[GROUP_NAME] = "Group Name";
-        mColumnName[TEST_NAME] = "Test name";
-        mColumnName[FUD] = "Function called";
-        mColumnName[RESULT] = "Result";
-        mColumnName[EXPECTED_RES] = "Expected result";
+        mColumnName[GROUP_NAME] = "GROUP NAME";
+        mColumnName[TEST_NAME] = "TEST NAME";
+        mColumnName[FUD] = "FUNCTION CALLED";
+        mColumnName[RESULT] = "RESULT";
+        mColumnName[EXPECTED_RES] = "EXPECTED RESULT";
         /////////////////////////////////////////
 
+        for(auto& it : mColumnName)
+            mColumnWidth[it.first] = it.second.size();
+
         // The order in which we will print the columns.
+        // @todo load these ones dynamically
         mOrder.push_back(GROUP_NAME);
         mOrder.push_back(TEST_NAME);
         mOrder.push_back(FUD);
         mOrder.push_back(RESULT);
         mOrder.push_back(EXPECTED_RES);
+
+        calculateTotalWidth();
     }
     TestLoggerVisitor(const TestLoggerVisitor&) = delete;
     TestLoggerVisitor& operator=(const TestGeneratorVisitor&) = delete;
     ~TestLoggerVisitor() {}
+
+    void calculateTotalWidth() {
+        WIDTH = 0;
+        for(auto column : mOrder)
+            WIDTH += mColumnWidth[column];
+        WIDTH += mPadding.size()*mOrder.size();// Add the padding for each column
+    }
 
     void VisitTestFileFirst(TestFile* TF)
     {
         cout << left;
         cout << setw(WIDTH) << setfill('=') << '=' << setfill(' ') << endl;
         for(auto column : mOrder)
-            cout << setw(mColumnWidth[column]) << mColumnName[column];
+            cout << setw(mColumnWidth[column]) << mColumnName[column] << mPadding;
         cout << endl;
-        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+        cout << setw(WIDTH) << setfill('~') << '~' << setfill(' ') << endl;
     }
 
 
@@ -90,7 +94,7 @@ public:
         // Print the columns in the given order, then print a new line and
         // optionally print more information about the current test.
         for(auto column : mOrder)
-            cout << setw(mColumnWidth[column]) << getColumnString(column, TD);
+            cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
         cout << endl;
         const vector<Exception>& warnings = TD->getWarnings();
 	if(warnings.size()) {
@@ -111,6 +115,36 @@ public:
     /// to be called before visiting any of the nodes.
     void setColumnWidth(ColumnName column, unsigned width) {
         mColumnWidth[column] = width;
+    }
+
+    const vector<ColumnName>& getColumnOrder() { return mOrder; }
+    const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }
+    string getColumnString(ColumnName name, TestDefinition *TD);
+};
+
+class OutputFixerVisitor : public Visitor {
+    TestLoggerVisitor& mLogger;
+    const vector<TestLoggerVisitor::ColumnName>& mOrder;
+    const map<TestLoggerVisitor::ColumnName,unsigned>& mColumnWidth;
+public:
+    OutputFixerVisitor() = delete;
+    OutputFixerVisitor(const OutputFixerVisitor&) = delete;
+    OutputFixerVisitor& operator = (const OutputFixerVisitor& ) = delete;
+
+    OutputFixerVisitor(TestLoggerVisitor& lv) : mLogger(lv),
+    mOrder(mLogger.getColumnOrder()), mColumnWidth(mLogger.getColumnWidths()){
+    }
+
+    void VisitTestDefinition(TestDefinition *TD) {
+        for(auto column : mOrder) {
+            string str = mLogger.getColumnString(column, TD);
+            if(str.size() > mColumnWidth.at(column))
+                mLogger.setColumnWidth(column, str.size()); // +1 whitespace
+        }
+    }
+
+    virtual void VisitTestFile(TestFile*) {
+        mLogger.calculateTotalWidth();
     }
 
 };

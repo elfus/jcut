@@ -200,6 +200,12 @@ int main(int argc, const char **argv, char * const *envp)
 				tests->accept(&runner);
 
 				TestLoggerVisitor results_logger;
+				OutputFixerVisitor fixer(results_logger);
+				// @note The following two calls have to happen in this exact
+				// same order:
+				//  1st OutputFixerVisitor so we can get the right widths of all the output
+				//  2nd TestLoggerVisitor so we can print the test information
+				tests->accept(&fixer);
 				tests->accept(&results_logger);
 
 				delete tests;
