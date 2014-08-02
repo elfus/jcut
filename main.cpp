@@ -202,6 +202,7 @@ int main(int argc, const char **argv, char * const *envp)
 				TestLoggerVisitor results_logger;
 				tests->accept(&results_logger);
 
+				delete tests;
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";
 			}
@@ -212,6 +213,9 @@ int main(int argc, const char **argv, char * const *envp)
 	// Shutdown.
 
 	llvm::llvm_shutdown();
+
+	if(TestExpr::leaks)
+		cerr << TestExpr::leaks << " memory leaks in TestExpr!" << endl;
 
 	return Res;
 }

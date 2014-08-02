@@ -26,13 +26,14 @@ using namespace std;
 
 class LLVMFunctionHolder {
 private:
+    // Seems LLVM Is deleting this function. You may want to investigate.
     llvm::Function* mFunction;
     llvm::GenericValue mReturnValue;
     /// Attribute used to know the group this LLVM Function belongs to
     string  mGroupName;
 public:
     LLVMFunctionHolder() : mFunction(nullptr) {}
-    virtual ~LLVMFunctionHolder() {delete mFunction;}
+    virtual ~LLVMFunctionHolder() { }
 
     void setLLVMFunction(llvm::Function* f) { mFunction = f; }
     llvm::Function* getLLVMFunction() const { return mFunction; }
@@ -1305,17 +1306,13 @@ public:
             GlobalSetup *gs = nullptr, GlobalTeardown *gt = nullptr) :
     mName(name), mTests(tests),
     mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt) {
-        if (!mName) {
-            string group_name = "group_";
-            group_name += ((char) (((int) '0') + (group_count++)));
-            mName = new Identifier(group_name);
-        }
         /// @todo Enable GlobalMockup
         // if (GlobalMockup) GlobalMockup->setGroupName(mName->getIdentifierStr());
         if (mGlobalSetup) mGlobalSetup->setGroupName(mName->getIdentifierStr());
         if (mGlobalTeardown) mGlobalTeardown->setGroupName(mName->getIdentifierStr());
     }
     ~TestGroup() {
+        if (mName) delete mName;
         if (mGlobalMockup) delete mGlobalMockup;
         if (mGlobalSetup) delete mGlobalSetup;
         if (mGlobalTeardown) delete mGlobalTeardown;
@@ -1324,6 +1321,7 @@ public:
     }
 
     void dump() {
+        if (mName) mName->dump();
         if (mGlobalMockup) mGlobalMockup->dump();
         if (mGlobalSetup) mGlobalSetup->dump();
         if (mGlobalTeardown) mGlobalTeardown->dump();
@@ -1335,6 +1333,7 @@ public:
 
     void accept(Visitor *v) {
         v->VisitTestGroupFirst(this);
+        if (mName) mName->accept(v);
         if (mGlobalMockup) mGlobalMockup->accept(v);
         if (mGlobalSetup) mGlobalSetup->accept(v);
         for (auto*& ptr : mTests) {
@@ -1388,7 +1387,12 @@ public:
         argArgument(arg), argBuffAlloc(nullptr), ArgIndx(0), Parent(nullptr) { }
     explicit FunctionArgument(BufferAlloc *arg) :
         argArgument(nullptr), argBuffAlloc(arg), ArgIndx(0), Parent(nullptr) { }
-    ~FunctionArgument() {}
+    ~FunctionArgument() {
+        if(argArgument)
+            delete argArgument;
+        if(argBuffAlloc)
+            delete argBuffAlloc;
+    }
 
     Tokenizer::Token getTokenType() const {
         if(argArgument) return argArgument->getTokenType();
@@ -1455,6 +1459,9 @@ public:
     const Tokenizer& getTokenizer() const { return mTokenizer; }
 
 private:
+    /// Generates default names for groups
+    Identifier* groupNameFactory();
+
     Identifier* ParseIdentifier();
     Argument* ParseArgument();
     InitializerValue* ParseInitializerValue();
@@ -1483,7 +1490,7 @@ private:
     TestInfo* ParseTestInfo();
     TestDefinition* ParseTestDefinition();
     // @arg name The name of the group to be parsed
-    TestGroup* ParseTestGroup(Identifier* name = nullptr);
+    TestGroup* ParseTestGroup(Identifier* name);
     GlobalMockup* ParseGlobalMockup();
     GlobalSetup* ParseGlobalSetup();
     GlobalTeardown* ParseGlobalTeardown();

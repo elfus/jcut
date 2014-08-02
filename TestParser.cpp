@@ -766,6 +766,9 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				if (mCurrentToken == Tokenizer::TOK_IDENTIFIER)
 					new_group_name = ParseIdentifier();
 
+				if(new_group_name == nullptr)
+					new_group_name = groupNameFactory();
+
 				if (mCurrentToken != '{') {
 					group_exception = true;
 					throw Exception(mTokenizer.previousLine(), mTokenizer.previousLine(),
@@ -774,7 +777,9 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				}
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
-				TestGroup* group = ParseTestGroup(new_group_name);
+				Identifier* ngn = new Identifier(name->getIdentifierStr()+":"+new_group_name->getIdentifierStr());
+				delete new_group_name;
+				TestGroup* group = ParseTestGroup(ngn);
 				if (group)
 					tests.push_back(group);
 
@@ -885,7 +890,7 @@ GlobalTeardown* TestDriver::ParseGlobalTeardown()
 
 TestFile* TestDriver::ParseTestFile()
 {
-	TestGroup* group = ParseTestGroup();
+	TestGroup* group = ParseTestGroup(groupNameFactory());
 	if (group)
 		return new TestFile(group);
 	else
@@ -897,6 +902,15 @@ TestExpr* TestDriver::ParseTestExpr()
 	// Position on the first token
 	mCurrentToken = mTokenizer.nextToken();
 	return ParseTestFile();
+}
+
+Identifier* TestDriver::groupNameFactory()
+{
+	static unsigned i = 0;
+	stringstream ss;
+	ss << "group_" << i;
+	i++;
+	return new Identifier(ss.str());
 }
 
 // Definitions due to conflicts with the forward declarations
