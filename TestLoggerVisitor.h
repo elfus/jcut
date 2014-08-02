@@ -25,14 +25,16 @@ class TestLoggerVisitor : public Visitor {
 public:
     enum ColumnName {
         TEST_NAME = 0,
+        FUD, // Function Under Test
         RESULT,
         EXPECTED_RES,
         WARNING,
         MAX_COLUMN
     };
 private:
-    unsigned WIDTH = 80;
+    unsigned WIDTH = 80; // The 'terminal' width
     unsigned TN_WIDTH = 20; // TEST NAME WIDTH
+    unsigned FUD_WIDTH = 20;
     unsigned RESULT_WIDTH = 8;
     unsigned EXP_WIDTH = 20;
     unsigned WARN_WIDTH = 30;
@@ -50,15 +52,18 @@ public:
         /////////////////////////////////////////
         // These ones have to be maintained manually.
         mColumnWidth[TEST_NAME] = TN_WIDTH;
+        mColumnWidth[FUD] = FUD_WIDTH;
         mColumnWidth[RESULT] = RESULT_WIDTH;
         mColumnWidth[EXPECTED_RES] = EXP_WIDTH;
         mColumnName[TEST_NAME] = "Test name";
+        mColumnName[FUD] = "Function called";
         mColumnName[RESULT] = "Result";
         mColumnName[EXPECTED_RES] = "Expected result";
         /////////////////////////////////////////
 
         // The order in which we will print the columns.
         mOrder.push_back(TEST_NAME);
+        mOrder.push_back(FUD);
         mOrder.push_back(RESULT);
         mOrder.push_back(EXPECTED_RES);
     }
