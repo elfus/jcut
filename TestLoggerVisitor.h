@@ -32,6 +32,12 @@ public:
         WARNING,
         MAX_COLUMN
     };
+
+    enum LogFormat {
+        LOG_ALL = 1 << 0, // 1
+        LOG_PASSING = 1 << 1, // 2
+        LOG_FAILING = 1 << 2, // 4
+    };
 private:
     unsigned WIDTH; // The 'terminal' width
     // Column Name and its width
@@ -42,9 +48,11 @@ private:
     unsigned mTestCount = 0;
     unsigned mTestsPassed = 0;
     unsigned mTestsFailed = 0;
+    LogFormat mFmt = LOG_ALL;
 
     string getExpectedResultString(TestDefinition *TD);
     string getWarningString(TestDefinition *TD);
+    void logTest(TestDefinition *TD);
 public:
 
     TestLoggerVisitor() {
@@ -105,28 +113,16 @@ public:
 
     void VisitTestDefinition(TestDefinition *TD) {
         ++mTestCount;
-        if(TD->getReturnValue().IntVal.getBoolValue())
+        if(TD->getReturnValue().IntVal.getBoolValue()) {
             ++mTestsPassed;
-        else
-            ++mTestsFailed;
-        // Print the columns in the given order, then print a new line and
-        // optionally print more information about the current test.
-        for(auto column : mOrder)
-            cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
-        cout << endl;
-        const vector<Exception>& warnings = TD->getWarnings();
-	if(warnings.size()) {
-		for(auto w : warnings)
-			cout << w.what() << endl;
-	}
-        // If we want to print more information about a test, this is the place
-        // for example we want print its output.
-        if(TD->getTestOutput().size()) {
-            cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
-            cout << setw(WIDTH) << right << "[Test output]" << left << endl;
-            cout << TD->getTestOutput() << endl;
+            if(mFmt & LOG_ALL || mFmt & LOG_PASSING)
+                logTest(TD);
         }
-        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+        else {
+            ++mTestsFailed;
+            if(mFmt & LOG_ALL || mFmt & LOG_FAILING)
+                logTest(TD);
+        }
     }
 
     /// @note In order for the new column width to take effect this method has
@@ -134,6 +130,8 @@ public:
     void setColumnWidth(ColumnName column, unsigned width) {
         mColumnWidth[column] = width;
     }
+
+    void setLogFormat(LogFormat fmt) { mFmt = fmt; }
 
     const vector<ColumnName>& getColumnOrder() { return mOrder; }
     const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }

@@ -201,6 +201,7 @@ int main(int argc, const char **argv, char * const *envp)
 
 				TestLoggerVisitor results_logger;
 				OutputFixerVisitor fixer(results_logger);
+				results_logger.setLogFormat(TestLoggerVisitor::LOG_ALL);
 				// @note The following two calls have to happen in this exact
 				// same order:
 				//  1st OutputFixerVisitor so we can get the right widths of all the output

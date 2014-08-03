@@ -70,3 +70,25 @@ string TestLoggerVisitor::getWarningString(TestDefinition *TD)
 	}
 	return "";
 }
+
+void TestLoggerVisitor::logTest(TestDefinition* TD)
+{
+	// Print the columns in the given order, then print a new line and
+	// optionally print more information about the current test.
+	for(auto column : mOrder)
+		cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
+	cout << endl;
+	const vector<Exception>& warnings = TD->getWarnings();
+	if(warnings.size()) {
+		for(auto w : warnings)
+			cout << w.what() << endl;
+	}
+	// If we want to print more information about a test, this is the place
+	// for example we want print its output.
+	if(TD->getTestOutput().size()) {
+		cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
+		cout << setw(WIDTH) << right << "[Test output]" << left << endl;
+		cout << TD->getTestOutput() << endl;
+	}
+	cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+}
