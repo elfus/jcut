@@ -148,7 +148,6 @@ public:
     void VisitFunctionCall(FunctionCall *);
     void VisitExpectedResult(ExpectedResult *);
     void VisitExpectedExpression(ExpectedExpression *);
-    void VisitTestFunction(TestFunction *);
     void VisitMockupFunction(MockupFunction*);
     void VisitVariableAssignment(VariableAssignment *);
     void VisitTestDefinition(TestDefinition *);

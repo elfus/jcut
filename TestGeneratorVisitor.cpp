@@ -230,11 +230,6 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	}
 }
 
-void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
-{
-
-}
-
 void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 {
 	FunctionCall* FC = MF->getFunctionCall();
