@@ -39,6 +39,9 @@ private:
     map<ColumnName,string> mColumnName;
     vector<ColumnName> mOrder;
     string mPadding;
+    unsigned mTestCount = 0;
+    unsigned mTestsPassed = 0;
+    unsigned mTestsFailed = 0;
 
     string getExpectedResultString(TestDefinition *TD);
     string getWarningString(TestDefinition *TD);
@@ -89,8 +92,23 @@ public:
         cout << setw(WIDTH) << setfill('~') << '~' << setfill(' ') << endl;
     }
 
+    void VisitTestFile(TestFile* TF)
+    {
+        assert(mTestCount == (mTestsPassed + mTestsFailed) && "Invalid test count");
+        cout << setw(WIDTH) << setfill('~') << '~' << setfill(' ') << endl;
+        cout << "TEST SUMMARY" << endl;
+        cout << "Tests ran: " << mTestCount << endl;
+        cout << "Tests PASSED: " << mTestsPassed << endl;
+        cout << "Tests FAILED: " << mTestsFailed << endl;
+    }
+
 
     void VisitTestDefinition(TestDefinition *TD) {
+        ++mTestCount;
+        if(TD->getReturnValue().IntVal.getBoolValue())
+            ++mTestsPassed;
+        else
+            ++mTestsFailed;
         // Print the columns in the given order, then print a new line and
         // optionally print more information about the current test.
         for(auto column : mOrder)
@@ -120,6 +138,9 @@ public:
     const vector<ColumnName>& getColumnOrder() { return mOrder; }
     const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }
     string getColumnString(ColumnName name, TestDefinition *TD);
+
+    unsigned getTestsFailed() const { return mTestsFailed; }
+
 };
 
 class OutputFixerVisitor : public Visitor {

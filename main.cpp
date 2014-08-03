@@ -208,6 +208,8 @@ int main(int argc, const char **argv, char * const *envp)
 				tests->accept(&fixer);
 				tests->accept(&results_logger);
 
+				// this application exits with the number of tests failed.
+				Res = results_logger.getTestsFailed();
 				delete tests;
 			} catch (const Exception& e) {
 				errs() << e.what() << "\n";
