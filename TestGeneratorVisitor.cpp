@@ -25,12 +25,6 @@ mWarnings()
 
 /**
  * Create the appropriate instructions for each argument type
- *
- * @TODO Improve implementation and code readability
- * @TODO Add support for pointers to pointers and more complex types
- *
- * @param arg
- * @return
  */
 void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 {
@@ -105,14 +99,17 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 
 void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 {
-	// Get the call instruction pushed by VisitFunctionCallExpr
+	// Get the call instruction pushed by VisitFunctionCall or the last instructions
+	// pushed by this same method VisitExpectedResult
     CallInst *call = dyn_cast<CallInst>(mInstructions.back());
     if(call == nullptr)
         throw Exception("Invalid CallInst!");
 
 	Type* returnedType = call->getCalledFunction()->getReturnType();
 	if(returnedType->getTypeID() == Type::TypeID::VoidTyID) {
-		cerr<<"Warning: Trying compare a value against a function with no return value"<<endl;
+		stringstream ss;
+		ss<<"Trying compare a value against a function with no return value (void)"<<endl;
+		mWarnings.push_back(Exception(ss.str(), "", Exception::WARNING));
 		return;
 	}
 
@@ -149,7 +146,6 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	mReturnValue = zext;
 }
 
-/// @todo @bug Add support for comparing float types
 void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 {
 	Operand* LHS = EE->getLHSOperand();
@@ -211,8 +207,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mReturnValue->getType());
 		// We perform this comparison for the cases in which we called a unit test
 		// (function) and we use its return value to chain it with the rest of
-		// comparisons. For the global teardown this does not apply and we should
-		// avoid creating these.
+		// comparisons.
 		llvm::Value* mainBool = mBuilder.CreateICmpEQ(mReturnValue, zext);
 		llvm::ZExtInst* zext2 = (llvm::ZExtInst*) mBuilder.CreateZExt(mainBool,mReturnValue->getType());
 
@@ -222,7 +217,9 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 		mInstructions.push_back(zext2);
 		mReturnValue = zext2;
 	} else {
-		// It means we are in a GlobalTeardown or GlobalSetup
+		// It means we are in a GlobalTeardown or GlobalSetup because mReturnValue
+		// is never assigned when processing before_all or after_all, so it always
+		// remains nullptr
 		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());// We know we always return int32
 		mInstructions.push_back((llvm::Instruction*)i);
 		mInstructions.push_back(zext);
@@ -302,6 +299,10 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 
 	/// @todo Add support for structures
 	LoadInst* load_value = mBuilder.CreateLoad(global_variable);
+	// Every time we are about to modify a global variable save it in our backup
+	// vector both the value and the original global variable. We will keep the
+	// original value in memory for the time being.
+	// NOTE: This is before calling the function under test.
 	mBackup.push_back(make_tuple(load_value, global_variable));
 	mInstructions.push_back(load_value);
 
@@ -404,7 +405,6 @@ void TestGeneratorVisitor::VisitTestGroup(TestGroup *TG)
  * Creates a new Value of the same Type as type with real_value
  *
  * @TODO Improve the way this method works and its documentation
- * @BUG This method only works with IntegerTyID types
  */
 llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		const string& real_value)
@@ -413,7 +413,6 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	switch (typeID) {
 	case Type::TypeID::IntegerTyID:
 	{
-		/// @todo throw a warning when we 'cast' a floating type to an integer
 		string value = real_value;
 		if(real_value.find('.') != string::npos) {
 			value = real_value.substr(0, real_value.find('.'));
@@ -449,7 +448,7 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	case Type::TypeID::VoidTyID:
 		assert(false && "Cannot create a void value!");
 	default:
-		cout << "Could not create value for typeID: " << typeID << endl;
+		cerr << "Could not create value for typeID: " << typeID << endl;
 		return nullptr;
 	}
 	return nullptr;
@@ -467,6 +466,11 @@ llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
 			"block_" + name, function);
 
 	if(restore_backup) {
+		// This line corresponds to the global variables saved on line
+		// TestGeneratorVisitor::VisitVariableAssignment::309
+		// Restore the values of global variables that are in memory
+		// NOTE: At this point the function under test was already called, so
+		// we can restore the variables.
 		for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
 			StoreInst* st = mBuilder.CreateStore(get<0>(tup), get<1>(tup));
 			mInstructions.push_back(st);
@@ -480,7 +484,7 @@ llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
 	else if(use_mReturnValue && mReturnValue==nullptr)
 		ret = mBuilder.CreateRet(mBuilder.getInt32(1));// the setup/teardown passed
 	else
-		ret = mBuilder.CreateRet(mBuilder.getInt32(0));
+		ret = mBuilder.CreateRet(mBuilder.getInt32(0));// the function under test returned 'void'
 
 	mInstructions.push_back(ret);
 
@@ -500,6 +504,9 @@ void TestGeneratorVisitor::saveGlobalVariables()
 {
 	llvm::GlobalVariable* dst = nullptr;
 	mBackupGroup.push_back(make_tuple(nullptr,nullptr));
+	// Get the values of the global variables that were to be modified.
+	// Then create new global variables and assign them the original values
+	// from the global variables.
 	for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
 		Value* g_value = get<0>(tup);
 		GlobalVariable* original = get<1>(tup);

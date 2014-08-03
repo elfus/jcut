@@ -146,7 +146,9 @@ public:
 
     void VisitFunctionArgument(FunctionArgument *);
     void VisitFunctionCall(FunctionCall *);
+    // Used to compare the results from the function under test against an expected result.
     void VisitExpectedResult(ExpectedResult *);
+    // Used to compare expressions in 'after or after_all' statements.
     void VisitExpectedExpression(ExpectedExpression *);
     void VisitMockupFunction(MockupFunction*);
     void VisitVariableAssignment(VariableAssignment *);
