@@ -158,7 +158,7 @@ public:
         for(auto column : mOrder) {
             string str = mLogger.getColumnString(column, TD);
             if(str.size() > mColumnWidth.at(column))
-                mLogger.setColumnWidth(column, str.size()); // +1 whitespace
+                mLogger.setColumnWidth(column, str.size());
         }
     }
 

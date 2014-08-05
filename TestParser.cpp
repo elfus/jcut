@@ -978,10 +978,12 @@ string FunctionCall::getFunctionCalledString() {
 	// For instance when calling a function that receives a char, we need to
 	// print a character and not a number, and when calling a function that
 	// receives a numeric constant or integral type we have to display number.
-	for(FunctionArgument* fa : FunctionArguments)
-		called += fa->toString() + ", ";
-	called.pop_back();
-	called.pop_back();
+	if(FunctionArguments.size()) {
+		for(FunctionArgument* fa : FunctionArguments)
+			called += fa->toString() + ", ";
+		called.pop_back();
+		called.pop_back();
+	}
 	called += ")";
 	return called;
 }
