@@ -77,7 +77,7 @@ private:
      * @param restore_backup
      * @return Function
      */
-    llvm::Function* generateFunction(const string& name, bool use_mReturnValue = false, bool restore_backup = false);
+    llvm::Function* generateFunction(const string& name, bool use_mReturnValue = false);
 
     /**
      * Saves all the global variables loaded in mBackup in a new global variable.

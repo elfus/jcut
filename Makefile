@@ -29,5 +29,5 @@ include $(CLANG_LEVEL)/../../Makefile.config
 
 include $(CLANG_LEVEL)/Makefile
 
-CXXFLAGS = -std=c++11 -g -fexceptions -frtti
-CFLAGS = -g
+CXXFLAGS = -std=c++11 -ggdb3 -fexceptions -frtti
+CFLAGS = -ggdb3

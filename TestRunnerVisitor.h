@@ -38,8 +38,15 @@ private:
             }
 
             llvm::GenericValue rval = mEE->runFunction(f,mArgs);
-            mEE->clearAllGlobalMappings();
-            mEE->freeMachineCodeForFunction(f);
+            //////////////////////////////////////
+            // @warning Watch out for this method. If you call it you will loose
+            // all the current values of your global variables!
+            // mEE->clearAllGlobalMappings();
+            /////////////////////////////////////
+            // @bug this method makes the code crash when VisitTestDefinition.
+            // Seems it has to be called in conjunction with the previous one.
+            // mEE->freeMachineCodeForFunction(f);
+            /////////////////////////////////////
             FW->setReturnValue(rval);
         } else
             cerr << "No available LLVM test function! Received nullptr" << endl;
@@ -102,7 +109,12 @@ public:
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(TD); // do the cleanup
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
+        TD->setOutput(StdCapture::GetCapture());
     }
 
 };

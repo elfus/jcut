@@ -133,7 +133,7 @@ public:
         }
     }
 
-    void VisitTestTeardow(TestTeardown *TT) {
+    void VisitTestTeardown(TestTeardown *TT) {
         if(mCurrentTestPassed) {
             if(mFmt & LOG_ALL || (mFmt & LOG_PASSING && mFmt & LOG_TEST_TEARDOWN))
                 logFunction(TT, TT->getLLVMFunction()->getName());
@@ -160,6 +160,8 @@ public:
 
     void VisitTestDefinition(TestDefinition *TD) {
         cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+        if(mFmt & LOG_ALL)
+            logFunction(TD, "cleanup");
     }
 
     /// @note In order for the new column width to take effect this method has

@@ -299,13 +299,23 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 
 	/// @todo Add support for structures
 	LoadInst* load_value = mBuilder.CreateLoad(global_variable);
-	// Every time we are about to modify a global variable save it in our backup
-	// vector both the value and the original global variable. We will keep the
-	// original value in memory for the time being.
-	// NOTE: This is before calling the function under test.
-	mBackup.push_back(make_tuple(load_value, global_variable));
 	mInstructions.push_back(load_value);
 
+        /// @todo Watch for pointer types and structures
+        GlobalVariable* backup = new GlobalVariable(*mModule,
+                        global_variable->getType()->getElementType(),
+                        false,
+                        GlobalValue::LinkageTypes::ExternalLinkage,
+                        0,
+                        "backup_"+global_variable->getName().str(),
+                        global_variable);
+        backup->setInitializer(global_variable->getInitializer());
+        backup->copyAttributesFrom(global_variable);
+
+        StoreInst* st = mBuilder.CreateStore(load_value, backup);
+        mInstructions.push_back(st);
+
+        mBackupGroup.push_back(make_tuple(backup,global_variable));
 	// TODO: Handle the rest of token types
 	switch (tokenType) {
 		case Tokenizer::TOK_INT:
@@ -343,30 +353,35 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 
 void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
 {
-    string func_name = "test_setup_GET_THE_REAL_NAME";
-    saveGlobalVariables();
+    string func_name = "setup_GET_THE_REAL_NAME";
     Function *testFunction = generateFunction(func_name, true);
     TS->setLLVMFunction(testFunction);
-}
-
-void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
-{
-    string func_name = "test_teardown_GET_THE_REAL_NAME";
-    restoreGlobalVariables();
-    Function *testFunction = generateFunction(func_name, true);
-    TT->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
     string func_name = TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
-    string test_name = getUniqueTestName(func_name);
-    Function *testFunction = generateFunction(test_name,true,true);
+    Function *testFunction = generateFunction(func_name,true);
     TF->setLLVMFunction(testFunction);
 }
 
+void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
+{
+    string func_name = "teardown_GET_THE_REAL_NAME";
+    Function *testFunction = generateFunction(func_name, true);
+    TT->setLLVMFunction(testFunction);
+}
+
+
+
 void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 {
+    if(mBackupGroup.size()) {
+        string func_name = "cleanup_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+        restoreGlobalVariables();
+        Function *testFunction = generateFunction(func_name);
+        TD->setLLVMFunction(testFunction);
+    }
     // The warnings may include test-setup, test-function, or test-teardown
     TD->setWarnings(mWarnings);
 
@@ -460,36 +475,22 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 }
 
 llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
-													bool use_mReturnValue,
-													bool restore_backup)
+                                                        bool use_mReturnValue)
 {
+    string unique_name = getUniqueTestName(name);
 	Function *function = cast<Function> (mModule->getOrInsertFunction(
-			name,
+			unique_name,
 			Type::getInt32Ty(mModule->getContext()),
 			(Type*) 0));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
-			"block_" + name, function);
-
-	if(restore_backup) {
-		// This line corresponds to the global variables saved on line
-		// TestGeneratorVisitor::VisitVariableAssignment::309
-		// Restore the values of global variables that are in memory
-		// NOTE: At this point the function under test was already called, so
-		// we can restore the variables.
-		for(tuple<llvm::Value*,llvm::GlobalVariable*>& tup : mBackup) {
-			StoreInst* st = mBuilder.CreateStore(get<0>(tup), get<1>(tup));
-			mInstructions.push_back(st);
-		}
-	}
+			"block_" + unique_name, function);
 
 	ReturnInst *ret = nullptr;
 	if(use_mReturnValue && mReturnValue) {
 		ret = mBuilder.CreateRet(mReturnValue);
 	}
-	else if(use_mReturnValue && mReturnValue==nullptr)
-		ret = mBuilder.CreateRet(mBuilder.getInt32(1));// the setup/teardown passed
 	else
-		ret = mBuilder.CreateRet(mBuilder.getInt32(0));// the function under test returned 'void'
+            ret = mBuilder.CreateRet(mBuilder.getInt32(1));// the setup/teardown passed
 
 	mInstructions.push_back(ret);
 
