@@ -23,26 +23,6 @@
 
 using namespace std;
 
-
-class LLVMFunctionHolder {
-private:
-    // Seems LLVM Is deleting this function. You may want to investigate.
-    llvm::Function* mFunction;
-    llvm::GenericValue mReturnValue;
-    /// Attribute used to know the group this LLVM Function belongs to
-    string  mGroupName;
-public:
-    LLVMFunctionHolder() : mFunction(nullptr) {}
-    virtual ~LLVMFunctionHolder() { }
-
-    void setLLVMFunction(llvm::Function* f) { mFunction = f; }
-    llvm::Function* getLLVMFunction() const { return mFunction; }
-    void setReturnValue(llvm::GenericValue GV) { mReturnValue = GV; }
-    const llvm::GenericValue& getReturnValue () const { return mReturnValue; }
-    string getGroupName() const { return mGroupName; }
-    void setGroupName(const string& name) { mGroupName = name; }
-};
-
 class Exception : public std::exception {
 public:
     enum Severity {
@@ -92,6 +72,37 @@ private:
         }
         mMsg = ss.str();
     }
+};
+
+class LLVMFunctionHolder {
+private:
+    // Seems LLVM Is deleting this function. You may want to investigate.
+    llvm::Function* mFunction;
+    llvm::GenericValue mReturnValue;
+    /// Attribute used to know the group this LLVM Function belongs to
+    string  mGroupName;
+    // The output when running this function.
+    string  mOutput;
+    // Any warning we want to inform while generating this LLVM Function
+    vector<Exception> mWarnings;
+public:
+    LLVMFunctionHolder() : mFunction(nullptr) {}
+    virtual ~LLVMFunctionHolder() { }
+
+    void setLLVMFunction(llvm::Function* f) { mFunction = f; }
+    llvm::Function* getLLVMFunction() const { return mFunction; }
+    void setReturnValue(llvm::GenericValue GV) { mReturnValue = GV; }
+    const llvm::GenericValue& getReturnValue () const { return mReturnValue; }
+    string getGroupName() const { return mGroupName; }
+    void setGroupName(const string& name) { mGroupName = name; }
+    void setOutput(string&& output) { mOutput = output; }
+    const string& getOutput() const { return mOutput; }
+    void setWarnings(const vector<Exception>& warnings) {
+        mWarnings = warnings;
+        warning_count += mWarnings.size();
+    }
+    const vector<Exception>& getWarnings() const { return mWarnings; }
+    static unsigned warning_count;
 };
 
 namespace tp { // tp stands for test parser
@@ -194,7 +205,6 @@ public:
     virtual ~TestExpr() {--leaks;}
 
     static int leaks;
-    static unsigned warning_count;
 };
 
 class ComparisonOperator : public TestExpr {
@@ -1047,7 +1057,7 @@ public:
     }
 };
 
-class TestSetup : public TestExpr {
+class TestSetup : public TestExpr, public LLVMFunctionHolder {
 private:
     TestFixture* mTestFixtureExpr;
 public:
@@ -1071,7 +1081,7 @@ public:
     }
 };
 
-class TestFunction : public TestExpr {
+class TestFunction : public TestExpr, public LLVMFunctionHolder {
 private:
     FunctionCall* mFunctionCall;
     ExpectedResult* mExpectedResult;
@@ -1099,7 +1109,7 @@ public:
     }
 };
 
-class TestTeardown : public TestExpr {
+class TestTeardown : public TestExpr, public LLVMFunctionHolder {
 private:
     TestFixture* mTestFixture;
 public:
@@ -1146,9 +1156,6 @@ private:
     TestSetup *mTestSetup;
     TestTeardown *mTestTeardown;
     TestMockup *mTestMockup;
-    string mTestName;
-    vector<Exception> mWarnings;
-    string mTestOutput;
 
 public:
 
@@ -1159,7 +1166,7 @@ public:
             TestTeardown *teardown = nullptr,
             TestMockup *mockup = nullptr) :
     mTestInfo(info), FunctionCall(function), mTestSetup(setup),
-    mTestTeardown(teardown), mTestMockup(mockup), mTestName()  {
+    mTestTeardown(teardown), mTestMockup(mockup)  {
     }
 
     TestFunction * getTestFunction() const {return FunctionCall;}
@@ -1188,28 +1195,13 @@ public:
     }
 
     void accept(Visitor *v) {
+        v->VisitTestDefinitionFirst(this);
         if(mTestInfo) mTestInfo->accept(v);
         if(mTestMockup) mTestMockup->accept(v);
         if(mTestSetup) mTestSetup->accept(v);
         FunctionCall->accept(v);
         if(mTestTeardown) mTestTeardown->accept(v);
         v->VisitTestDefinition(this);
-    }
-
-    void setTestName(const string& name) { mTestName = name; }
-    string getTestName() const { return mTestName; }
-    void setWarnings(const vector<Exception>& warnings) {
-        mWarnings = warnings;
-        warning_count += mWarnings.size();
-    }
-    const vector<Exception>& getWarnings() const { return mWarnings; }
-
-    void setTestOutput(string&& output) {
-        mTestOutput = output;
-    }
-
-    const string& getTestOutput() const {
-        return mTestOutput;
     }
 };
 

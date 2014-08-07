@@ -188,7 +188,7 @@ int main(int argc, const char **argv, char * const *envp)
 				TestExpr *tests = driver.ParseTestExpr(); // Parse file
 				TestGeneratorVisitor visitor(Module);
 				tests->accept(&visitor); // Generate object structure tree
-				
+
 				// Initialize the JIT Engine only once
 				llvm::InitializeNativeTarget();
 				std::string Error;

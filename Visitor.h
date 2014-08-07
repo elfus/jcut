@@ -102,6 +102,7 @@ public:
     virtual void VisitTestFileFirst(TestFile *) {}
     virtual void VisitGlobalSetupFirst(GlobalSetup *) {}
     virtual void VisitGlobalTeardownFirst(GlobalTeardown *) {}
+    virtual void VisitTestDefinitionFirst(TestDefinition *) {}
     virtual void VisitTestGroupFirst(TestGroup *) {}
 };
 

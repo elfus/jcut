@@ -139,6 +139,8 @@ private:
      * @return
      */
     llvm::AllocaInst* bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba);
+
+    string getUniqueTestName(const string& name);
 public:
     TestGeneratorVisitor(llvm::Module *mod);
     TestGeneratorVisitor(const TestGeneratorVisitor&) = delete;
@@ -152,7 +154,17 @@ public:
     void VisitExpectedExpression(ExpectedExpression *);
     void VisitMockupFunction(MockupFunction*);
     void VisitVariableAssignment(VariableAssignment *);
+    /// Generates an LLVM Function that calls a function, assigns a variable or
+    /// checks an expected expression.
+    void VisitTestSetup(TestSetup *);
+    /// Generates an LLVM Function that calls a function, assigns a variable or
+    /// checks an expected expression.
+    void VisitTestTeardown(TestTeardown *);
+    /// Generates the LLVM Function that calls our function under test (FUD)
+    void VisitTestFunction(TestFunction *);
+    /// Restores whatever global variable was modified in VisitTestSetup or VisitTestTeardown
     void VisitTestDefinition(TestDefinition *);
+
     void VisitGlobalSetup(GlobalSetup *);
     void VisitGlobalTeardown(GlobalTeardown *);
     void VisitTestGroup(TestGroup *);

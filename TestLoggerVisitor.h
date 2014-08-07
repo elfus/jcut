@@ -37,6 +37,8 @@ public:
         LOG_ALL = 1 << 0, // 1
         LOG_PASSING = 1 << 1, // 2
         LOG_FAILING = 1 << 2, // 4
+        LOG_TEST_SETUP = 1 << 3, // 8
+        LOG_TEST_TEARDOWN = 1 << 4, // 16
     };
 private:
     unsigned WIDTH; // The 'terminal' width
@@ -49,10 +51,11 @@ private:
     unsigned mTestsPassed = 0;
     unsigned mTestsFailed = 0;
     LogFormat mFmt = LOG_ALL;
+    bool mCurrentTestPassed = false;
 
-    string getExpectedResultString(TestDefinition *TD);
-    string getWarningString(TestDefinition *TD);
-    void logTest(TestDefinition *TD);
+    string getExpectedResultString(TestFunction *TF);
+    string getWarningString(TestFunction *TF);
+    void logFunction(LLVMFunctionHolder *FH, const string& name);
 public:
 
     TestLoggerVisitor() {
@@ -110,19 +113,53 @@ public:
         cout << "Tests FAILED: " << mTestsFailed << endl;
     }
 
+    void VisitTestDefinitionFirst(TestDefinition *TD) {
+        // Print the columns in the given order, then print a new line and
+	// optionally print more information about the current test.
+	for(auto column : mOrder)
+		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
+	cout << endl;
+        mCurrentTestPassed = TD->getTestFunction()->getReturnValue().IntVal.getBoolValue();
+    }
 
-    void VisitTestDefinition(TestDefinition *TD) {
+    void VisitTestSetup(TestSetup *TS) {
+        if(mCurrentTestPassed) {
+            if(mFmt & LOG_ALL || (mFmt & LOG_PASSING && mFmt & LOG_TEST_SETUP) )
+                logFunction(TS, TS->getLLVMFunction()->getName());
+        }
+        else {
+            if(mFmt & LOG_ALL || (mFmt & LOG_FAILING && mFmt & LOG_TEST_SETUP) )
+                logFunction(TS, TS->getLLVMFunction()->getName());
+        }
+    }
+
+    void VisitTestTeardow(TestTeardown *TT) {
+        if(mCurrentTestPassed) {
+            if(mFmt & LOG_ALL || (mFmt & LOG_PASSING && mFmt & LOG_TEST_TEARDOWN))
+                logFunction(TT, TT->getLLVMFunction()->getName());
+        }
+        else {
+            if(mFmt & LOG_ALL || (mFmt & LOG_FAILING && mFmt & LOG_TEST_TEARDOWN))
+                logFunction(TT, TT->getLLVMFunction()->getName());
+        }
+    }
+
+    void VisitTestFunction(TestFunction *TF) {
         ++mTestCount;
-        if(TD->getReturnValue().IntVal.getBoolValue()) {
+        if(mCurrentTestPassed) {
             ++mTestsPassed;
             if(mFmt & LOG_ALL || mFmt & LOG_PASSING)
-                logTest(TD);
+                logFunction(TF, TF->getLLVMFunction()->getName());
         }
         else {
             ++mTestsFailed;
             if(mFmt & LOG_ALL || mFmt & LOG_FAILING)
-                logTest(TD);
+                logFunction(TF, TF->getLLVMFunction()->getName());
         }
+    }
+
+    void VisitTestDefinition(TestDefinition *TD) {
+        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
     /// @note In order for the new column width to take effect this method has
@@ -135,7 +172,7 @@ public:
 
     const vector<ColumnName>& getColumnOrder() { return mOrder; }
     const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }
-    string getColumnString(ColumnName name, TestDefinition *TD);
+    string getColumnString(ColumnName name, TestFunction *TF);
 
     unsigned getTestsFailed() const { return mTestsFailed; }
 
@@ -154,9 +191,9 @@ public:
     mOrder(mLogger.getColumnOrder()), mColumnWidth(mLogger.getColumnWidths()){
     }
 
-    void VisitTestDefinition(TestDefinition *TD) {
+    void VisitTestFunction(TestFunction *TF) {
         for(auto column : mOrder) {
-            string str = mLogger.getColumnString(column, TD);
+            string str = mLogger.getColumnString(column, TF);
             if(str.size() > mColumnWidth.at(column))
                 mLogger.setColumnWidth(column, str.size());
         }

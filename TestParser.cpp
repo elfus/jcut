@@ -248,7 +248,7 @@ int Tokenizer::nextToken()
 //
 
 int TestExpr::leaks = 0;
-unsigned TestExpr::warning_count = 0;
+unsigned LLVMFunctionHolder::warning_count = 0;
 
 Argument* TestDriver::ParseArgument()
 {

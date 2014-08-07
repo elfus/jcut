@@ -248,7 +248,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 	} else {
 		// Function definition or declaration
 		cout << "Function found: " << func_name << endl;
-		
+
 		tp::Argument* expected = MF->getArgument();
 		vector<Type*> params;
 		for(llvm::Argument& arg : llvm_func->getArgumentList()) {
@@ -257,7 +257,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 
 		FunctionType* FT = FunctionType::get(llvm_func->getReturnType(),ArrayRef<Type*>(params),false);
 		Function* F = cast<Function>(mModule->getOrInsertFunction(mockup_name, FT, llvm_func->getAttributes()));
-		
+
 		// create unique name
 		BasicBlock* MB = BasicBlock::Create(mModule->getContext(),"mockup_block",F);
 		// The expected value has to match the return value type from the llvm_func
@@ -341,31 +341,36 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	}
 }
 
+void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
+{
+    string func_name = "test_setup_GET_THE_REAL_NAME";
+    saveGlobalVariables();
+    Function *testFunction = generateFunction(func_name, true);
+    TS->setLLVMFunction(testFunction);
+}
+
+void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
+{
+    string func_name = "test_teardown_GET_THE_REAL_NAME";
+    restoreGlobalVariables();
+    Function *testFunction = generateFunction(func_name, true);
+    TT->setLLVMFunction(testFunction);
+}
+
+void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
+{
+    string func_name = TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
+    string test_name = getUniqueTestName(func_name);
+    Function *testFunction = generateFunction(test_name,true,true);
+    TF->setLLVMFunction(testFunction);
+}
+
 void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 {
-	string func_name = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
-	string test_name = "test_" + func_name + "_0";
-	unsigned i = 0;
+    // The warnings may include test-setup, test-function, or test-teardown
+    TD->setWarnings(mWarnings);
 
-	do {
-		unsigned pos = test_name.find_last_of("_");
-		unsigned discard = test_name.size() - (++pos);
-		while(discard--) test_name.pop_back();
-		stringstream ss;
-		ss << i;
-		test_name = test_name + ss.str();
-		++i;
-	} while (mModule->getFunction(test_name));
-
-	TD->setTestName(test_name);
-
-	Function *testFunction = generateFunction(test_name,true,true);
-
-	TD->setLLVMFunction(testFunction);
-
-	TD->setWarnings(mWarnings);
-
-	mWarnings.clear();
+    mWarnings.clear();
 }
 
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
@@ -734,4 +739,22 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 		}
 	}
 	return alloc1; //alloc1 is a pointer type to type.
+}
+
+string TestGeneratorVisitor::getUniqueTestName(const string& name)
+{
+    string unique_name = "test_" + name + "_0";
+    unsigned i = 0;
+
+    do {
+            unsigned pos = unique_name.find_last_of("_");
+            unsigned discard = unique_name.size() - (++pos);
+            while(discard--) unique_name.pop_back();
+            stringstream ss;
+            ss << i;
+            unique_name = unique_name + ss.str();
+            ++i;
+    } while (mModule->getFunction(unique_name));
+
+    return unique_name;
 }

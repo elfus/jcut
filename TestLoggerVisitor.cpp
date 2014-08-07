@@ -1,30 +1,30 @@
 #include <TestLoggerVisitor.h>
 
-string TestLoggerVisitor::getColumnString(ColumnName name, TestDefinition *TD)
+string TestLoggerVisitor::getColumnString(ColumnName name, TestFunction *TF)
 {
 	switch(name) {
 		case GROUP_NAME:
-			return TD->getGroupName();
+			//return TD->getGroupName();
+                        return "FIX-ME";
 		case TEST_NAME:
-			return TD->getTestName();
-			break;
+			return TF->getLLVMFunction()->getName();
 		case FUD:
-			return TD->getTestFunction()->getFunctionCall()->getFunctionCalledString();
-		case RESULT:
-			return (TD->getReturnValue().IntVal.getBoolValue()?"PASSED" : "FAILED");
+			return TF->getFunctionCall()->getFunctionCalledString();
+                case RESULT:
+			return (TF->getReturnValue().IntVal.getBoolValue()?"PASSED" : "FAILED");
 		case EXPECTED_RES:
-			return getExpectedResultString(TD);
+			return getExpectedResultString(TF);
 		default:
 			return "Invalid column";
 	}
 	return "Invalid column2";
 }
 
-string TestLoggerVisitor::getExpectedResultString(TestDefinition *TD)
+string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)
 {
 	// @todo Get the actual outcome from the call function
 	// @todo detect what failed, after conditions?
-	ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
+	ExpectedResult* ER = TF->getExpectedResult();
 	if (ER) {
 		stringstream ss;
 		Constant* C = ER->getExpectedConstant()->getConstant();
@@ -58,9 +58,9 @@ string TestLoggerVisitor::getExpectedResultString(TestDefinition *TD)
 	return "Invalid expected result";
 }
 
-string TestLoggerVisitor::getWarningString(TestDefinition *TD)
+string TestLoggerVisitor::getWarningString(TestFunction *TF)
 {
-	const vector<Exception>& warnings = TD->getWarnings();
+	const vector<Exception>& warnings = TF->getWarnings();
 	if(warnings.size()) {
 		stringstream ss;
 		ss << "[" << warnings.size() << "] ";
@@ -71,24 +71,20 @@ string TestLoggerVisitor::getWarningString(TestDefinition *TD)
 	return "";
 }
 
-void TestLoggerVisitor::logTest(TestDefinition* TD)
+void TestLoggerVisitor::logFunction(LLVMFunctionHolder *FH, const string& name)
 {
-	// Print the columns in the given order, then print a new line and
-	// optionally print more information about the current test.
-	for(auto column : mOrder)
-		cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
-	cout << endl;
-	const vector<Exception>& warnings = TD->getWarnings();
+	const vector<Exception>& warnings = FH->getWarnings();
 	if(warnings.size()) {
 		for(auto w : warnings)
 			cout << w.what() << endl;
 	}
 	// If we want to print more information about a test, this is the place
 	// for example we want print its output.
-	if(TD->getTestOutput().size()) {
+	if(FH->getOutput().size()) {
+                stringstream ss;
+                ss << "[" << name << " output]";
 		cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
-		cout << setw(WIDTH) << right << "[Test output]" << left << endl;
-		cout << TD->getTestOutput() << endl;
+		cout << setw(WIDTH) << right << ss.str() << left << endl;
+		cout << FH->getOutput() << endl;
 	}
-	cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
 }

@@ -32,14 +32,17 @@ private:
     llvm::Module* mModule;
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
-        if (mDumpFunctions) {
-            f->dump();
-        }
+        if (f) {
+            if (mDumpFunctions) {
+                f->dump();
+            }
 
-        llvm::GenericValue rval = mEE->runFunction(f,mArgs);
-        mEE->clearAllGlobalMappings();
-        mEE->freeMachineCodeForFunction(f);
-        FW->setReturnValue(rval);
+            llvm::GenericValue rval = mEE->runFunction(f,mArgs);
+            mEE->clearAllGlobalMappings();
+            mEE->freeMachineCodeForFunction(f);
+            FW->setReturnValue(rval);
+        } else
+            cerr << "No available LLVM test function! Received nullptr" << endl;
     }
 public:
     TestRunnerVisitor() = delete;
@@ -52,36 +55,54 @@ public:
 
     // @todo Try visiting GlobalSetup
     virtual void VisitTestGroupFirst(TestGroup *TG) {
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
         GlobalSetup* GS = TG->getGlobalSetup();
         if (GS)
             runFunction(GS);
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
     }
     // @todo Try visiting GlobalTeardown
     void VisitTestGroup(TestGroup *TG) {
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
         GlobalTeardown* GT = TG->getGlobalTeardown();
         if (GT)
             runFunction(GT);
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
+    }
+
+    void VisitTestSetup(TestSetup* TS) {
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
+        runFunction(TS);
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
+        TS->setOutput(std::move(StdCapture::GetCapture()));
+    }
+
+    void VisitTestFunction(TestFunction *TF) {
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
+        runFunction(TF);
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
+        TF->setOutput(std::move(StdCapture::GetCapture()));
+    }
+
+    void VisitTestTeardown(TestTeardown *TT) {
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
+        runFunction(TT);
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
+        TT->setOutput(std::move(StdCapture::GetCapture()));
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
-        TestMockup* TM = TD->getTestMockup();
-        if (TM) {
-            TM->useMockupFunction();
-             string target_func = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
-            llvm::Function* f = mModule->getFunction(target_func);
-            assert(f && "Could not get target function");
-            f->dump();
-            mEE->recompileAndRelinkFunction(f);
-        }
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
-        runFunction(TD);
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        TD->setTestOutput(std::move(StdCapture::GetCapture()));
-        if (TM) {
-            TM->useOriginalFunction(mEE);
-        }
+        runFunction(TD); // do the cleanup
     }
 
 };
