@@ -1119,7 +1119,7 @@ public:
 
     void accept(Visitor *v) {
         mTestFixture->accept(v);
-        v->VisitTestTeardow(this);
+        v->VisitTestTeardown(this);
     }
 };
 

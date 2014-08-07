@@ -77,7 +77,7 @@ public:
     virtual void VisitCharConstant(CharConstant *) {}
     virtual void VisitComparisonOperator(ComparisonOperator *) {}
     virtual void VisitOperand(Operand *) {}
-    virtual void VisitTestTeardow(TestTeardown *) {}
+    virtual void VisitTestTeardown(TestTeardown *) {}
     virtual void VisitTestFunction(TestFunction *) {}
     virtual void VisitTestSetup(TestSetup *) {}
     virtual void VisitTestFixture(TestFixture *) {}
