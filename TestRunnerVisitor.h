@@ -48,8 +48,7 @@ private:
             // mEE->freeMachineCodeForFunction(f);
             /////////////////////////////////////
             FW->setReturnValue(rval);
-        } else
-            cerr << "No available LLVM test function! Received nullptr" << endl;
+        }
     }
 public:
     TestRunnerVisitor() = delete;

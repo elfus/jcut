@@ -39,6 +39,7 @@ public:
         LOG_FAILING = 1 << 2, // 4
         LOG_TEST_SETUP = 1 << 3, // 8
         LOG_TEST_TEARDOWN = 1 << 4, // 16
+        LOG_TEST_CLEANUP = 1 << 5
     };
 private:
     unsigned WIDTH; // The 'terminal' width
@@ -116,10 +117,16 @@ public:
     void VisitTestDefinitionFirst(TestDefinition *TD) {
         // Print the columns in the given order, then print a new line and
 	// optionally print more information about the current test.
-	for(auto column : mOrder)
+	mCurrentTestPassed = TD->getTestFunction()->getReturnValue().IntVal.getBoolValue();
+        if(mCurrentTestPassed && (mFmt & LOG_ALL || mFmt & LOG_PASSING)) {
+            for(auto column : mOrder)
 		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
-	cout << endl;
-        mCurrentTestPassed = TD->getTestFunction()->getReturnValue().IntVal.getBoolValue();
+        }
+        else if(mCurrentTestPassed==false && (mFmt & LOG_ALL || mFmt & LOG_FAILING)) {
+            for(auto column : mOrder)
+		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
+        }
+        cout << endl;
     }
 
     void VisitTestSetup(TestSetup *TS) {
@@ -159,9 +166,9 @@ public:
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
-        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
-        if(mFmt & LOG_ALL)
+        if(mFmt & LOG_ALL || mFmt & LOG_TEST_CLEANUP)
             logFunction(TD, "cleanup");
+        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
     /// @note In order for the new column width to take effect this method has
