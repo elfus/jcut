@@ -342,6 +342,12 @@ DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 		mCurrentToken = mTokenizer.nextToken(); // eat up the '.'
 		id = ParseIdentifier();
 		if (mCurrentToken != '=') {
+                    for(tuple<Identifier*,InitializerValue*>& tup : init) {
+                            id = get<0>(tup);
+                            arg = get<1>(tup);
+                            delete id;
+                            delete arg;
+                    }
 			delete id;
 			throw Exception("Invalid designated initializer");
 		}
@@ -388,7 +394,8 @@ StructInitializer* TestDriver::ParseStructInitializer()
 	}
 
 	if(mCurrentToken != '}') {
-		delete si;
+		if(si) delete si;
+                if(il) delete il;
 		throw Exception("Malformed designated initializer");
 	}
 
@@ -433,10 +440,13 @@ FunctionCall* TestDriver::ParseFunctionCall()
 {
 	Identifier* functionName = ParseFunctionName();
 
-	if (mCurrentToken != '(')
-		throw Exception(mTokenizer.line(),mTokenizer.column(),
-				"Expected a left parenthesis in function call but received " + mTokenizer.getTokenStringValue(),
-				functionName->getIdentifierStr()+mTokenizer.getTokenStringValue());
+	if (mCurrentToken != '(') {
+            string extra = functionName->getIdentifierStr()+mTokenizer.getTokenStringValue();
+            delete functionName;
+            throw Exception(mTokenizer.line(),mTokenizer.column(),
+                            "Expected a left parenthesis in function call but received " + mTokenizer.getTokenStringValue(),
+                            extra);
+        }
 
 	mCurrentToken = mTokenizer.nextToken(); // eat the (
 	vector<FunctionArgument*> Args;
@@ -450,6 +460,7 @@ FunctionCall* TestDriver::ParseFunctionCall()
 		if (mCurrentToken != ',') {
 			for (auto*& ptr : Args)
 				delete ptr;
+                        delete functionName;
 			throw Exception(mTokenizer.line(), mTokenizer.column(),
 					"Expected a comma or right parenthesis in function call but received "
 					+ mTokenizer.getTokenStringValue());
@@ -538,10 +549,13 @@ TestFunction* TestDriver::ParseTestFunction()
 	ExpectedResult* ER = nullptr;
 	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP)
 		ER = ParseExpectedResult();
-	if (mCurrentToken != ';')
-		throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
-				"Expected a semi colon ';' at the end of the test expression",
-				"Received "+mTokenizer.getTokenStringValue());
+	if (mCurrentToken != ';') {
+            delete FunctionCall;
+            if(ER) delete ER;
+            throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
+                            "Expected a semi colon ';' at the end of the test expression",
+                            "Received "+mTokenizer.getTokenStringValue());
+        }
 	mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	return new TestFunction(FunctionCall, ER);
 }
@@ -596,6 +610,9 @@ TestFixture* TestDriver::ParseTestFixture()
 
 		if (mCurrentToken != ';') {
 			mTestFixtureException = true;
+                        for(auto*& ptr : assignments) delete ptr;
+                        for(auto*& ptr : functions) delete ptr;
+                        for(auto*& ptr : expected) delete ptr;
 			throw Exception(mTokenizer.previousLine(),mTokenizer.previousColumn(),
 					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
 					"Received "+mTokenizer.getTokenStringValue());
@@ -672,10 +689,13 @@ MockupFixture* TestDriver::ParseMockupFixture()
 		if (mCurrentToken == '}')
 			break;
 
-		if (mCurrentToken != ';')
+		if (mCurrentToken != ';') {
+                    for(auto*& ptr : MockupFunctions) delete ptr;
+                    for(auto*& ptr : MockupVariables) delete ptr;
 			throw Exception(mTokenizer.line(),mTokenizer.column(),
 					"Expected a semi colon ';' at the end of the test mockup",//@todo improve message
 					"Received "+mTokenizer.getTokenStringValue());
+                }
 		mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	}
 	return new MockupFixture(MockupFunctions, MockupVariables);
@@ -771,6 +791,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 
 				if (mCurrentToken != '{') {
 					group_exception = true;
+                                        delete new_group_name;
 					throw Exception(mTokenizer.previousLine(), mTokenizer.previousLine(),
 							"Invalid group definition. Expected a left curly bracket '{' for the given group",
 							"Received: "+mTokenizer.getTokenStringValue()+" instead.");
@@ -783,10 +804,13 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				if (group)
 					tests.push_back(group);
 
-				if(mCurrentToken != '}')
-					throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
-							"Invalid group definition. Expected a right curly bracket '}'",
-							"Received "+mTokenizer.getTokenStringValue()+" instead.");
+				if(mCurrentToken != '}') {
+                                    delete ngn;
+                                    delete group;
+                                    throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
+                                                    "Invalid group definition. Expected a right curly bracket '}'",
+                                                    "Received "+mTokenizer.getTokenStringValue()+" instead.");
+                                }
 				mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
 			} else {
 				TestDefinition *testDefinition = ParseTestDefinition();
@@ -894,8 +918,10 @@ TestFile* TestDriver::ParseTestFile()
 	TestGroup* group = ParseTestGroup(groupNameFactory());
 	if (group)
 		return new TestFile(group);
-	else
-		throw Exception("Invalid test file");
+	else {
+            delete group;
+            throw Exception("Invalid test file");
+        }
 }
 
 TestExpr* TestDriver::ParseTestExpr()
