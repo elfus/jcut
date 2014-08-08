@@ -179,8 +179,10 @@ public:
         logFunction(GT, GT->getLLVMFunction()->getName());
     }
 
+    // Log the group cleanup
     void VisitTestGroup(TestGroup *TG) {
-        logFunction(TG, TG->getLLVMFunction()->getName());
+        if(TG->getLLVMFunction())
+            logFunction(TG, TG->getLLVMFunction()->getName());
     }
 
     /// @note In order for the new column width to take effect this method has

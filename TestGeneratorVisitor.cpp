@@ -297,7 +297,6 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 		real_value = VA->getArgument()->getStringRepresentation();
 	}
 
-	/// @todo Add support for structures
 	LoadInst* load_value = mBuilder.CreateLoad(global_variable);
 	mInstructions.push_back(load_value);
 
@@ -315,7 +314,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
         StoreInst* st = mBuilder.CreateStore(load_value, backup);
         mInstructions.push_back(st);
 
-        mBackupGroup.push_back(make_tuple(backup,global_variable));
+        mBackupTemp.push_back(make_tuple(backup,global_variable));
 	// TODO: Handle the rest of token types
 	switch (tokenType) {
 		case Tokenizer::TOK_INT:
@@ -353,8 +352,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 
 void TestGeneratorVisitor::VisitTestDefinitionFirst(TestDefinition *TD)
 {
-	mBackupGroup.push_back(make_tuple(nullptr, nullptr));
-	mCurrentFud = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+    mCurrentFud = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
 }
 
 void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
@@ -362,6 +360,13 @@ void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
     string func_name = "setup_"+mCurrentFud;
     Function *testFunction = generateFunction(func_name, true);
     TS->setLLVMFunction(testFunction);
+
+    // Any variable assignment done in the current test pass it to the vector for
+    // the current test.
+    for(auto& b : mBackupTemp)
+        mBackupTest.push_back(b);
+
+    while(mBackupTemp.size()) mBackupTemp.pop_back();
 }
 
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
@@ -376,15 +381,20 @@ void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
     string func_name = "teardown_"+mCurrentFud;
     Function *testFunction = generateFunction(func_name, true);
     TT->setLLVMFunction(testFunction);
+
+    // Any variable assignment done in the current test pass it to the vector for
+    // the current test
+    for(auto& b : mBackupTemp)
+        mBackupTest.push_back(b);
+
+    while(mBackupTemp.size()) mBackupTemp.pop_back();
 }
 
 void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 {
-	/// @bug Watch for this if, we need to find a more suitable condition when
-	/// there was no after or before but there was before_all and after_all
-    if(mBackupGroup.size() > 1) {
+    if(mBackupTest.size() ) {
         string func_name = "cleanup_test_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
-        restoreGlobalVariables();
+        restoreGlobalVariables(mBackupTest);
         Function *testFunction = generateFunction(func_name);
         TD->setLLVMFunction(testFunction);
     }
@@ -396,29 +406,41 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 
 void TestGeneratorVisitor::VisitTestGroupFirst(TestGroup *)
 {
-	mBackupGroup.push_back(make_tuple(nullptr, nullptr));
 }
 
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
-	string func_name = "group_setup_"+GS->getGroupName();
-	Function *testFunction = generateFunction(func_name, true);
-	GS->setLLVMFunction(testFunction);
+    string func_name = "group_setup_"+GS->getGroupName();
+    Function *testFunction = generateFunction(func_name, true);
+    GS->setLLVMFunction(testFunction);
+
+    // Any variable assignment done in the current group pass it to the vector for
+    // the current group.
+    for(auto& b : mBackupTemp)
+        mBackupGroup.push_back(b);
+
+    while(mBackupTemp.size()) mBackupTemp.pop_back();
 }
 
 void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
-	string func_name = "group_teardown_"+GT->getGroupName();
-	Function *testFunction = generateFunction(func_name, true);
-	GT->setLLVMFunction(testFunction);
+    string func_name = "group_teardown_"+GT->getGroupName();
+    Function *testFunction = generateFunction(func_name, true);
+    GT->setLLVMFunction(testFunction);
+
+    // Any variable assignment done in the current group pass it to the vector for
+    // the current group.
+    for(auto& b : mBackupTemp)
+        mBackupGroup.push_back(b);
+
+    while(mBackupTemp.size()) mBackupTemp.pop_back();
 }
 
 void TestGeneratorVisitor::VisitTestGroup(TestGroup *TG)
 {
-	/// @bug Watch for this if, we need to find a more suitable condition
-    if(mBackupGroup.size() > 1) {
+    if(mBackupGroup.size()) {
         string func_name = "group_cleanup_"+TG->getGroupName();
-        restoreGlobalVariables();
+        restoreGlobalVariables(mBackupGroup);
         Function *cleanupFUnction = generateFunction(func_name);
         TG->setLLVMFunction(cleanupFUnction);
     }
@@ -537,14 +559,14 @@ void TestGeneratorVisitor::saveGlobalVariables()
 	mBackup.clear();
 }
 
-void TestGeneratorVisitor::restoreGlobalVariables()
+void TestGeneratorVisitor::restoreGlobalVariables(std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>>& backup)
 {
 	// Restore the backed up variables from the global variables created in
 	// VisitGlobalSetup
 	// @bug This works only where we declare a teardown with "after_all"
-	while(mBackupGroup.size()) {
-		tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>& tup = mBackupGroup.back();
-		mBackupGroup.pop_back();
+	while(backup.size()) {
+		tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>& tup = backup.back();
+		backup.pop_back();
 		if(get<0>(tup)==nullptr and get<1>(tup)==nullptr)
 			break;
 		LoadInst* ld = mBuilder.CreateLoad(get<0>(tup));

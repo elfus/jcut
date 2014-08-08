@@ -43,9 +43,10 @@ private:
     std::vector<tuple<llvm::Value*,llvm::GlobalVariable*>> mBackup;
     /// Used to hold backup values of global variables and their original values
     /// for groups
-    /// @todo Add support for structures
     /// first template argument is the dst (backup), second  is the src
     /// (original) variable
+    std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupTemp;
+    std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupTest;
     std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupGroup;
     llvm::Value *mReturnValue;
     std::map<string,bool> mMockupNames;//used to create unique mockup names
@@ -113,7 +114,7 @@ private:
      * mBackupGroup as a stack in order to pop out the global variables to be
      * restored and taking into a account the marker of 2-tuple with nullptrs.
      */
-    void restoreGlobalVariables();
+    void restoreGlobalVariables(std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>>&);
 
     /**
      * Extracts the initializer values in a recursive fashion and stores them
