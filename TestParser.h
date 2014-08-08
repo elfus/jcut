@@ -703,6 +703,8 @@ public:
     }
 
     ~BufferAlloc() {
+        if (mIntBuffSize) delete mIntBuffSize;
+        if (mIntDefaultValue) delete mIntDefaultValue;
         if (mStructInit) delete mStructInit;
     }
 
