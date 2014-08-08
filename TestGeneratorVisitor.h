@@ -164,10 +164,15 @@ public:
     void VisitTestFunction(TestFunction *);
     /// Restores whatever global variable was modified in VisitTestSetup or VisitTestTeardown
     void VisitTestDefinition(TestDefinition *);
-
+    void VisitTestDefinitionFirst(TestDefinition *) {mBackupGroup.push_back(make_tuple(nullptr, nullptr)); }
+    /// Generates an LLVM Function that maps to before_all
     void VisitGlobalSetup(GlobalSetup *);
+    /// Generates an LLVM Function that maps to after_all
     void VisitGlobalTeardown(GlobalTeardown *);
+    /// Generates an LLVM Function that restores whatever was done in before_all
+    /// and after_all
     void VisitTestGroup(TestGroup *);
+    void VisitTestGroupFirst(TestGroup *) {mBackupGroup.push_back(make_tuple(nullptr, nullptr)); }
 
 };
 

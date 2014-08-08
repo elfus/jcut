@@ -1282,7 +1282,7 @@ public:
     }
 };
 
-class TestGroup : public TestExpr {
+class TestGroup : public TestExpr, public LLVMFunctionHolder {
 private:
     Identifier* mName;
     // Let's work with tests as we find them, do not alter their order.

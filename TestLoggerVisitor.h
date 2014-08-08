@@ -114,6 +114,10 @@ public:
         cout << "Tests FAILED: " << mTestsFailed << endl;
     }
 
+    void VisitGlobalSetup(GlobalSetup *GS) {
+        logFunction(GS, GS->getLLVMFunction()->getName());
+    }
+
     void VisitTestDefinitionFirst(TestDefinition *TD) {
         // Print the columns in the given order, then print a new line and
 	// optionally print more information about the current test.
@@ -169,6 +173,14 @@ public:
         if(mFmt & LOG_ALL || mFmt & LOG_TEST_CLEANUP)
             logFunction(TD, "cleanup");
         cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+    }
+
+    void VisitGlobalTeardown(GlobalTeardown *GT) {
+        logFunction(GT, GT->getLLVMFunction()->getName());
+    }
+
+    void VisitTestGroup(TestGroup *TG) {
+        logFunction(TG, TG->getLLVMFunction()->getName());
     }
 
     /// @note In order for the new column width to take effect this method has

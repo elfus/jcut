@@ -360,7 +360,7 @@ void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
 
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
-    string func_name = TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
+    string func_name = "test_" + TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
     Function *testFunction = generateFunction(func_name,true);
     TF->setLLVMFunction(testFunction);
 }
@@ -372,12 +372,12 @@ void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
     TT->setLLVMFunction(testFunction);
 }
 
-
-
 void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 {
+	/// @bug Watch for this if, we need to find a more suitable condition when
+	/// there was no after or before but there was before_all and after_all
     if(mBackupGroup.size()) {
-        string func_name = "cleanup_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+        string func_name = "cleanup_test_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
         restoreGlobalVariables();
         Function *testFunction = generateFunction(func_name);
         TD->setLLVMFunction(testFunction);
@@ -390,35 +390,27 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
-	string func_name = "setup_"+GS->getGroupName();
-	saveGlobalVariables();
+	string func_name = "group_setup_"+GS->getGroupName();
 	Function *testFunction = generateFunction(func_name, true);
 	GS->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
-	string func_name = "global_teardown_"+GT->getGroupName();
-	restoreGlobalVariables();
+	string func_name = "group_teardown_"+GT->getGroupName();
 	Function *testFunction = generateFunction(func_name, true);
 	GT->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitTestGroup(TestGroup *TG)
 {
-	GlobalSetup* GS = TG->getGlobalSetup();
-	GlobalTeardown* GT = TG->getGlobalTeardown();
-	// Restore the global variables of this group only if there is a GlobalSetup
-	// and no GlobalTeardown was provided
-	// @bug What happens when we have a GlobalTeardown only?
-	if (nullptr == GT && nullptr != GS) {
-		GT = new GlobalTeardown();
-		string func_name = "group_teardown_"+TG->getGroupName();
-		restoreGlobalVariables();
-		Function *testFunction = generateFunction(func_name);
-		GT->setLLVMFunction(testFunction);
-		TG->setGlobalTeardown(GT);
-	}
+	/// @bug Watch for this if, we need to find a more suitable condition
+    if(mBackupGroup.size()) {
+        string func_name = "group_cleanup_"+TG->getGroupName();
+        restoreGlobalVariables();
+        Function *cleanupFUnction = generateFunction(func_name);
+        TG->setLLVMFunction(cleanupFUnction);
+    }
 }
 
 /**
@@ -744,7 +736,7 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 
 string TestGeneratorVisitor::getUniqueTestName(const string& name)
 {
-    string unique_name = "test_" + name + "_0";
+    string unique_name = name + "_0";
     unsigned i = 0;
 
     do {

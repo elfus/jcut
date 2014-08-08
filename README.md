@@ -28,6 +28,8 @@ Test File Grammar
 
 <global-teardown> := after_all "{" <test-fixture> "}"
 
+# Even thought <global-teardown> needs to be defined before a <test-definition>, it will
+# actually be executed after the <test-definition>
 <test-group> := [<global-mockup> | <global-setup> | <global-teardown> ] <test-definition>+ | group [<identifier>] "{" <test-group>+ "}"
 
 # TODO Right we are forcing the user to use this order, however it would be better

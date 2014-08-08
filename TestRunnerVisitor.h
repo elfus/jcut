@@ -59,25 +59,32 @@ public:
 
     bool isValidExecutionEngine() const { return mEE != nullptr; }
 
-    // @todo Try visiting GlobalSetup
-    virtual void VisitTestGroupFirst(TestGroup *TG) {
+    void VisitGlobalSetup(GlobalSetup *GS) {
         if(!StdCapture::BeginCapture())
             cerr << "** There was a problem capturing test output!" << endl;
-        GlobalSetup* GS = TG->getGlobalSetup();
-        if (GS)
-            runFunction(GS);
+        runFunction(GS);
         if(!StdCapture::EndCapture())
             cerr << "** There was a problem finishing the test output capture!" << endl;
+        GS->setOutput(StdCapture::GetCapture());
     }
-    // @todo Try visiting GlobalTeardown
+
+    void VisitGlobalTeardown(GlobalTeardown *GT) {
+        if(!StdCapture::BeginCapture())
+            cerr << "** There was a problem capturing test output!" << endl;
+        runFunction(GT);
+        if(!StdCapture::EndCapture())
+            cerr << "** There was a problem finishing the test output capture!" << endl;
+        GT->setOutput(StdCapture::GetCapture());
+    }
+
+    // The cleanup
     void VisitTestGroup(TestGroup *TG) {
         if(!StdCapture::BeginCapture())
             cerr << "** There was a problem capturing test output!" << endl;
-        GlobalTeardown* GT = TG->getGlobalTeardown();
-        if (GT)
-            runFunction(GT);
+        runFunction(TG);
         if(!StdCapture::EndCapture())
             cerr << "** There was a problem finishing the test output capture!" << endl;
+        TG->setOutput(StdCapture::GetCapture());
     }
 
     void VisitTestSetup(TestSetup* TS) {
@@ -89,6 +96,7 @@ public:
         TS->setOutput(std::move(StdCapture::GetCapture()));
     }
 
+    // The actual function under test
     void VisitTestFunction(TestFunction *TF) {
         if(!StdCapture::BeginCapture())
             cerr << "** There was a problem capturing test output!" << endl;
@@ -107,6 +115,7 @@ public:
         TT->setOutput(std::move(StdCapture::GetCapture()));
     }
 
+    // The cleanup
     void VisitTestDefinition(TestDefinition *TD) {
         if(!StdCapture::BeginCapture())
             cerr << "** There was a problem capturing test output!" << endl;
