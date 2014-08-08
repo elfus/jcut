@@ -351,23 +351,29 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	}
 }
 
+void TestGeneratorVisitor::VisitTestDefinitionFirst(TestDefinition *TD)
+{
+	mBackupGroup.push_back(make_tuple(nullptr, nullptr));
+	mCurrentFud = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+}
+
 void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
 {
-    string func_name = "setup_GET_THE_REAL_NAME";
+    string func_name = "setup_"+mCurrentFud;
     Function *testFunction = generateFunction(func_name, true);
     TS->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
-    string func_name = "test_" + TF->getFunctionCall()->getIdentifier()->getIdentifierStr();
+    string func_name = "test_" + mCurrentFud;
     Function *testFunction = generateFunction(func_name,true);
     TF->setLLVMFunction(testFunction);
 }
 
 void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
 {
-    string func_name = "teardown_GET_THE_REAL_NAME";
+    string func_name = "teardown_"+mCurrentFud;
     Function *testFunction = generateFunction(func_name, true);
     TT->setLLVMFunction(testFunction);
 }

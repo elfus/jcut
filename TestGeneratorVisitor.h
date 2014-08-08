@@ -51,6 +51,7 @@ private:
     std::map<string,bool> mMockupNames;//used to create unique mockup names
     /// Store all the warnings for a single TestDefinition.
     std::vector<Exception> mWarnings;
+    std::string mCurrentFud; // Current Function Under Test
 
     /**
  * Creates a new Value of the same Type as type with real_value
@@ -164,7 +165,7 @@ public:
     void VisitTestFunction(TestFunction *);
     /// Restores whatever global variable was modified in VisitTestSetup or VisitTestTeardown
     void VisitTestDefinition(TestDefinition *);
-    void VisitTestDefinitionFirst(TestDefinition *) {mBackupGroup.push_back(make_tuple(nullptr, nullptr)); }
+    void VisitTestDefinitionFirst(TestDefinition *);
     /// Generates an LLVM Function that maps to before_all
     void VisitGlobalSetup(GlobalSetup *);
     /// Generates an LLVM Function that maps to after_all
