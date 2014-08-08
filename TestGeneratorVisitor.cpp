@@ -382,7 +382,7 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 {
 	/// @bug Watch for this if, we need to find a more suitable condition when
 	/// there was no after or before but there was before_all and after_all
-    if(mBackupGroup.size()) {
+    if(mBackupGroup.size() > 1) {
         string func_name = "cleanup_test_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
         restoreGlobalVariables();
         Function *testFunction = generateFunction(func_name);
@@ -392,6 +392,11 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
     TD->setWarnings(mWarnings);
 
     mWarnings.clear();
+}
+
+void TestGeneratorVisitor::VisitTestGroupFirst(TestGroup *)
+{
+	mBackupGroup.push_back(make_tuple(nullptr, nullptr));
 }
 
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
@@ -411,7 +416,7 @@ void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 void TestGeneratorVisitor::VisitTestGroup(TestGroup *TG)
 {
 	/// @bug Watch for this if, we need to find a more suitable condition
-    if(mBackupGroup.size()) {
+    if(mBackupGroup.size() > 1) {
         string func_name = "group_cleanup_"+TG->getGroupName();
         restoreGlobalVariables();
         Function *cleanupFUnction = generateFunction(func_name);

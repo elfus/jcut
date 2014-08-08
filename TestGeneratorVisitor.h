@@ -173,7 +173,7 @@ public:
     /// Generates an LLVM Function that restores whatever was done in before_all
     /// and after_all
     void VisitTestGroup(TestGroup *);
-    void VisitTestGroupFirst(TestGroup *) {mBackupGroup.push_back(make_tuple(nullptr, nullptr)); }
+    void VisitTestGroupFirst(TestGroup *);
 
 };
 
