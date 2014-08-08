@@ -10,7 +10,8 @@ string TestLoggerVisitor::getColumnString(ColumnName name, TestFunction *TF)
 			return TF->getLLVMFunction()->getName();
 		case FUD:
 			return TF->getFunctionCall()->getFunctionCalledString();
-                case RESULT:
+        case RESULT:
+			/// @todo Detect individually the conditions of the teardown functions
 			return (TF->getReturnValue().IntVal.getBoolValue()?"PASSED" : "FAILED");
 		case EXPECTED_RES:
 			return getExpectedResultString(TF);
