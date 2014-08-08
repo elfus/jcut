@@ -33,6 +33,8 @@ private:
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
         if (f) {
+            if(!StdCapture::BeginCapture())
+                cerr << "** There was a problem capturing test output!" << endl;
             if (mDumpFunctions) {
                 f->dump();
             }
@@ -48,6 +50,9 @@ private:
             // mEE->freeMachineCodeForFunction(f);
             /////////////////////////////////////
             FW->setReturnValue(rval);
+            if(!StdCapture::EndCapture())
+                cerr << "** There was a problem finishing the test output capture!" << endl;
+            FW->setOutput(StdCapture::GetCapture());
         }
     }
 public:
@@ -60,69 +65,34 @@ public:
     bool isValidExecutionEngine() const { return mEE != nullptr; }
 
     void VisitGlobalSetup(GlobalSetup *GS) {
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(GS);
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        GS->setOutput(StdCapture::GetCapture());
     }
 
     void VisitGlobalTeardown(GlobalTeardown *GT) {
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(GT);
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        GT->setOutput(StdCapture::GetCapture());
     }
 
     // The cleanup
     void VisitTestGroup(TestGroup *TG) {
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(TG);
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        TG->setOutput(StdCapture::GetCapture());
     }
 
     void VisitTestSetup(TestSetup* TS) {
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(TS);
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        TS->setOutput(std::move(StdCapture::GetCapture()));
     }
 
     // The actual function under test
     void VisitTestFunction(TestFunction *TF) {
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(TF);
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        TF->setOutput(std::move(StdCapture::GetCapture()));
     }
 
     void VisitTestTeardown(TestTeardown *TT) {
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(TT);
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        TT->setOutput(std::move(StdCapture::GetCapture()));
     }
 
     // The cleanup
     void VisitTestDefinition(TestDefinition *TD) {
-        if(!StdCapture::BeginCapture())
-            cerr << "** There was a problem capturing test output!" << endl;
         runFunction(TD); // do the cleanup
-        if(!StdCapture::EndCapture())
-            cerr << "** There was a problem finishing the test output capture!" << endl;
-        TD->setOutput(StdCapture::GetCapture());
     }
 
 };
