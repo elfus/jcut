@@ -1205,6 +1205,12 @@ public:
         if(mTestTeardown) mTestTeardown->accept(v);
         v->VisitTestDefinition(this);
     }
+
+    void propagateGroupName() {
+        FunctionCall->setGroupName(LLVMFunctionHolder::getGroupName());
+        if(mTestSetup) mTestSetup->setGroupName(LLVMFunctionHolder::getGroupName());
+        if(mTestTeardown) mTestTeardown->setGroupName(LLVMFunctionHolder::getGroupName());
+    }
 };
 
 class GlobalMockup : public TestExpr {

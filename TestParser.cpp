@@ -794,6 +794,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					testDefinition->setGroupName(name->getIdentifierStr());
 				else
 					testDefinition->setGroupName("default");
+                                testDefinition->propagateGroupName();
 				tests.push_back(testDefinition);
 			}
 		} catch (const exception& e) {

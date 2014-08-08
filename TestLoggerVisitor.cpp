@@ -4,8 +4,7 @@ string TestLoggerVisitor::getColumnString(ColumnName name, TestFunction *TF)
 {
 	switch(name) {
 		case GROUP_NAME:
-			//return TD->getGroupName();
-                        return "FIX-ME";
+			return TF->getGroupName();
 		case TEST_NAME:
 			return TF->getLLVMFunction()->getName();
 		case FUD:
