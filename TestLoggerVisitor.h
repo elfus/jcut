@@ -39,7 +39,10 @@ public:
         LOG_FAILING = 1 << 2, // 4
         LOG_TEST_SETUP = 1 << 3, // 8
         LOG_TEST_TEARDOWN = 1 << 4, // 16
-        LOG_TEST_CLEANUP = 1 << 5
+        LOG_TEST_CLEANUP = 1 << 5,
+        LOG_GROUP_SETUP = 1 << 6,
+        LOG_GROUP_TEARDOWN = 1 << 7,
+        LOG_GROUP_CLEANUP = 1 << 8,
     };
 private:
     unsigned WIDTH; // The 'terminal' width
@@ -115,42 +118,44 @@ public:
     }
 
     void VisitGlobalSetup(GlobalSetup *GS) {
-        logFunction(GS, GS->getLLVMFunction()->getName());
+        if(mFmt & (LOG_ALL|LOG_GROUP_SETUP))
+            logFunction(GS, GS->getLLVMFunction()->getName());
     }
 
     void VisitTestDefinitionFirst(TestDefinition *TD) {
         // Print the columns in the given order, then print a new line and
 	// optionally print more information about the current test.
 	mCurrentTestPassed = TD->getTestFunction()->getReturnValue().IntVal.getBoolValue();
-        if(mCurrentTestPassed && (mFmt & LOG_ALL || mFmt & LOG_PASSING)) {
+        if(mCurrentTestPassed && (mFmt & (LOG_ALL | LOG_PASSING)) ){
             for(auto column : mOrder)
 		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
+            cout << endl;
         }
-        else if(mCurrentTestPassed==false && (mFmt & LOG_ALL || mFmt & LOG_FAILING)) {
+        else if(mCurrentTestPassed==false && (mFmt & (LOG_ALL | LOG_FAILING)) ) {
             for(auto column : mOrder)
 		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
+            cout << endl;
         }
-        cout << endl;
     }
 
     void VisitTestSetup(TestSetup *TS) {
         if(mCurrentTestPassed) {
-            if(mFmt & LOG_ALL || (mFmt & LOG_PASSING && mFmt & LOG_TEST_SETUP) )
+            if((mFmt & (LOG_ALL | LOG_PASSING)) && mFmt & LOG_TEST_SETUP)
                 logFunction(TS, TS->getLLVMFunction()->getName());
         }
         else {
-            if(mFmt & LOG_ALL || (mFmt & LOG_FAILING && mFmt & LOG_TEST_SETUP) )
+            if((mFmt & (LOG_ALL | LOG_FAILING)) && mFmt & LOG_TEST_SETUP)
                 logFunction(TS, TS->getLLVMFunction()->getName());
         }
     }
 
     void VisitTestTeardown(TestTeardown *TT) {
         if(mCurrentTestPassed) {
-            if(mFmt & LOG_ALL || (mFmt & LOG_PASSING && mFmt & LOG_TEST_TEARDOWN))
+            if((mFmt & (LOG_ALL | LOG_PASSING)) && mFmt & LOG_TEST_TEARDOWN)
                 logFunction(TT, TT->getLLVMFunction()->getName());
         }
         else {
-            if(mFmt & LOG_ALL || (mFmt & LOG_FAILING && mFmt & LOG_TEST_TEARDOWN))
+            if((mFmt & (LOG_ALL | LOG_FAILING)) && mFmt & LOG_TEST_TEARDOWN)
                 logFunction(TT, TT->getLLVMFunction()->getName());
         }
     }
@@ -159,29 +164,31 @@ public:
         ++mTestCount;
         if(mCurrentTestPassed) {
             ++mTestsPassed;
-            if(mFmt & LOG_ALL || mFmt & LOG_PASSING)
+            if(mFmt & (LOG_ALL | LOG_PASSING) )
                 logFunction(TF, TF->getLLVMFunction()->getName());
         }
         else {
             ++mTestsFailed;
-            if(mFmt & LOG_ALL || mFmt & LOG_FAILING)
+            if(mFmt & (LOG_ALL | LOG_FAILING) )
                 logFunction(TF, TF->getLLVMFunction()->getName());
         }
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
-        if(mFmt & LOG_ALL || mFmt & LOG_TEST_CLEANUP)
+        if(mFmt & (LOG_ALL | LOG_TEST_CLEANUP)) {
             logFunction(TD, "cleanup");
-        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+            cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+        }
     }
 
     void VisitGlobalTeardown(GlobalTeardown *GT) {
-        logFunction(GT, GT->getLLVMFunction()->getName());
+        if(mFmt & (LOG_ALL | LOG_GROUP_TEARDOWN))
+            logFunction(GT, GT->getLLVMFunction()->getName());
     }
 
     // Log the group cleanup
     void VisitTestGroup(TestGroup *TG) {
-        if(TG->getLLVMFunction())
+        if(mFmt & (LOG_ALL | LOG_GROUP_CLEANUP) && TG->getLLVMFunction())
             logFunction(TG, TG->getLLVMFunction()->getName());
     }
 
