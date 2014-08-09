@@ -35,7 +35,7 @@ group B {
 }
 
 group C {
-    mult(2.5,4) == 111;
+    mult(2.5,4) == 10;
     group B
         mult(2.5,4) > -10;
     }
@@ -44,14 +44,14 @@ group C {
          group B
             mult(2.5,4) > -10;
         }
-        mult(2.5,4) > 222;
+        mult(2.5,4) < 11;
     }
 
      group B
         mult(2.5,4) > 999;
      }
 
-     mult(2.5,4) > 333;
+     mult(2.5,4) > 9;
 }
 
 # continue detecting errors on test-fixtures
