@@ -45,7 +45,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			if (llvm_arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
 				BufferAlloc *ba = arg->getBufferAlloc();
 				assert(ba != nullptr && "Invalid BufferAlloc pointer");
-				AllocaInst *alloc1 = bufferAllocInitialization(llvm_arg.getType(),ba);
+				AllocaInst *alloc1 = bufferAllocInitialization(llvm_arg.getType(),ba, mInstructions);
 
 				// Allocate memory for a pointer type
 				AllocaInst *alloc2 = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "AllocPtr" + Twine(i)); // Allocate a pointer type
@@ -338,10 +338,10 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 		{
 			tp::BufferAlloc* ba = VA->getBufferAlloc();
 			// global_variable is a pointer to a pointer.
-			AllocaInst* alloc = bufferAllocInitialization(global_variable->getType()->getElementType(), ba);
+			AllocaInst* alloc = bufferAllocInitialization(global_variable->getType()->getElementType(), ba, mPtrAllocation);
 			StoreInst *store2 = mBuilder.CreateStore(alloc, global_variable); // Store an already allocated variable address to our pointer
 			// alloc was already pushed inside bufferAllocInitialization
-			mInstructions.push_back(store2);
+			mPtrAllocation.push_back(store2);
 		}
 		break;
 		default:
@@ -372,6 +372,8 @@ void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
 void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 {
     string func_name = "test_" + mCurrentFud;
+	mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
+	mPtrAllocation.clear();
     Function *testFunction = generateFunction(func_name,true);
     TF->setLLVMFunction(testFunction);
 }
@@ -703,7 +705,8 @@ Value* TestGeneratorVisitor::createFloatComparison(ComparisonOperator::Type type
 	return nullptr;
 }
 
-llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba)
+llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba,
+	std::vector<llvm::Instruction*>& instructions)
 {
 	assert(ptrType && "Invalid ptrType");
 	assert(ptrType->getTypeID() == Type::PointerTyID && "ptrType has to be a pointer type");
@@ -713,7 +716,7 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 						mBuilder.getInt(APInt(32, ba->getBufferSizeAsString(), 10)) // @todo Add support to hex and octal bases
 						); // Allocate memory for the element type pointed to
 
-	mInstructions.push_back(alloc1);
+	instructions.push_back(alloc1);
 
 	if(ptrType->getPointerElementType()->getTypeID() == Type::TypeID::StructTyID) {
 		////////////////////////////////////////
@@ -726,12 +729,12 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 		Value* bitcast = mBuilder.CreateBitCast(alloc1,mBuilder.getInt8PtrTy());
 		assert(bitcast && "Invalid bitcast instruction");
 		ConstantInt* zero_value = mBuilder.getInt8(0);
-		mInstructions.push_back(cast<Instruction>(bitcast));
+		instructions.push_back(cast<Instruction>(bitcast));
 		for(unsigned i = 0; i < size * ba->getBufferSize(); i++) {
 			GetElementPtrInst* gep = cast<GetElementPtrInst>(mBuilder.CreateGEP(bitcast,mBuilder.getInt64(i)));
 			StoreInst* store = mBuilder.CreateStore(zero_value, gep);
-			mInstructions.push_back(gep);
-			mInstructions.push_back(store);
+			instructions.push_back(gep);
+			instructions.push_back(store);
 		}
 		// End of initialization.
 		/////////////////////////////////////////
@@ -740,9 +743,9 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 			const StructInitializer* init = ba->getStructInitializer();
 			for(unsigned i=0; i < ba->getBufferSize(); i++) {
 				GetElementPtrInst* gep = cast<GetElementPtrInst>(mBuilder.CreateGEP(bitcast,mBuilder.getInt64(i*size)));
-				mInstructions.push_back(gep);
+				instructions.push_back(gep);
 				BitCastInst* bc = cast<BitCastInst>(mBuilder.CreateBitCast(gep,ptrType));
-				mInstructions.push_back(bc);
+				instructions.push_back(bc);
 				Value* val = cast<Value>(bc);
 				assert(val && "Invalid Value type");
 				vector<Value*> indices;
@@ -759,9 +762,9 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 		// iterate over the whole buffer.
 		for(unsigned i = 0; i < ba->getBufferSize(); i++) {
 			Value* gep = mBuilder.CreateGEP(alloc1,	mBuilder.getInt32(i), Twine("array_"+i));
-			mInstructions.push_back(static_cast<llvm::Instruction*>(gep));
+			instructions.push_back(static_cast<llvm::Instruction*>(gep));
 			StoreInst *S = mBuilder.CreateStore(v, gep);
-			mInstructions.push_back(S);
+			instructions.push_back(S);
 		}
 	}
 	return alloc1; //alloc1 is a pointer type to type.

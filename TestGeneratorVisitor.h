@@ -35,6 +35,17 @@ private:
     llvm::BasicBlock *mCurrentBB;
     /// Instructions generated for each TestDefinitionExpr
     std::vector<llvm::Instruction*> mInstructions;
+    /// This vector is used to hold all the instructions needed to allocate memory
+    /// for pointers. Since we have different functions for the setup, function
+    /// under test, teardown and cleanup, the previous implementation allocated
+    /// the memory and then passed a pointer to the FUD on the same llvm Function,
+    /// however the allocation was being done in a different function on the stack
+    /// and after exiting the setup function that memory was no longer valid. Thus
+    /// we use this vector to store those instructions when they generated, but
+    /// we actually use the instructions when we really need them, that is when we
+    /// VisitTestFunction we just insert these instructions at the very beginning
+    /// of the mInstructions vector.
+    std::vector<llvm::Instruction*> mPtrAllocation;
     /// Used to hold the arguments for each FunctionCallExpr
     std::vector<llvm::Value*> mArgs;
     /// Used to hold backup values of global variables and their original values
@@ -136,11 +147,15 @@ private:
 
     /**
      * Allocates and initializes a buffer of type ptrType->elementType using BufferAlloc information.
-     * @param ptrType
-     * @param ba
+     * The resulting instructions generated will be stored in the vector 'instructions'.
+     *
+     * @param[in] ptrType
+     * @param[in] ba
+     * @param[out] instructions A vector of instructions to store the code we generate.
      * @return
      */
-    llvm::AllocaInst* bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba);
+    llvm::AllocaInst* bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba,
+                                                std::vector<llvm::Instruction*>& instructions);
 
     string getUniqueTestName(const string& name);
 public:
