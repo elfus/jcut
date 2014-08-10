@@ -520,10 +520,15 @@ llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
                                                         bool use_mReturnValue)
 {
     string unique_name = getUniqueTestName(name);
+	llvm::Type* return_type = nullptr;
+	if(mTestFunctionCall)
+		return_type = mTestFunctionCall->getCalledFunction()->getReturnType();
+	else
+		return_type = mBuilder.getInt8Ty();
 	Function *function = cast<Function> (mModule->getOrInsertFunction(
 			unique_name,
-			mTestFunctionCall->getCalledFunction()->getReturnType(),
-			(Type*) 0));
+			return_type,
+			nullptr));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
 			"block_" + unique_name, function);
 

@@ -98,7 +98,7 @@ string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)
 		}
 		return ss.str();
 	}
-	return "Invalid expected result";
+	return "(none)";
 }
 
 string TestLoggerVisitor::getWarningString(TestFunction *TF)
