@@ -144,7 +144,7 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	// convert an i1 type to an i32 type for proper comparison to bool.
 	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());
 	mInstructions.push_back(zext);
-	mReturnValue = zext;
+//	mReturnValue = zext;
 }
 
 void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
@@ -508,7 +508,7 @@ llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
     string unique_name = getUniqueTestName(name);
 	Function *function = cast<Function> (mModule->getOrInsertFunction(
 			unique_name,
-			Type::getInt32Ty(mModule->getContext()),
+			mTestFunctionCall->getCalledFunction()->getReturnType(),
 			(Type*) 0));
 	BasicBlock *BB = BasicBlock::Create(mModule->getContext(),
 			"block_" + unique_name, function);

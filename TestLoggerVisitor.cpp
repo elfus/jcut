@@ -26,7 +26,8 @@ string TestLoggerVisitor::getActualResultString(TestFunction *TF)
 {
 	llvm::GenericValue result(TF->getReturnValue());
 	stringstream ss;
-	llvm::Type::TypeID type = TF->getFunctionCall()->getReturnType()->getTypeID();
+	llvm::Type *returnType = TF->getFunctionCall()->getReturnType();
+	llvm::Type::TypeID type = returnType->getTypeID();
 	switch(type) {
 		case llvm::Type::TypeID::DoubleTyID:
 			ss << result.DoubleVal;
@@ -39,28 +40,22 @@ string TestLoggerVisitor::getActualResultString(TestFunction *TF)
 			break;
 		case llvm::Type::TypeID::IntegerTyID:
 		{
-			// @todo We still have a lot work to do here
-			// we have to decide between two options
-			// 1. Keep returning a bool value from the generated llvm::Function
-			//    and store the actual return value somewhere else in llvm IR code
-			//	  and retrieve it somehow
-			// 2. Return the actual value in the function and detect what type of
-			//	  data type in C++ and convert it to string (above you will have to
-			//	  do the comparison)
-			const uint64_t* res = result.IntVal.getRawData();
-			ss << *res;
+			unsigned bit_width = result.IntVal.getBitWidth();
+			bool is_signed = result.IntVal.isSignedIntN(bit_width);
+			/// @note For the sake of simplicity just use 10, however we
+			/// we may want to use a different radix.
+			unsigned radix = 10;
+			ss << result.IntVal.toString(radix,is_signed);
 		}
 		break;
 		case llvm::Type::TypeID::PointerTyID:
-		{
 			ss << result.PointerVal;
-		}
-			break;
-		case llvm::Type::TypeID::VoidTyID:
-			ss << "void";
 			break;
 		case llvm::Type::TypeID::StructTyID:
 			ss << "struct type";
+			break;
+		case llvm::Type::TypeID::VoidTyID:
+			ss << "void";
 			break;
 		default:
 			assert(false && "Unsupported return type");
