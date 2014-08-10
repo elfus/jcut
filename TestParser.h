@@ -85,8 +85,10 @@ private:
     string  mOutput;
     // Any warning we want to inform while generating this LLVM Function
     vector<Exception> mWarnings;
+    bool mPassingValue;
 public:
-    LLVMFunctionHolder() : mFunction(nullptr) {}
+    LLVMFunctionHolder() : mFunction(nullptr), mReturnValue(), mGroupName(),
+    mOutput(), mWarnings(), mPassingValue(false) {}
     virtual ~LLVMFunctionHolder() { }
 
     void setLLVMFunction(llvm::Function* f) { mFunction = f; }
@@ -102,6 +104,8 @@ public:
         warning_count += mWarnings.size();
     }
     const vector<Exception>& getWarnings() const { return mWarnings; }
+    void setPassingValue(bool passed) { mPassingValue = passed; }
+    bool getPassingValue() const { return mPassingValue; }
     static unsigned warning_count;
 };
 

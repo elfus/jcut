@@ -19,7 +19,8 @@ mBuilder(mod->getContext()),
 mTestFunctionCall(nullptr),
 mCurrentBB(nullptr),
 mReturnValue(nullptr),
-mWarnings()
+mWarnings(),
+mCurrentResult(nullptr)
 {
 }
 
@@ -141,10 +142,19 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 
 	assert(i && "Invalid comparison instruction");
 	mInstructions.push_back((llvm::Instruction*)i);
-	// convert an i1 type to an i32 type for proper comparison to bool.
-	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());
+	// convert an i1 type to an i8 type for proper comparison to bool.
+	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt8Ty());
 	mInstructions.push_back(zext);
-//	mReturnValue = zext;
+
+	// store the bool result in a global variable.
+	GlobalVariable* result = new GlobalVariable(*mModule,
+					zext->getType(),
+					false,
+					GlobalValue::LinkageTypes::ExternalLinkage,
+					mBuilder.getInt8(0)); // Providing an initializer 'DEFINES' the variable
+	StoreInst* st = mBuilder.CreateStore(zext, result);
+	mInstructions.push_back(st);
+	mCurrentResult = result;
 }
 
 void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
@@ -376,6 +386,10 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 	mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
 	mPtrAllocation.clear();
     Function *testFunction = generateFunction(func_name,true);
+	if(mCurrentResult) {
+		mCurrentResult->setName("result_"+testFunction->getName());
+		mCurrentResult = nullptr;
+	}
     TF->setLLVMFunction(testFunction);
 }
 

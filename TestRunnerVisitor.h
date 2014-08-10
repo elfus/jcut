@@ -49,6 +49,16 @@ private:
             // Seems it has to be called in conjunction with the previous one.
             // mEE->freeMachineCodeForFunction(f);
             /////////////////////////////////////
+            string result_name = "result_"+f->getName().str();
+            uint64_t address = mEE->getGlobalValueAddress(result_name);
+            if(address) {
+                unsigned char* pass = reinterpret_cast<unsigned char*>(address);
+                FW->setPassingValue(static_cast<bool>(*pass));
+            } else {
+                // It means it was a function returning. Perhaps we should generate
+                // code to create a global variable and store true?
+                FW->setPassingValue(true);
+            }
             FW->setReturnValue(rval);
             if(!StdCapture::EndCapture())
                 cerr << "** There was a problem finishing the test output capture!" << endl;

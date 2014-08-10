@@ -64,6 +64,9 @@ private:
     /// Store all the warnings for a single TestDefinition.
     std::vector<Exception> mWarnings;
     std::string mCurrentFud; // Current Function Under Test
+    /// Used to hold the bool value between  the actual result and the expected
+    /// result.
+    llvm::GlobalVariable* mCurrentResult;
 
     /**
  * Creates a new Value of the same Type as type with real_value

@@ -129,7 +129,7 @@ public:
     void VisitTestDefinitionFirst(TestDefinition *TD) {
         // Print the columns in the given order, then print a new line and
 	// optionally print more information about the current test.
-	mCurrentTestPassed = TD->getTestFunction()->getReturnValue().IntVal.getBoolValue();
+	mCurrentTestPassed = TD->getTestFunction()->getPassingValue();
         if(mCurrentTestPassed && (mFmt & (LOG_ALL | LOG_PASSING)) ){
             for(auto column : mOrder)
 		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;

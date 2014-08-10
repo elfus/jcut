@@ -11,7 +11,7 @@ string TestLoggerVisitor::getColumnString(ColumnName name, TestFunction *TF)
 			return TF->getFunctionCall()->getFunctionCalledString();
         case RESULT:
 			/// @todo Detect individually the conditions of the teardown functions
-			return (TF->getReturnValue().IntVal.getBoolValue()?"PASSED" : "FAILED");
+			return (TF->getPassingValue()?"PASSED" : "FAILED");
 		case ACTUAL_RESULT:
 			return getActualResultString(TF);
 		case EXPECTED_RES:
