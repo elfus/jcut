@@ -12,12 +12,60 @@ string TestLoggerVisitor::getColumnString(ColumnName name, TestFunction *TF)
         case RESULT:
 			/// @todo Detect individually the conditions of the teardown functions
 			return (TF->getReturnValue().IntVal.getBoolValue()?"PASSED" : "FAILED");
+		case ACTUAL_RESULT:
+			return getActualResultString(TF);
 		case EXPECTED_RES:
 			return getExpectedResultString(TF);
 		default:
 			return "Invalid column";
 	}
 	return "Invalid column2";
+}
+
+string TestLoggerVisitor::getActualResultString(TestFunction *TF)
+{
+	llvm::GenericValue result(TF->getReturnValue());
+	stringstream ss;
+	llvm::Type::TypeID type = TF->getFunctionCall()->getReturnType()->getTypeID();
+	switch(type) {
+		case llvm::Type::TypeID::DoubleTyID:
+			ss << result.DoubleVal;
+		break;
+		case llvm::Type::TypeID::FloatTyID:
+			ss << result.FloatVal;
+		break;
+		case llvm::Type::TypeID::HalfTyID:
+			ss << result.FloatVal;
+			break;
+		case llvm::Type::TypeID::IntegerTyID:
+		{
+			// @todo We still have a lot work to do here
+			// we have to decide between two options
+			// 1. Keep returning a bool value from the generated llvm::Function
+			//    and store the actual return value somewhere else in llvm IR code
+			//	  and retrieve it somehow
+			// 2. Return the actual value in the function and detect what type of
+			//	  data type in C++ and convert it to string (above you will have to
+			//	  do the comparison)
+			const uint64_t* res = result.IntVal.getRawData();
+			ss << *res;
+		}
+		break;
+		case llvm::Type::TypeID::PointerTyID:
+		{
+			ss << result.PointerVal;
+		}
+			break;
+		case llvm::Type::TypeID::VoidTyID:
+			ss << "void";
+			break;
+		case llvm::Type::TypeID::StructTyID:
+			ss << "struct type";
+			break;
+		default:
+			assert(false && "Unsupported return type");
+	}
+	return ss.str();
 }
 
 string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)

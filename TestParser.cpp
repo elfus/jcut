@@ -942,7 +942,7 @@ Identifier* TestDriver::groupNameFactory()
 
 // Definitions due to conflicts with the forward declarations
 FunctionCall::FunctionCall(Identifier* name, const vector<FunctionArgument*>& arg) :
-FunctionName(name), FunctionArguments(arg)
+FunctionName(name), FunctionArguments(arg), mReturnType(nullptr)
 {
 	unsigned i = 0;
 	for (auto*& ptr : FunctionArguments) {

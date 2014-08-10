@@ -610,6 +610,8 @@ class FunctionCall : public TestExpr {
 private:
     Identifier *FunctionName;
     vector<FunctionArgument*> FunctionArguments;
+    // owned by llvm, do not delete
+    llvm::Type *mReturnType;
 public:
 
     Identifier *getIdentifier() const {return FunctionName;}
@@ -623,6 +625,8 @@ public:
     void accept(Visitor *v);
 
     string getFunctionCalledString();
+    void setReturnType(llvm::Type *type) { mReturnType = type; }
+    llvm::Type* getReturnType() const { return mReturnType; }
 };
 
 class ExpectedResult : public TestExpr {

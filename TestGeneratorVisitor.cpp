@@ -92,7 +92,8 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
         else
                mReturnValue = call;
 
-        mTestFunctionCall = call;
+	FC->setReturnType(call->getCalledFunction()->getReturnType());
+	mTestFunctionCall = call;
 	mInstructions.push_back(call);
 	mArgs.clear();
 }

@@ -28,6 +28,7 @@ public:
         TEST_NAME,
         FUD, // Function Under Test
         RESULT,
+        ACTUAL_RESULT,
         EXPECTED_RES,
         WARNING,
         MAX_COLUMN
@@ -57,6 +58,7 @@ private:
     LogFormat mFmt = LOG_ALL;
     bool mCurrentTestPassed = false;
 
+    string getActualResultString(TestFunction *TF);
     string getExpectedResultString(TestFunction *TF);
     string getWarningString(TestFunction *TF);
     void logFunction(LLVMFunctionHolder *FH, const string& name);
@@ -70,6 +72,7 @@ public:
         mColumnName[TEST_NAME] = "TEST NAME";
         mColumnName[FUD] = "FUNCTION CALLED";
         mColumnName[RESULT] = "RESULT";
+        mColumnName[ACTUAL_RESULT] = "ACTUAL RESULT";
         mColumnName[EXPECTED_RES] = "EXPECTED RESULT";
         /////////////////////////////////////////
 
@@ -82,6 +85,7 @@ public:
         mOrder.push_back(TEST_NAME);
         mOrder.push_back(FUD);
         mOrder.push_back(RESULT);
+        mOrder.push_back(ACTUAL_RESULT);
         mOrder.push_back(EXPECTED_RES);
 
         calculateTotalWidth();
