@@ -1,0 +1,1413 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 3cm
+\topmargin 3cm
+\rightmargin 3cm
+\bottommargin 3cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\listings_params "basicstyle={\ttfamily \small},columns=fullflexible"
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+JIT-TESTING Tutorial
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Subsection*
+What is it? 
+\end_layout
+
+\begin_layout Standard
+JIT-TESTING is a simple command line tool to perform 
+\emph on
+unit testing in C code
+\emph default
+ using the LLVM Just In Time (JIT) engine and some of the Clang APIs.
+\end_layout
+
+\begin_layout Subsection*
+Objectives 
+\end_layout
+
+\begin_layout Standard
+The main objectives behind the design and implementation of this tool are:
+ 
+\end_layout
+
+\begin_layout Itemize
+Minimize the amount of test code you need to write for your software written
+ in C.
+ 
+\end_layout
+
+\begin_layout Itemize
+Simplify the test code you write.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+We believe that writing a test for a function should be as simple as if
+ you were calling that function with its parameters somewhere else in your
+ program.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Minimize the compile times for your tests and in turn for your program.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The jit-testing tool will actually compile only the functions you are testing,
+ leaving the rest untouched.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Encourage Test Driven Development (TDD) and unit testing among C programmers.
+\end_layout
+
+\begin_layout Standard
+While the main focus of our tool has always been oriented to unit testing
+ and TDD we have found during the early stages of development and testing
+ that this tool might be a good resource for educational purposes for C
+ novice programmers and universities.
+\end_layout
+
+\begin_layout Subsubsection*
+How does it work? 
+\end_layout
+
+\begin_layout Standard
+JIT-TESTING takes as input 2 important things: your C source code and a
+ test file.
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+C source code
+\emph default
+: JIT-TESTING makes use of the Clang APIs to analyze and process the source
+ code, hence it will behave pretty much like a compiler.
+ This means that you will need to tell it where are all your source code
+ lives.
+ If you're familiar with GCC or Clang you will figure out you can do this
+ by using the usual compiler flags for finding header files and linking
+ source code in several files and libraries, i.e.
+ -I or -L.
+ 
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+Test file
+\emph default
+: This is a text file with the extension 
+\emph on
+jtl
+\emph default
+.
+ In order for this tool to understand what you want to test and expecting
+ from a test you need to use the 
+\emph on
+JIT-TESTING Language
+\emph default
+ (
+\emph on
+jtl
+\emph default
+).
+ Don't worry about learning a new language, you will see in the rest of
+ this tutorial that this language is really small, simple and based on a
+ small subset of the C syntax.
+ If you are comfortable with C's syntax then you're pretty much done learning
+ this new language.
+\end_layout
+
+\begin_layout Standard
+Upon receiving these 2 inputs the tool will analyze the C code using Clang
+ APIs and will generate code for only those functions described in the test
+ file and then run them using the LLVM JIT Execution Engine.
+ Then a small report will be provided by the tool about the tests ran.
+\end_layout
+
+\begin_layout Standard
+From a high level perspective the following diagram describes how JIT-TESTING
+ works.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename jit-testing high level.jpg
+	scale 40
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+High level view of how jit-testing works
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+pagebreak
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+The tutorial
+\end_layout
+
+\begin_layout Standard
+In this tutorial we will walk you through the usage of JIT-TESTING to test
+ some C code.
+ We will start by writing some basic and simple C functions, and then some
+ tests for it.
+\end_layout
+
+\begin_layout Standard
+For the sake of simplicity all the C code we write will be in a source file
+ named '
+\emph on
+some_file.c
+\emph default
+'and our test file will be named '
+\emph on
+test_file.jtl
+\emph default
+'.
+ In section XXX we will explain how to test C code across multiple files.
+\end_layout
+
+\begin_layout Standard
+NOTE: For the examples in which we make use of the C standard library (stdio.h,
+ stdlib.h, etc.) you will need to have properly installed such libraries and
+ tell JIT-TESTING where they live.
+ See section XXX for more information.
+\end_layout
+
+\begin_layout Subsection
+The basics
+\end_layout
+
+\begin_layout Subsubsection
+The simplest test
+\end_layout
+
+\begin_layout Standard
+Open your favorite text editor and create a file named 
+\emph on
+some_file.c
+\emph default
+ then write the following function in it.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		// some_file.c
+\end_layout
+
+\begin_layout Plain Layout
+
+		void my_function() { 
+\end_layout
+
+\begin_layout Plain Layout
+
+			return; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then create the test file 
+\emph on
+test_file.jtl
+\emph default
+ and type the function we want to call.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		# test_file.jtl		
+\end_layout
+
+\begin_layout Plain Layout
+
+		my_function(); 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note the semi-colon at the end of the function, follows the same syntax
+ as C for calling a function.
+ Also note that you can place comments in your test file starting with the
+ character 
+\emph on
+#
+\emph default
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Running the above test on the function we just wrote can be done with the
+ following command line: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		jit-testing some_file.c --test-file test_file.jtl 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+You will see some output reporting the results of executing the function
+ defined in the test file.
+\end_layout
+
+\begin_layout Standard
+Running a test with 
+\emph on
+jit-testing
+\emph default
+ is as simple as typing the function in the test file as if you were calling
+ a function in C code.
+ What the tool will do is to take the given test function '
+\emph on
+my_function()
+\emph default
+', it will search for its definition in the input C files, it will compile
+ and execute it using LLVM JIT Execution engine.
+ Since this is a void function the tool assumes the test has passed if it
+ completed its execution without interruption.
+\end_layout
+
+\begin_layout Standard
+NOTE: Even though we did not use of any standard library the 'my_function()'
+ function is a valid C function.
+ You can try introducing a syntax error, i.e.
+ try removing a semi-colon or parenthesis to see what 
+\emph on
+jit-testing
+\emph default
+ tells you.
+\end_layout
+
+\begin_layout Subsubsection
+Passing arguments to a functions 
+\end_layout
+
+\begin_layout Standard
+Now we will see how to call a function takes some parameters and returns
+ a value.
+ Type the following function:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		int sum(int a, int b) {
+\end_layout
+
+\begin_layout Plain Layout
+
+			return a+b;
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Then write down a test for it which simply calls it with any parameter you
+ want.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily},language=C"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		sum(2,2);
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Execute the tests with the command
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		jit-testing some_file.c --test-file test_file.jtl 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If the function has no syntax errors 
+\emph on
+jit-testing
+\emph default
+ will run it and report the status of it as passed.
+\end_layout
+
+\begin_layout Subsubsection
+Expected results
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Expected-results"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+A function is one of the most important elements in which a program is distribut
+ed and the execution of any program depends on the return values of such
+ functions.
+\end_layout
+
+\begin_layout Standard
+You can compare the actual result of a given function with an expected result
+ with the following syntax in your test file.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		sum(2,2) == 4;
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This syntax may feel awkward for a C programmer, however it tells the tool
+ that the return value from calling the function 
+\emph on
+sum()
+\emph default
+ should be compared with the value 4
+\emph on
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Execute the test and see what reports tells.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		jit-testing some_file.c --test-file test_file.jtl 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+jit-testing
+\emph default
+ supports the following operators for comparing the return value of a function
+ with any value you give it.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		sum(2,2) != 4;
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) == 4;
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) >= 4;
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) <= 4;
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) > 4;
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) < 4;
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The comparison operators behave and follow the same rules from a C program.
+ Try writing some tests that make use of these operators.
+\end_layout
+
+\begin_layout Subsection*
+What values can I use as expected result?
+\end_layout
+
+\begin_layout Standard
+As of now the values you may use as expected result are
+\emph on
+:
+\end_layout
+
+\begin_layout Itemize
+Constant integers
+\emph on
+ 
+\emph default
+(only decimal notation is supported, hexadecimal and octal is in the 
+\begin_inset Quotes eld
+\end_inset
+
+to do
+\begin_inset Quotes erd
+\end_inset
+
+ list).
+\end_layout
+
+\begin_layout Itemize
+Floating point constants.
+\end_layout
+
+\begin_layout Itemize
+Characters denoted with the syntax 'X' where X is any valid ASCII character.
+\end_layout
+
+\begin_layout Itemize
+C-like strings: 
+\begin_inset Quotes eld
+\end_inset
+
+this is a string
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+How 
+\emph on
+jit-testing
+\emph default
+ will treat each value is shown the following code snippets in comments.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		# It will take the ASCII value of 'a' (49)
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) == 'a';
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+		# If sum returns an unsigned value,
+\end_layout
+
+\begin_layout Plain Layout
+
+		# -47 will be treated as unsigned value
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) == -47;
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+		# It will take the memory address of the
+\end_layout
+
+\begin_layout Plain Layout
+
+		# string and casting it to whatever data
+\end_layout
+
+\begin_layout Plain Layout
+
+		# type the function returns
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) == "this is a string";		
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In all cases the tool will cast the expected value to whatever data type
+ the function under test returns and then perform the comparison.
+ The expected value is ignored for functions that return 'void'.
+\end_layout
+
+\begin_layout Subsubsection
+Summary
+\end_layout
+
+\begin_layout Standard
+To wrap up and use all you have learned in this section try writing a function
+ that calculates the factorial of a number using both a recursive and iterative
+ solution.
+ 
+\end_layout
+
+\begin_layout Standard
+Today is your lucky as I will provide those functions for you :)
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		int fact_1(int a) {   
+\end_layout
+
+\begin_layout Plain Layout
+
+			if(1 == a) return a;   
+\end_layout
+
+\begin_layout Plain Layout
+
+			return a * factorial(a-1); 
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\end_layout
+
+\begin_layout Plain Layout
+
+		int fact_2(int a) {   
+\end_layout
+
+\begin_layout Plain Layout
+
+			unsigned i = 1;   
+\end_layout
+
+\begin_layout Plain Layout
+
+			while(a) i *= a--;   
+\end_layout
+
+\begin_layout Plain Layout
+
+			return i; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Try writing your own versions of these two functions and test them all using
+ 
+\emph on
+jit-testing
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+pagebreak
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Managing program state
+\end_layout
+
+\begin_layout Standard
+Any non-trivial program will contain its own state represented as a set
+ of data structures which are modified by a series of function calls.
+ Sometimes a given function behavior depends not only on the parameter values
+ it receives but also on the current value of one or several global variables
+ or structures.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+jit-testing
+\emph default
+ lets you define the state of your program by using 2 keywords from the
+ 
+\emph on
+jit-testing language: 
+\family typewriter
+\emph default
+before
+\family default
+\emph on
+ 
+\emph default
+and
+\emph on
+ 
+\family typewriter
+\emph default
+after.
+\end_layout
+
+\begin_layout Standard
+The syntax for these two keywords is as follow:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		before { ...
+ }
+\end_layout
+
+\begin_layout Plain Layout
+
+		function_under_test();
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { ...
+ }
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+You have to write the 
+\emph on
+before 
+\emph default
+keyword before the function you want to test and type the 
+\emph on
+after
+\emph default
+ keyword after the function you want to test.
+ The curly braces are mandatory for both the 
+\emph on
+before
+\emph default
+ and 
+\emph on
+after
+\emph default
+ keywords.
+ 
+\end_layout
+
+\begin_layout Standard
+The important thing to note here is that any statement you specify inside
+ the curly brace 
+\series bold
+will be executed 
+\emph on
+before
+\emph default
+ and 
+\emph on
+after
+\series default
+ 
+\emph default
+the function under test respectively.
+ You can have 3 different of statements inside the curly braces and they
+ are described with the following examples.
+\end_layout
+
+\begin_layout Subsubsection
+Modifying global variables
+\end_layout
+
+\begin_layout Standard
+Write the following code in your source file.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		int state; /* Global variable */
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\end_layout
+
+\begin_layout Plain Layout
+
+		int get_state() {   
+\end_layout
+
+\begin_layout Plain Layout
+
+			return state; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Write the following test in your test file.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		get_state() == 0;
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Run this test through the command line.
+ Remember that the C standard specificies that global variables will be
+ initialized to 0, thus our test succeeds and 
+\emph on
+jit-testing
+\emph default
+ will report the actual result.
+\end_layout
+
+\begin_layout Standard
+Now try writing the following test:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		before { state = 10; } # Assignment operator =
+\end_layout
+
+\begin_layout Plain Layout
+
+		get_state() == 0; 	 # Comparison operator ==
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Try running this test and you will see that it fails.
+ The reason why it fails is because 
+\emph on
+jit-testing
+\emph default
+ modified the variable 
+\emph on
+state
+\emph default
+ and assigned a 
+\emph on
+10
+\emph default
+ to it right before executing the function 
+\emph on
+get_state()
+\emph default
+.
+ Thus the actual result from calling 
+\emph on
+get_state()
+\emph default
+ is 10.
+\end_layout
+
+\begin_layout Subsubsection
+Checking global variables values
+\end_layout
+
+\begin_layout Standard
+Imagine the 
+\emph on
+get_state()
+\emph default
+ function has a return type of 
+\emph on
+void
+\emph default
+ and there was no way for us to check which value the variable 
+\emph on
+state
+\emph default
+ has after calling the function under test.
+ This problem can be solved by making a comparison using the 
+\emph on
+after
+\emph default
+ keyword.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		before { state = 10; } # Assignment operator =
+\end_layout
+
+\begin_layout Plain Layout
+
+		get_state(); 	 # Imagine this function returns 'void'
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { state == 10; } # Comparison operator ==
+\end_layout
+
+\end_inset
+
+This test will succeed as 
+\emph on
+jit-testing
+\emph default
+ will check that the variable 
+\emph on
+state
+\emph default
+ has a value of 
+\emph on
+10 after
+\emph default
+ running the function under test.
+ Note that when there is no expected value specified after function under
+ test the return value is ignored regardless of its data type.
+\end_layout
+
+\begin_layout Subsubsection
+Calling functions
+\series medium
+ 
+\series default
+\emph on
+before
+\emph default
+ and 
+\emph on
+after
+\emph default
+ a function under test
+\end_layout
+
+\begin_layout Standard
+Now add the following function to your C source file 
+\emph on
+some_file.c
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		void modify_state() {   
+\end_layout
+
+\begin_layout Plain Layout
+
+			state += 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now we will modify the variable 
+\emph on
+state
+\emph default
+ by calling a function rather than doing an assignment.
+ Here is the new test:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		before { modify_state(); } # Function call
+\end_layout
+
+\begin_layout Plain Layout
+
+		get_state() == 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { modify_state(); } # You can call a function call here to
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This test will succed because the function 
+\emph on
+modify_state()
+\emph default
+ is called before the 
+\emph on
+get_state()
+\emph default
+ function modifying the global variable.
+ In the 
+\emph on
+after
+\emph default
+ statement we also call the function that modifies the global variable.
+ For this toy example is useless, but you can think of calling a function
+ that cleans up all the things done in the 
+\emph on
+before
+\emph default
+ statement or during the function under test.
+\end_layout
+
+\begin_layout Subsubsection
+Summary
+\end_layout
+
+\begin_layout Standard
+In this section we just learned that we can use the 
+\emph on
+before
+\emph default
+ and 
+\emph on
+after
+\emph default
+ keywords to execute three different types of statements:
+\end_layout
+
+\begin_layout Enumerate
+Variable assignment 'variable = X' where X is any value as described in
+ section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Expected-results"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Function call.
+\end_layout
+
+\begin_layout Enumerate
+Variable comparison with any value as described in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Expected-results"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The syntax for the before
+\emph on
+ 
+\emph default
+and
+\emph on
+ after 
+\emph default
+keywords is as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		before {<variable assignment>* | <function call>* | <variable comparison>*}
+\end_layout
+
+\begin_layout Plain Layout
+
+		function_under_test();
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { <variable assignment>* | <function call>* | <variable comparison>*
+ }
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note the little star to the right of each statement.
+ That indicates that you can have as many statements as you want in the
+ 
+\emph on
+before
+\emph default
+ and 
+\emph on
+after 
+\emph default
+statements or none of them.
+\end_layout
+
+\begin_layout Subsection
+Grouping related tests
+\end_layout
+
+\begin_layout Subsubsection
+The default group
+\end_layout
+
+\begin_layout Subsubsection
+Nesting groups
+\end_layout
+
+\begin_layout Subsubsection
+Managing program states for a given group
+\end_layout
+
+\begin_layout Subsection
+Structures as global variables
+\end_layout
+
+\begin_layout Subsection
+Pointers
+\end_layout
+
+\begin_layout Subsubsection
+Automatic memory allocation
+\end_layout
+
+\begin_layout Subsubsection
+Memory initialization
+\end_layout
+
+\begin_layout Subsubsection
+Pointers to structures
+\end_layout
+
+\begin_layout Subsubsection
+Structures initialization
+\end_layout
+
+\begin_layout Section
+Advanced topics
+\end_layout
+
+\begin_layout Subsection
+Testing code which uses the C standard library.
+\end_layout
+
+\begin_layout Subsection
+Testing code spread in different source files.
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_body
+\end_document

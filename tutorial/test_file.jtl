@@ -1,0 +1,22 @@
+my_function();
+sum(2,2);
+sum(2,2) == 4;
+sum(2,2) != 5;
+sum(2,2) >= 5;
+sum(2,2) <= 5;
+sum(2,2) > 5;
+sum(2,2) < 5;
+
+factorial(3) == 6;
+
+fact_2(3) == 6;
+
+get_state() == 0;
+
+before { state = 10; }
+get_state();
+after { state == 10; }
+
+before { modify_state(); } # Function call
+get_state() == 5; 
+after { modify_state();}
