@@ -49,16 +49,6 @@ private:
             // Seems it has to be called in conjunction with the previous one.
             // mEE->freeMachineCodeForFunction(f);
             /////////////////////////////////////
-            string result_name = "result_"+f->getName().str();
-            uint64_t address = mEE->getGlobalValueAddress(result_name);
-            if(address) {
-                unsigned char* pass = reinterpret_cast<unsigned char*>(address);
-                FW->setPassingValue(static_cast<bool>(*pass));
-            } else {
-                // It means it was a function returning. Perhaps we should generate
-                // code to create a global variable and store true?
-                FW->setPassingValue(true);
-            }
             FW->setReturnValue(rval);
             if(!StdCapture::EndCapture())
                 cerr << "** There was a problem finishing the test output capture!" << endl;
@@ -94,6 +84,18 @@ public:
     // The actual function under test
     void VisitTestFunction(TestFunction *TF) {
         runFunction(TF);
+        // We used the getPointerToGlobal instead because it works with JIT engine
+        // and the previous method works only with MCJIT.
+        llvm::GlobalVariable* g = TF->getResultVariable();
+        if(g) {
+            string result_name = TF->getResultVariable()->getName().str();
+            unsigned char* pass = static_cast<unsigned char*>(mEE->getPointerToGlobal(g));
+            if(pass) {
+                TF->setPassingValue(static_cast<bool>(*pass));
+            }
+        } else
+            assert(false && "Invalid global variable for result!");
+
     }
 
     void VisitTestTeardown(TestTeardown *TT) {

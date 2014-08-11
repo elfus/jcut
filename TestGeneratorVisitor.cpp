@@ -88,10 +88,25 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 	assert(funcToBeCalled != nullptr && "Function not found!");
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
-        if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
-               mReturnValue = mBuilder.getInt32(1);// 1 Passes, 0 fails for void functions
-        else
-               mReturnValue = call;
+	/// Create the global variable that will hold the bool value for the comparison
+	/// between the actual result and the expected result.
+	GlobalVariable* result = new GlobalVariable(*mModule,
+					mBuilder.getInt8Ty(),
+					false,
+					GlobalValue::LinkageTypes::ExternalLinkage,
+					mBuilder.getInt8(0)); // Providing an initializer 'DEFINES' the variable
+	// 1 Passes, void functions always pass if they completed execution
+	// Here we give a passing value since we don't know if an expected result was
+	// provided, thus all the functions regardless of their return type (including void)
+	// will pass if they complete execution
+	StoreInst* st = mBuilder.CreateStore(mBuilder.getInt8(1), result);
+	mInstructions.push_back(st);
+	mCurrentResult = result;
+
+	if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
+		mReturnValue = mBuilder.getInt32(0); // for void types always return 0
+	else
+		mReturnValue = call;
 
 	FC->setReturnType(call->getCalledFunction()->getReturnType());
 	mTestFunctionCall = call;
@@ -147,14 +162,8 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	mInstructions.push_back(zext);
 
 	// store the bool result in a global variable.
-	GlobalVariable* result = new GlobalVariable(*mModule,
-					zext->getType(),
-					false,
-					GlobalValue::LinkageTypes::ExternalLinkage,
-					mBuilder.getInt8(0)); // Providing an initializer 'DEFINES' the variable
-	StoreInst* st = mBuilder.CreateStore(zext, result);
+	StoreInst* st = mBuilder.CreateStore(zext, mCurrentResult);
 	mInstructions.push_back(st);
-	mCurrentResult = result;
 }
 
 void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
@@ -388,6 +397,7 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
     Function *testFunction = generateFunction(func_name,true);
 	if(mCurrentResult) {
 		mCurrentResult->setName("result_"+testFunction->getName());
+		TF->setResultVariable(mCurrentResult);
 		mCurrentResult = nullptr;
 	}
     TF->setLLVMFunction(testFunction);
