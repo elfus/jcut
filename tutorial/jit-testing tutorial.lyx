@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -12,13 +12,13 @@
 \font_roman default
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -29,15 +29,24 @@
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -78,7 +87,11 @@ What is it?
 \end_layout
 
 \begin_layout Standard
-JIT-TESTING is a simple command line tool to perform 
+
+\emph on
+jit-testing
+\emph default
+ is a simple command line tool to perform 
 \emph on
 unit testing in C code
 \emph default
@@ -142,8 +155,11 @@ How does it work?
 \end_layout
 
 \begin_layout Standard
-JIT-TESTING takes as input 2 important things: your C source code and a
- test file.
+
+\emph on
+jit-testing 
+\emph default
+takes as input 2 important things: your C source code and a test file.
 \end_layout
 
 \begin_layout Itemize
@@ -151,10 +167,10 @@ JIT-TESTING takes as input 2 important things: your C source code and a
 \emph on
 C source code
 \emph default
-: JIT-TESTING makes use of the Clang APIs to analyze and process the source
+: jit-testing makes use of the Clang APIs to analyze and process the source
  code, hence it will behave pretty much like a compiler.
- This means that you will need to tell it where are all your source code
- lives.
+ This means that you will need to tell it where are all your header files
+ and libraries live.
  If you're familiar with GCC or Clang you will figure out you can do this
  by using the usual compiler flags for finding header files and linking
  source code in several files and libraries, i.e.
@@ -175,7 +191,7 @@ jtl
  In order for this tool to understand what you want to test and expecting
  from a test you need to use the 
 \emph on
-JIT-TESTING Language
+Jit-Testing Language
 \emph default
  (
 \emph on
@@ -217,7 +233,7 @@ status open
 \end_inset
 
 
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 High level view of how jit-testing works
@@ -375,7 +391,8 @@ Note the semi-colon at the end of the function, follows the same syntax
 \end_layout
 
 \begin_layout Standard
-Running the above test on the function we just wrote can be done with the
+Open a command line, shell or terminal in your operating system and then
+ to run the above test on the function we just wrote can be done with the
  following command line: 
 \end_layout
 
@@ -417,17 +434,6 @@ my_function()
  completed its execution without interruption.
 \end_layout
 
-\begin_layout Standard
-NOTE: Even though we did not use of any standard library the 'my_function()'
- function is a valid C function.
- You can try introducing a syntax error, i.e.
- try removing a semi-colon or parenthesis to see what 
-\emph on
-jit-testing
-\emph default
- tells you.
-\end_layout
-
 \begin_layout Subsubsection
 Passing arguments to a functions 
 \end_layout
@@ -435,7 +441,11 @@ Passing arguments to a functions
 \begin_layout Standard
 Now we will see how to call a function takes some parameters and returns
  a value.
- Type the following function:
+ Type the following function in your file 
+\emph on
+some_file.c
+\emph default
+:
 \end_layout
 
 \begin_layout Standard
@@ -466,7 +476,9 @@ status open
 
 \begin_layout Standard
 Then write down a test for it which simply calls it with any parameter you
- want.
+ want in 
+\emph on
+test_file.jtl.
 \end_layout
 
 \begin_layout Standard
@@ -861,6 +873,13 @@ pagebreak
 
 \begin_layout Subsection
 Managing program state
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Managing-program-state"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -906,8 +925,8 @@ status open
 
 \begin_layout Plain Layout
 
-		before { ...
- }
+		[before { ...
+ }]
 \end_layout
 
 \begin_layout Plain Layout
@@ -917,8 +936,8 @@ status open
 
 \begin_layout Plain Layout
 
-		after { ...
- }
+		[after { ...
+ }]
 \end_layout
 
 \end_inset
@@ -945,7 +964,8 @@ before
 after
 \emph default
  keywords.
- 
+ The squared brackets indicate that either statement are optional for your
+ test.
 \end_layout
 
 \begin_layout Standard
@@ -1320,7 +1340,7 @@ status open
 
 \begin_layout Plain Layout
 
-		before {<variable assignment>* | <function call>* | <variable comparison>*}
+		[before {<variable assignment>* | <function call>* | <variable comparison>*}]
 \end_layout
 
 \begin_layout Plain Layout
@@ -1330,8 +1350,8 @@ status open
 
 \begin_layout Plain Layout
 
-		after { <variable assignment>* | <function call>* | <variable comparison>*
- }
+		[after { <variable assignment>* | <function call>* | <variable comparison>*
+ }]
 \end_layout
 
 \end_inset
@@ -1351,22 +1371,659 @@ before
 after 
 \emph default
 statements or none of them.
+ The squared bracket indicate that both the before and after statements
+ are optional for a function under test.
 \end_layout
 
 \begin_layout Subsection
 Grouping related tests
 \end_layout
 
+\begin_layout Standard
+Any non-trivial program will have its set of tests, and often times the
+ amount such tests will be big.
+ A common practice to maintain a set of tests in the long term is to group
+ the tests into related sets of tests that comply with a certain criteria.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+jit-testing
+\emph default
+ lets you group any amount of tests by using the keyword 
+\family typewriter
+group
+\family default
+.
+ The syntax is as follow:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		group [Name] {
+\end_layout
+
+\begin_layout Plain Layout
+
+			...
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+You can optionally provide a name for a given group.
+\end_layout
+
+\begin_layout Standard
+The reason to have groups is mainly to 2 things: 
+\end_layout
+
+\begin_layout Enumerate
+Provide a program state for a set of tests in order to avoid having redundant
+\emph on
+ before
+\emph default
+ and 
+\emph on
+after 
+\emph default
+statements for the same set of tests.
+\end_layout
+
+\begin_layout Enumerate
+Provide a way to filter and customize the reports by set of tests.
+\end_layout
+
 \begin_layout Subsubsection
 The default group
+\end_layout
+
+\begin_layout Standard
+Taking all the examples we've done in the previous section you should have
+ the 
+\emph on
+test_file.jtl
+\emph default
+ that looks somewhat like this:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		# test_file.jtl
+\end_layout
+
+\begin_layout Plain Layout
+
+		my_function(); 
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2);
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) == 4; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) != 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) >= 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) <= 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) > 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		sum(2,2) < 5;
+\end_layout
+
+\begin_layout Plain Layout
+
+		fact_1(3) == 6;
+\end_layout
+
+\begin_layout Plain Layout
+
+		fact_2(3) == 6;
+\end_layout
+
+\begin_layout Plain Layout
+
+		get_state() == 0;
+\end_layout
+
+\begin_layout Plain Layout
+		
+\end_layout
+
+\begin_layout Plain Layout
+
+		before { state = 10; } 
+\end_layout
+
+\begin_layout Plain Layout
+
+		get_state(); 
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { state == 10; }
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\end_layout
+
+\begin_layout Plain Layout
+
+		before { modify_state(); }
+\end_layout
+
+\begin_layout Plain Layout
+
+		get_state() == 5;  
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { modify_state();}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+By default 
+\emph on
+jit-testing
+\emph default
+ adds all the tests in a test file into the 'default group' which is named
+ 
+\emph on
+group_0
+\emph default
+.
+ This is merely for implementation convenience and you will see in the test
+ reports a 'group_0' for every test you run.
 \end_layout
 
 \begin_layout Subsubsection
 Nesting groups
 \end_layout
 
+\begin_layout Standard
+Let us take some of the tests from the 
+\emph on
+test_file.jtl
+\emph default
+ and group them into nested groups.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		# test_file.jtl
+\end_layout
+
+\begin_layout Plain Layout
+
+		my_function(); 
+\end_layout
+
+\begin_layout Plain Layout
+
+		group A {
+\end_layout
+
+\begin_layout Plain Layout
+
+			sum(2,2);
+\end_layout
+
+\begin_layout Plain Layout
+
+			sum(2,2) == 4; 
+\end_layout
+
+\begin_layout Plain Layout
+
+			sum(2,2) != 5;
+\end_layout
+
+\begin_layout Plain Layout
+
+			group B {
+\end_layout
+
+\begin_layout Plain Layout
+
+				sum(2,2) >= 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+				sum(2,2) <= 5;		 
+\end_layout
+
+\begin_layout Plain Layout
+
+				group C {
+\end_layout
+
+\begin_layout Plain Layout
+
+					sum(2,2) > 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+					sum(2,2) < 5;
+\end_layout
+
+\begin_layout Plain Layout
+
+				}
+\end_layout
+
+\begin_layout Plain Layout
+
+			}
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+		group D {
+\end_layout
+
+\begin_layout Plain Layout
+
+			fact_1(3) == 6;
+\end_layout
+
+\begin_layout Plain Layout
+
+			fact_2(3) == 6;
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Inside a group you can have any number of tests or even any number of nested
+ groups.
+ There is no limit in how many groups can be nested.
+ The tests and groups found within another group will be executed in the
+ same order they appear in your test file.
+\end_layout
+
 \begin_layout Subsubsection
 Managing program states for a given group
+\end_layout
+
+\begin_layout Standard
+Recall section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Managing-program-state"
+
+\end_inset
+
+ in which we learned how to modify the program state for a given test with
+ the keywords 
+\family typewriter
+before
+\family default
+ and 
+\family typewriter
+after
+\family default
+.
+ We can also modify and check the program state for a 
+\emph on
+group
+\emph default
+ of tests using the same 
+\family typewriter
+before
+\family default
+ and 
+\family typewriter
+after
+\family default
+ keywords.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		before { ...
+ }
+\end_layout
+
+\begin_layout Plain Layout
+
+		group [Name] {
+\end_layout
+
+\begin_layout Plain Layout
+
+			...
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { ...
+ }
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These two keywords will modify the program state for the current group they
+ belong to, just like we saw in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Managing-program-state"
+
+\end_inset
+
+ they modify the state for a given test this time it applies to the current
+ group.
+ 
+\end_layout
+
+\begin_layout Standard
+For instance the following examples are valid tests.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		before { state = 10; }
+\end_layout
+
+\begin_layout Plain Layout
+
+		group E { 	 	
+\end_layout
+
+\begin_layout Plain Layout
+
+			
+\end_layout
+
+\begin_layout Plain Layout
+
+			get_state() == 10; 
+\end_layout
+
+\begin_layout Plain Layout
+
+			
+\end_layout
+
+\begin_layout Plain Layout
+
+			before { modify_state(); } 	
+\end_layout
+
+\begin_layout Plain Layout
+
+			get_state() == 15; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\end_layout
+
+\begin_layout Plain Layout
+
+			modify_state();
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { state == 20; } 
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\end_layout
+
+\begin_layout Plain Layout
+
+		before { state = 5; } 
+\end_layout
+
+\begin_layout Plain Layout
+
+		group F { 	
+\end_layout
+
+\begin_layout Plain Layout
+
+			get_state() == 5; 
+\end_layout
+
+\begin_layout Plain Layout
+
+			
+\end_layout
+
+\begin_layout Plain Layout
+
+			before { modify_state(); } 	
+\end_layout
+
+\begin_layout Plain Layout
+
+			get_state() == 10; 
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\end_layout
+
+\begin_layout Plain Layout
+
+		group G { 	
+\end_layout
+
+\begin_layout Plain Layout
+
+			get_state() == 0; 
+\end_layout
+
+\begin_layout Plain Layout
+
+			
+\end_layout
+
+\begin_layout Plain Layout
+
+			modify_state();
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\begin_layout Plain Layout
+
+		after { state == 5; }
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+All these are valid tests and they all pass.
+ Try running writing these tests in your file 
+\emph on
+test_file.jtl.
+\end_layout
+
+\begin_layout Subsubsection
+Summary
+\end_layout
+
+\begin_layout Standard
+In this section we learned how to group tests by using the keyword 
+\family typewriter
+group
+\family default
+.
+ We also learned how to modify the prorgam state for a specific group by
+ using the keywords before and after.
+ The final syntax for the 
+\family typewriter
+group
+\family default
+ keyword is as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		[before { <variable assignment>* | <function call>* | <variable comparison>*
+ }]
+\end_layout
+
+\begin_layout Plain Layout
+
+		group [Name] {
+\end_layout
+
+\begin_layout Plain Layout
+
+			...
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\begin_layout Plain Layout
+
+		[after { <variable assignment>* | <function call>* | <variable comparison>*
+ }]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Both the 
+\family typewriter
+before
+\family default
+ and 
+\family typewriter
+after
+\family default
+ statements are optional for a given group, and they can contain any number
+ of variable assignments, function calls or variable comparisons with an
+ expected value.
+ A group can also have an optional name.
+ If you omit this name the tool will assign this group an automatically
+ generated group name.
 \end_layout
 
 \begin_layout Subsection

@@ -7,7 +7,7 @@ sum(2,2) <= 5;
 sum(2,2) > 5;
 sum(2,2) < 5;
 
-factorial(3) == 6;
+fact_1(3) == 6;
 
 fact_2(3) == 6;
 
@@ -20,3 +20,51 @@ after { state == 10; }
 before { modify_state(); } # Function call
 get_state() == 5; 
 after { modify_state();}
+
+my_function(); 
+group A {
+	sum(2,2);
+	sum(2,2) == 4; 
+	sum(2,2) != 5;
+	group B {
+		sum(2,2) >= 5; 
+		sum(2,2) <= 5;		 
+		group C {
+			sum(2,2) > 5; 
+			sum(2,2) < 5;
+		}
+	}
+}
+
+group D {
+	fact_1(3) == 6;
+	fact_2(3) == 6;
+}
+
+group E {
+	before_all { state = 10; }
+	after_all { state == 15; }
+	
+	get_state() == 10;
+	
+	before { modify_state(); }
+	get_state() == 15;
+}
+
+group F {
+	before_all { state = 10; }
+	
+	get_state() == 10;
+	
+	before { modify_state(); }
+	get_state() == 15;
+}
+
+group G {
+	after_all { state == 5; }
+	
+	get_state() == 0;
+	
+	before { modify_state(); }
+	get_state() == 5;
+}

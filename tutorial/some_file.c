@@ -6,9 +6,9 @@ int sum(int a, int b) {
   return a+b;
 }
 
-int factorial(int a) {
+int fact_1(int a) {
   if(1 == a) return a;
-  return a * factorial(a-1);
+  return a * fact_1(a-1);
 }
 
 int fact_2(int a) {
