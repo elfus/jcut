@@ -1,2 +1,6 @@
 *.ll
 nbproject
+stderr.txt
+stdoutput.txt
+*~
+*.exe
