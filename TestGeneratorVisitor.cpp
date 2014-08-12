@@ -19,8 +19,7 @@ mBuilder(mod->getContext()),
 mTestFunctionCall(nullptr),
 mCurrentBB(nullptr),
 mReturnValue(nullptr),
-mWarnings(),
-mCurrentResult(nullptr)
+mWarnings()
 {
 }
 
@@ -88,21 +87,6 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 	assert(funcToBeCalled != nullptr && "Function not found!");
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
-	/// Create the global variable that will hold the bool value for the comparison
-	/// between the actual result and the expected result.
-	GlobalVariable* result = new GlobalVariable(*mModule,
-					mBuilder.getInt8Ty(),
-					false,
-					GlobalValue::LinkageTypes::ExternalLinkage,
-					mBuilder.getInt8(0)); // Providing an initializer 'DEFINES' the variable
-	// 1 Passes, void functions always pass if they completed execution
-	// Here we give a passing value since we don't know if an expected result was
-	// provided, thus all the functions regardless of their return type (including void)
-	// will pass if they complete execution
-	StoreInst* st = mBuilder.CreateStore(mBuilder.getInt8(1), result);
-	mInstructions.push_back(st);
-	mCurrentResult = result;
-
 	if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
 		mReturnValue = mBuilder.getInt32(0); // for void types always return 0
 	else
@@ -160,10 +144,6 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	// convert an i1 type to an i8 type for proper comparison to bool.
 	llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt8Ty());
 	mInstructions.push_back(zext);
-
-	// store the bool result in a global variable.
-	StoreInst* st = mBuilder.CreateStore(zext, mCurrentResult);
-	mInstructions.push_back(st);
 }
 
 void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
@@ -394,12 +374,26 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
     string func_name = "test_" + mCurrentFud;
 	mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
 	mPtrAllocation.clear();
-    Function *testFunction = generateFunction(func_name,true);
-	if(mCurrentResult) {
-		mCurrentResult->setName("result_"+testFunction->getName());
-		TF->setResultVariable(mCurrentResult);
-		mCurrentResult = nullptr;
+
+	/// Create the global variable that will hold the bool value for the comparison
+	/// between the actual result and the expected result.
+	GlobalVariable* result = new GlobalVariable(*mModule,
+					mBuilder.getInt8Ty(),
+					false,
+					GlobalValue::LinkageTypes::ExternalLinkage,
+					mBuilder.getInt8(1)); // Providing an initializer 'DEFINES' the variable
+	// If zext == nullptr no expected expression was provided and we assume
+	// the test passed.
+	if(llvm::ZExtInst* zext = dyn_cast<ZExtInst>(mInstructions.back())) {
+		// if zext != nullptr means that there was an expected expression and
+		// we should store the bool result in the global variable we just created.
+		StoreInst* st = mBuilder.CreateStore(zext, result);
+		mInstructions.push_back(st);
 	}
+
+    Function *testFunction = generateFunction(func_name,true);
+	result->setName("result_"+testFunction->getName());
+	TF->setResultVariable(result);
     TF->setLLVMFunction(testFunction);
 }
 
