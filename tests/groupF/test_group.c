@@ -61,3 +61,4 @@ void testing_malloc() {
 	struct Pixel localpixel;
 	memset(&localpixel,0, sizeof(struct Pixel));
 }
+
