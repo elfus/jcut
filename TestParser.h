@@ -1004,51 +1004,21 @@ public:
 
 class TestFixture : public TestExpr {
 private:
-    vector<FunctionCall*> mFunctionCalls;
-    vector<VariableAssignment*> mVarAssign;
-    vector<ExpectedExpression*> mExp;
+    vector<TestExpr*> mStmt;
 public:
 
-    TestFixture(const vector<FunctionCall*>& func,
-            const vector<VariableAssignment*>& var,
-            const vector<ExpectedExpression*>& exp) :
-    mFunctionCalls(func), mVarAssign(var), mExp(exp) {
+    TestFixture(const vector<TestExpr*>& stmnt) : mStmt(stmnt) {
 
     }
 
     ~TestFixture() {
-        for (auto*& ptr : mFunctionCalls)
-            delete ptr;
-
-        for (auto*& ptr : mVarAssign)
-            delete ptr;
-
-        for (auto*& ptr : mExp)
+        for (auto*& ptr : mStmt)
             delete ptr;
     }
 
     void dump() {
-        if (mVarAssign.size()) {
-            cout << endl << "VARIABLE ASSIGNMENT" << endl;
-            for (auto*& ptr : mVarAssign) {
-                ptr->dump();
-                cout << " ";
-            }
-            cout << endl;
-        }
-
-        if (mFunctionCalls.size()) {
-            cout << endl << "FUNCTION CALLS" << endl;
-            for (auto*& ptr : mFunctionCalls) {
-                ptr->dump();
-                cout << " ";
-            }
-            cout << endl;
-        }
-
-        if (mExp.size()) {
-            cout << endl << "EXPECTED EXPRESSIONS" << endl;
-            for (auto*& ptr : mExp) {
+        if (mStmt.size()) {
+            for (auto*& ptr : mStmt) {
                 ptr->dump();
                 cout << " ";
             }
@@ -1057,15 +1027,8 @@ public:
     }
 
     void accept(Visitor *v) {
-        for (auto*& ptr : mVarAssign)
+        for (auto*& ptr : mStmt)
             ptr->accept(v);
-
-        for (auto*& ptr : mFunctionCalls)
-            ptr->accept(v);
-
-        for (auto*& ptr : mExp)
-            ptr->accept(v);
-
         v->VisitTestFixture(this);
     }
 };

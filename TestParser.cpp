@@ -580,9 +580,7 @@ TestSetup* TestDriver::ParseTestSetup()
 
 TestFixture* TestDriver::ParseTestFixture()
 {
-	vector<VariableAssignment*> assignments;
-	vector<FunctionCall*> functions;
-	vector<ExpectedExpression*> expected;
+	vector<TestExpr*> statements;
 	FunctionCall *func = nullptr;
 	VariableAssignment* var = nullptr;
 	ExpectedExpression* exp = nullptr;
@@ -590,29 +588,27 @@ TestFixture* TestDriver::ParseTestFixture()
 	while (mCurrentToken != '}') {
 		if (mTokenizer.getIdentifierType() == Tokenizer::Identifier::ID_FUNCTION) {
 			func = (FunctionCall*) ParseFunctionCall();
-			functions.push_back(func);
+			statements.push_back(func);
 			func = nullptr;
 		} else if (mTokenizer.getIdentifierType() == Tokenizer::ID_VARIABLE) {
 			if (mTokenizer.peekToken() == Tokenizer::TOK_COMPARISON_OP) {
 				exp = ParseExpectedExpression();
-				expected.push_back(exp);
+				statements.push_back(exp);
 				exp = nullptr;
 			} else if(mTokenizer.peekToken() == '=') {
 				var = (VariableAssignment*) ParseVariableAssignment();
-				assignments.push_back(var);
+				statements.push_back(var);
 				var = nullptr;
 			}
 		} else if (mTokenizer.getIdentifierType() == Tokenizer::ID_CONSTANT) {
 			exp = ParseExpectedExpression();
-			expected.push_back(exp);
+			statements.push_back(exp);
 			exp = nullptr;
 		}
 
 		if (mCurrentToken != ';') {
 			mTestFixtureException = true;
-                        for(auto*& ptr : assignments) delete ptr;
-                        for(auto*& ptr : functions) delete ptr;
-                        for(auto*& ptr : expected) delete ptr;
+                        for(auto*& ptr : statements) delete ptr;
 			throw Exception(mTokenizer.previousLine(),mTokenizer.previousColumn(),
 					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
 					"Received "+mTokenizer.getTokenStringValue());
@@ -625,7 +621,7 @@ TestFixture* TestDriver::ParseTestFixture()
 			break;
 
 	}
-	return new TestFixture(functions, assignments, expected);
+	return new TestFixture(statements);
 }
 
 ExpectedExpression* TestDriver::ParseExpectedExpression()
