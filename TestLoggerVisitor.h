@@ -148,22 +148,22 @@ public:
 
     void VisitTestSetup(TestSetup *TS) {
         if(mCurrentTestPassed) {
-            if((mFmt & (LOG_ALL | LOG_PASSING)) && mFmt & LOG_TEST_SETUP)
+            if((mFmt & (LOG_ALL | LOG_PASSING)) || mFmt & LOG_TEST_SETUP)
                 logFunction(TS, TS->getLLVMFunction()->getName());
         }
         else {
-            if((mFmt & (LOG_ALL | LOG_FAILING)) && mFmt & LOG_TEST_SETUP)
+            if((mFmt & (LOG_ALL | LOG_FAILING)) || mFmt & LOG_TEST_SETUP)
                 logFunction(TS, TS->getLLVMFunction()->getName());
         }
     }
 
     void VisitTestTeardown(TestTeardown *TT) {
         if(mCurrentTestPassed) {
-            if((mFmt & (LOG_ALL | LOG_PASSING)) && mFmt & LOG_TEST_TEARDOWN)
+            if((mFmt & (LOG_ALL | LOG_PASSING)) || mFmt & LOG_TEST_TEARDOWN)
                 logFunction(TT, TT->getLLVMFunction()->getName());
         }
         else {
-            if((mFmt & (LOG_ALL | LOG_FAILING)) && mFmt & LOG_TEST_TEARDOWN)
+            if((mFmt & (LOG_ALL | LOG_FAILING)) || mFmt & LOG_TEST_TEARDOWN)
                 logFunction(TT, TT->getLLVMFunction()->getName());
         }
     }
@@ -183,7 +183,7 @@ public:
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
-        if(mFmt & LOG_TEST_CLEANUP) {
+        if(mFmt & (LOG_ALL | LOG_TEST_CLEANUP)) {
             logFunction(TD, "cleanup");
         }
         cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
