@@ -55,7 +55,7 @@ private:
     unsigned mTestCount = 0;
     unsigned mTestsPassed = 0;
     unsigned mTestsFailed = 0;
-    LogFormat mFmt = LOG_ALL;
+    int mFmt = LOG_ALL;
     bool mCurrentTestPassed = false;
 
     string getActualResultString(TestFunction *TF);
@@ -122,8 +122,12 @@ public:
     }
 
     void VisitGlobalSetup(GlobalSetup *GS) {
-        if(mFmt & (LOG_ALL|LOG_GROUP_SETUP))
+        if(mFmt & (LOG_GROUP_SETUP)) {
+            cout << setw(WIDTH) << setfill('<') << '<' << setfill(' ') << endl;
             logFunction(GS, GS->getLLVMFunction()->getName());
+            cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
+            cout << setw(WIDTH) << setfill('<') << '<' << setfill(' ') << endl;
+        }
     }
 
     void VisitTestDefinitionFirst(TestDefinition *TD) {
@@ -179,21 +183,27 @@ public:
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
-        if(mFmt & (LOG_ALL | LOG_TEST_CLEANUP)) {
+        if(mFmt & LOG_TEST_CLEANUP) {
             logFunction(TD, "cleanup");
-            cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
         }
+        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
     void VisitGlobalTeardown(GlobalTeardown *GT) {
-        if(mFmt & (LOG_ALL | LOG_GROUP_TEARDOWN))
+        if(mFmt & LOG_GROUP_TEARDOWN) {
+            cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
             logFunction(GT, GT->getLLVMFunction()->getName());
+            cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
+        }
     }
 
     // Log the group cleanup
     void VisitTestGroup(TestGroup *TG) {
-        if(mFmt & (LOG_ALL | LOG_GROUP_CLEANUP) && TG->getLLVMFunction())
+        if((mFmt & LOG_GROUP_CLEANUP) && TG->getLLVMFunction()) {
+            cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
             logFunction(TG, TG->getLLVMFunction()->getName());
+            cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
+        }
     }
 
     /// @note In order for the new column width to take effect this method has
@@ -202,7 +212,7 @@ public:
         mColumnWidth[column] = width;
     }
 
-    void setLogFormat(LogFormat fmt) { mFmt = fmt; }
+    void setLogFormat(int fmt) { mFmt = fmt; }
 
     const vector<ColumnName>& getColumnOrder() { return mOrder; }
     const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }
