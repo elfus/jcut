@@ -137,10 +137,12 @@ private:
      * @param global_struct The global structure we are pointing to.
      * @param init The values we want to extract
      * @param ndxs Indices used by the GEP instruction to store the correct values.
+     * @param[out] instructions Vector where to store the instructions generated.
      */
     void extractInitializerValues(llvm::Value* global_struct,
                                   const StructInitializer* init,
-                                  vector<llvm::Value*>* ndxs);
+                                  vector<llvm::Value*>* ndxs,
+                                  std::vector<llvm::Instruction*>& instructions);
 
     llvm::Value* createIntComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
     llvm::Value* createFloatComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);

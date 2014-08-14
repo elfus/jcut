@@ -324,7 +324,6 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	LoadInst* load_value = mBuilder.CreateLoad(global_variable);
 	mInstructions.push_back(load_value);
 
-        /// @todo Watch for pointer types and structures
         GlobalVariable* backup = new GlobalVariable(*mModule,
                         global_variable->getType()->getElementType(),
                         false,
@@ -355,7 +354,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 			StructInitializer* str_init = VA->getStructInitializer();
 			vector<Value*> values;
 			values.push_back(mBuilder.getInt32(0));
-			extractInitializerValues(global_variable, str_init,&values);
+			extractInitializerValues(global_variable, str_init,&values, mInstructions);
 		}
 			break;
 		case Tokenizer::TOK_BUFF_ALLOC:
@@ -382,8 +381,6 @@ void TestGeneratorVisitor::VisitTestDefinitionFirst(TestDefinition *TD)
 void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
 {
     string func_name = "setup_"+mCurrentFud;
-	mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
-	mPtrAllocation.clear();
     Function *testFunction = generateFunction(func_name, true);
     TS->setLLVMFunction(testFunction);
 
@@ -426,8 +423,6 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
 {
     string func_name = "teardown_"+mCurrentFud;
-	mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
-	mPtrAllocation.clear();
     Function *testFunction = generateFunction(func_name, true);
     TT->setLLVMFunction(testFunction);
 
@@ -632,7 +627,8 @@ void TestGeneratorVisitor::restoreGlobalVariables(std::vector<tuple<llvm::Global
 
 void TestGeneratorVisitor::extractInitializerValues(Value* global_struct,
 		const StructInitializer* init,
-		vector<Value*>* ndxs)
+		vector<Value*>* ndxs,
+                std::vector<llvm::Instruction*>& instructions)
 {
 	if (init->getInitializerList()) {
 		InitializerList* init_list = init->getInitializerList();
@@ -651,18 +647,18 @@ void TestGeneratorVisitor::extractInitializerValues(Value* global_struct,
 			// @bug Add only if gep instruction is not already in the container.
 			// @todo investigate why is gep instruction already in a container
 			if(gep->getParent() == nullptr)
-				mInstructions.push_back(gep);
+				instructions.push_back(gep);
 
 			string str_value;
 			if (arg->isArgument()) {
 				str_value = arg->getArgument().getStringRepresentation();
 				Value* v = createValue(gep->getType()->getPointerElementType(), str_value);
 				StoreInst* store = mBuilder.CreateStore(v,gep);
-				mInstructions.push_back(store);
+				instructions.push_back(store);
 			}
 			else if (arg->isStructInitializer()) {
 				const StructInitializer& sub_init = arg->getStructInitializer();
-				extractInitializerValues(global_struct,&sub_init,ndxs);
+				extractInitializerValues(global_struct,&sub_init,ndxs,instructions);
 			}
 			i++;
 			ndxs->pop_back();
@@ -802,7 +798,7 @@ llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* pt
 				assert(val && "Invalid Value type");
 				vector<Value*> indices;
 				indices.push_back(mBuilder.getInt32(0));
-				extractInitializerValues(val, init, &indices);
+				extractInitializerValues(val, init, &indices, instructions);
 			}
 		}
 
