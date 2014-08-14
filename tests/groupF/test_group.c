@@ -14,6 +14,9 @@ struct SuperPixel {
 struct Pixel gpixel;
 struct SuperPixel gsuper;
 
+struct SuperPixel* ptr_gsuper;
+unsigned num_structs;
+
 void print_pixel(struct Pixel* p, unsigned size) {
 	while (size--) {
 		printf("-------------------------\n");
@@ -38,6 +41,15 @@ void print_super_pixel(struct SuperPixel* p, unsigned size) {
 		printf("%s: pixel->z.y = %d\n", __func__, p->z.y);
 		p++;
 	}
+}
+
+void print_ptr_gsuper() {
+    if(ptr_gsuper) {
+        printf("Valid ptr_gsuper %p !\n", ptr_gsuper);
+        print_super_pixel(ptr_gsuper, num_structs);
+    }
+    else
+        printf("Invalid ptr_gsuper!\n");
 }
 
 int sum_gpixel() {

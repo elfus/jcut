@@ -382,6 +382,8 @@ void TestGeneratorVisitor::VisitTestDefinitionFirst(TestDefinition *TD)
 void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
 {
     string func_name = "setup_"+mCurrentFud;
+	mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
+	mPtrAllocation.clear();
     Function *testFunction = generateFunction(func_name, true);
     TS->setLLVMFunction(testFunction);
 
@@ -424,6 +426,8 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
 {
     string func_name = "teardown_"+mCurrentFud;
+	mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
+	mPtrAllocation.clear();
     Function *testFunction = generateFunction(func_name, true);
     TT->setLLVMFunction(testFunction);
 
