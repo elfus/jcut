@@ -13,9 +13,8 @@ double gdouble;
 
 void print_gvar()
 {
-	printf("------------------------------------------------------------\n");
-	printf("gchar = %c (%d)\n",gchar, gchar);
-	printf("guchar = %c (%u)\n",guchar, guchar);
+	printf("gchar = %x (%d)\n",gchar, gchar);
+	printf("guchar = %x (%u)\n",guchar, guchar);
 	printf("gshort = %d\n",gshort);
 	printf("gushort = %u\n",gushort);
 	printf("gint = %d\n",gint);

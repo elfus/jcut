@@ -10,18 +10,6 @@ before_all {
 	gfloat = 3.141592;
     gdouble = 2.52340;
 }
-after_all {
-    gchar == 1;
-    guchar == 2;
-    gshort == 3;
-    gushort == 4;
-    gint == 5;
-    guint == 6;
-    glint == 7;
-    gulint == 8;
-	gfloat == 3.141592;
-    gdouble == 2.52340;
-}
 
 print_gvar();
 
@@ -124,3 +112,25 @@ after {
 
 # Todo add a test by calling functions in the after statement and comparing its
 # return value
+
+group A {
+    before_all { gchar = 5; }
+
+
+    getgchar() == 5;
+
+    after_all { gchar == 5; }
+}
+
+after_all {
+    gchar == 1;
+    guchar == 2;
+    gshort == 3;
+    gushort == 4;
+    gint == 5;
+    guint == 6;
+    glint == 7;
+    gulint == 8;
+	gfloat == 3.141592;
+    gdouble == 2.52340;
+}

@@ -2,9 +2,6 @@
 before_all {
     global_setup();
 }
-after_all {
-    global_teardown();
-}
 
 
 sum2,4) == 6;
@@ -235,28 +232,50 @@ group X {
     before_all {
         global_setup()
     }
+
+    msg();
+
     after_all {
         global_teardown();
     }
-    msg();
 }
 
 group Y {
     before_all {
         global_setup();
     }
+
+    msg();
+
     after_all {
         global_teardown()
     }
-    msg();
 }
 
 group Z {
     before_all {
         global_setup();
     }
+
+    msg();
+
     after_all {
         global_teardown();
     }
-    msg();
+}
+
+group ZZZ {
+    before_all {
+        global_setup();
+    }
+
+    msg()
+
+    after_all {
+        global_teardown();
+    }
+}
+
+after_all {
+    global_teardown();
 }
