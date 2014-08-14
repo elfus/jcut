@@ -43,19 +43,43 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			llvm::Argument& llvm_arg = *arg_it;
 
 			if (llvm_arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
-				BufferAlloc *ba = arg->getBufferAlloc();
-				assert(ba != nullptr && "Invalid BufferAlloc pointer");
-				AllocaInst *alloc1 = bufferAllocInitialization(llvm_arg.getType(),ba, mInstructions);
+				// this is a buffer allocation
+				if(BufferAlloc *ba = arg->getBufferAlloc()) {
+					assert(ba != nullptr && "Invalid BufferAlloc pointer");
+					AllocaInst *alloc1 = bufferAllocInitialization(llvm_arg.getType(),ba, mInstructions);
 
-				// Allocate memory for a pointer type
-				AllocaInst *alloc2 = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "AllocPtr" + Twine(i)); // Allocate a pointer type
-				StoreInst *store2 = mBuilder.CreateStore(alloc1, alloc2); // Store an already allocated variable address to our pointer
-				LoadInst *load = mBuilder.CreateLoad(alloc2, "value3"); // Load whatever address is in alloc3 into load3 'value3'
+					// Allocate memory for a pointer type
+					AllocaInst *alloc2 = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "AllocPtr" + Twine(i)); // Allocate a pointer type
+					StoreInst *store2 = mBuilder.CreateStore(alloc1, alloc2); // Store an already allocated variable address to our pointer
+					LoadInst *load = mBuilder.CreateLoad(alloc2, "value3"); // Load whatever address is in alloc3 into load3 'value3'
 
-				mInstructions.push_back(alloc2);
-				mInstructions.push_back(store2);
-				mInstructions.push_back(load);
-				mArgs.push_back(load);
+					mInstructions.push_back(alloc2);
+					mInstructions.push_back(store2);
+					mInstructions.push_back(load);
+					mArgs.push_back(load);
+				} else {
+					const tp::Argument* my_string = arg->getArgument();
+					assert(my_string->getTokenType() == Tokenizer::TOK_STRING && "This is not a string!");
+					const string& my_str = my_string->getStringRepresentation();
+					ArrayType* ArrayTy_0 = ArrayType::get(IntegerType::get(mModule->getContext(), 8), my_str.size()+1); // + null
+					GlobalVariable* gvar_array__str = new GlobalVariable(/*Module=*/*mModule,
+						   /*Type=*/ArrayTy_0,
+						   /*isConstant=*/true,
+						   /*Linkage=*/GlobalValue::PrivateLinkage,
+						   /*Initializer=*/0, // has initializer, specified below
+						   /*Name=*/".str");
+					gvar_array__str->setAlignment(1);
+					llvm::Constant *array_str = ConstantDataArray::getString(mModule->getContext(), my_str, true);
+					gvar_array__str->setInitializer(array_str);
+
+					std::vector<llvm::Constant*> indices;
+					ConstantInt* zero = ConstantInt::get(mModule->getContext(), APInt(32, StringRef("0"), 10));
+					indices.push_back(zero);
+					indices.push_back(zero);
+					llvm::Constant *str_ptr = ConstantExpr::getGetElementPtr(gvar_array__str, indices);
+
+					mArgs.push_back(str_ptr);
+				}
 				break;
 			}
 			// Code for non-pointer types

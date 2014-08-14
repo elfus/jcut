@@ -1406,6 +1406,11 @@ public:
 
         v->VisitFunctionArgument(this);// TODO IMplement
     }
+
+        const Argument* getArgument() const {
+            return argArgument;
+        }
+
 };
 
 class TestDriver {
