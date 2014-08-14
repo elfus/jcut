@@ -747,12 +747,15 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	try {
 		gm = ParseGlobalMockup();
 		gs = ParseGlobalSetup();
-		gt = ParseGlobalTeardown();
 	} catch (const Exception& e) {
 		cerr << e.what() << endl;
 		cerr << "Skipping all tests in current group "<<
 				((name)?name->getIdentifierStr():"")
 			 << endl;
+
+		if(gm) delete gm;
+		if(gs) delete gs;
+
 		unsigned parenthesis = 2; // the one from the group and the test-fixture
 		while(parenthesis and mCurrentToken!=Tokenizer::TOK_EOF)  {
 			if (mCurrentToken == '}')
@@ -770,9 +773,13 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		return nullptr;
 	}
 
+	///////////////////////////////////////
+	// Parse all the tests
+	//
 	while (true) {
 		try {
-			if (mCurrentToken == '}' or mCurrentToken == Tokenizer::TOK_EOF)
+			if (mCurrentToken == '}' or mCurrentToken == Tokenizer::TOK_EOF or
+				mCurrentToken == Tokenizer::TOK_AFTER_ALL)
 				break;
 
 			if (mCurrentToken == Tokenizer::TOK_GROUP) {
@@ -820,6 +827,11 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		} catch (const exception& e) {
 			cerr << e.what() << endl;
 
+			for(auto*& ptr : tests)
+				delete ptr;
+
+			tests.clear();
+
 			if (mTestFixtureException) {
 				while(mCurrentToken != '}')
 					mCurrentToken = mTokenizer.nextToken();
@@ -847,6 +859,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					mCurrentToken != Tokenizer::TOK_MOCKUP and
 					mCurrentToken != Tokenizer::TOK_BEFORE and
 					mCurrentToken != Tokenizer::TOK_IDENTIFIER and
+					mCurrentToken != Tokenizer::TOK_AFTER_ALL and
 					mCurrentToken != Tokenizer::TOK_GROUP and
 					mCurrentToken != Tokenizer::TOK_EOF) {
 				mCurrentToken = mTokenizer.nextToken();
@@ -859,6 +872,41 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				group_exception = false;
 			}
 		}
+	}
+
+	////////////////////////////////////////
+	// Changed the syntax and parse the groups teardown at the very end of the
+	// group
+	try {
+		gt = ParseGlobalTeardown();
+	} catch (const Exception& e) {
+		cerr << e.what() << endl;
+		cerr << "Skipping all tests in current group "<<
+				((name)?name->getIdentifierStr():"")
+			 << endl;
+		if(gm) delete gm;
+		if(gs) delete gs;
+
+		for(auto*& ptr : tests)
+			delete ptr;
+
+		tests.clear();
+
+		unsigned parenthesis = 2; // the one from the group and the test-fixture
+		while(parenthesis and mCurrentToken!=Tokenizer::TOK_EOF)  {
+			if (mCurrentToken == '}')
+				parenthesis--;
+			if (mCurrentToken == '{')
+				parenthesis++;
+			mCurrentToken = mTokenizer.nextToken();
+		}
+		mTestFixtureException = false;
+		mParsingSetup = false;
+		mParsingTearDown = false;
+		// @BUG: When a there is a problem with mockup_all, before_all or after_all
+		// statements stop parsing current group. Right now I implemented a basic
+		// algorithm, but it might contain bugs. Look at the hardcoded 2.
+		return nullptr;
 	}
 
 	return new TestGroup(name, tests, gm, gs, gt);
