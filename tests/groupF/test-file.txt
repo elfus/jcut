@@ -53,4 +53,16 @@ print_ptr_gsuper();
 before { ptr_gsuper = [2:{1,2,{3,4}}]; num_structs = 2;}
 print_ptr_gsuper();
 
+print_ptr_gsuper();
+after { ptr_gsuper = [2:{1}]; num_structs = 2; print_ptr_gsuper();}
+
+print_ptr_gsuper();
+after { ptr_gsuper = [2:{1,2}]; num_structs = 2; print_ptr_gsuper();}
+
+print_ptr_gsuper();
+after { ptr_gsuper = [2:{1,2,{3}}]; num_structs = 2; print_ptr_gsuper();}
+
+print_ptr_gsuper();
+after { ptr_gsuper = [2:{1,2,{3,4}}]; num_structs = 2; print_ptr_gsuper();}
+
 #print_pixel_by_value({1,2}); # We will leave this one until later, this one causes an error in the parser
