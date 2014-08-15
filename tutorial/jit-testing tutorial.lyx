@@ -1,5 +1,5 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
 \begin_document
 \begin_header
 \textclass article
@@ -12,13 +12,13 @@
 \font_roman default
 \font_sans default
 \font_typewriter default
-\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
+
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -26,27 +26,27 @@
 \index_command default
 \paperfontsize default
 \spacing single
-\use_hyperref false
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
 \papersize default
 \use_geometry true
-\use_package amsmath 1
-\use_package amssymb 1
-\use_package cancel 1
-\use_package esint 1
-\use_package mathdots 1
-\use_package mathtools 1
-\use_package mhchem 1
-\use_package stackrel 1
-\use_package stmaryrd 1
-\use_package undertilde 1
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
 \cite_engine basic
-\cite_engine_type default
-\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
-\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -76,6 +76,13 @@
 
 \begin_layout Title
 JIT-TESTING Tutorial
+\begin_inset CommandInset label
+LatexCommand label
+name "JIT-TESTING-Tutorial"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -123,7 +130,7 @@ pagebreak
 Introduction
 \end_layout
 
-\begin_layout Subsection*
+\begin_layout Subsection
 What is it? 
 \end_layout
 
@@ -139,7 +146,7 @@ unit testing in C code
  using the LLVM Just In Time (JIT) engine and some of the Clang APIs.
 \end_layout
 
-\begin_layout Subsection*
+\begin_layout Subsection
 Objectives 
 \end_layout
 
@@ -191,7 +198,7 @@ While the main focus of our tool has always been oriented to unit testing
  novice programmers and universities.
 \end_layout
 
-\begin_layout Subsubsection*
+\begin_layout Subsection
 How does it work? 
 \end_layout
 
@@ -210,13 +217,23 @@ C source code
 \emph default
 : jit-testing makes use of the Clang APIs to analyze and process the source
  code, hence it will behave pretty much like a compiler.
- This means that you will need to tell it where are all your header files
- and libraries live.
- If you're familiar with GCC or Clang you will figure out you can do this
- by using the usual compiler flags for finding header files and linking
- source code in several files and libraries, i.e.
- -I or -L.
- 
+ It will analyze your C code and report any error if it exists.
+ Then it will analyze your test file to know what tests you want to test.
+ If you use a 3rd party library see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Testing-code-which"
+
+\end_inset
+
+ or 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:3rd-party-libraries."
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Itemize
@@ -274,7 +291,7 @@ status open
 \end_inset
 
 
-\begin_inset Caption Standard
+\begin_inset Caption
 
 \begin_layout Plain Layout
 High level view of how jit-testing works
@@ -285,13 +302,154 @@ High level view of how jit-testing works
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Limitations"
+
+\end_inset
+
+ you can check what are the current limitations of this tool.
+\end_layout
+
+\begin_layout Subsection
+
+\emph on
+jit-testing 
+\emph default
+output
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:jit-testing-output"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this section we will briefly explain how the output looks like and what
+ it means.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+\paragraph_spacing single
+
+================================================================================
+======
+\end_layout
+
 \begin_layout Plain Layout
 
+GROUP NAME | TEST NAME | FUNCTION CALLED | RESULT | ACTUAL RESULT | EXPECTED
+ RESULT |
+\end_layout
+
+\begin_layout Plain Layout
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+\end_layout
+
+\begin_layout Plain Layout
+
+ xxxxxxxxx | xxxxxxxxx | xxxxxxxxxxxxxxx | xxxxxx | xxxxxxxxxxxxx | xxxxxxxxxxxx
+xxx |  
+\end_layout
+
+\begin_layout Plain Layout
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+\end_layout
+
+\begin_layout Plain Layout
+
+TEST SUMMARY 
+\end_layout
+
+\begin_layout Plain Layout
+
+Tests ran: 1 
+\end_layout
+
+\begin_layout Plain Layout
+
+Tests PASSED: 1 
+\end_layout
+
+\begin_layout Plain Layout
+
+Tests FAILED: 0
 \end_layout
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+The columns shown are explained from left to right:
+\end_layout
+
+\begin_layout Itemize
+GROUP NAME: By default a group name is assigned to each test.
+ As you will see in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Grouping-related-tests"
+
+\end_inset
+
+ you can create your own groups.
+\end_layout
+
+\begin_layout Itemize
+TEST NAME: This name generated automatically by the tool based on the function
+ under test.
+\end_layout
+
+\begin_layout Itemize
+FUNCTION CALLED: This is the function under test and it will show the parameters
+ used.
+\end_layout
+
+\begin_layout Itemize
+RESULT: Whether the test has failed or passed.
+\end_layout
+
+\begin_layout Itemize
+ACTUAL RESULT: If the function under test results a value it will be shown
+ here whatever data type, otherwise it will show just void.
+\end_layout
+
+\begin_layout Itemize
+EXPECTED RESULT: If any expected result was specified for a function this
+ field will show what was the expected result.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Expected-results"
+
+\end_inset
+
+ shows how to specify an expected result.
+\end_layout
+
+\begin_layout Standard
+At the very end you will see a small summary on the number of tests ran,
+ passed and failed.
 \end_layout
 
 \begin_layout Standard
@@ -328,21 +486,14 @@ jit-testing
 For the sake of simplicity all the C code we write will be located in a
  source file named 
 \emph on
-some_file.c
+cfile.c
 \emph default
 and our test file will be named 
 \emph on
-test_file.jtl
+test.jtl
 \emph default
 .
- In section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Testing-code-spread"
-
-\end_inset
-
- we will explain how to test C code across multiple files.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -354,15 +505,32 @@ jit-testing
 \emph default
  where they live.
  For windows users a small folder with the standard C standard library will
- be provided.
- See section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Testing-code-which"
+ be provided and you can run the tool on that same folder.
+\end_layout
 
-\end_inset
+\begin_layout Standard
+Since 
+\emph on
+jit-testing
+\emph default
+ is a command line tool for this tutorial you will need two things open
+ at all times:
+\end_layout
 
- for more information on running the tool from the command line.
+\begin_layout Itemize
+Command line window (also known as shell or terminal in the linux world).
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Make sure you change to the directory where you placed the folder 
+\emph on
+jit-testing-tutorial.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Text editor (emacs, vi, notepad++, etc.)
 \end_layout
 
 \begin_layout Subsection
@@ -374,9 +542,9 @@ The simplest test
 \end_layout
 
 \begin_layout Standard
-Open your favorite text editor and create a file named 
+In your text editor create a file named 
 \emph on
-some_file.c
+cfile.c
 \emph default
  then write the following function in it.
  
@@ -390,7 +558,7 @@ status open
 
 \begin_layout Plain Layout
 
-		// some_file.c
+		// cfile.c
 \end_layout
 
 \begin_layout Plain Layout
@@ -429,7 +597,7 @@ status open
 
 \begin_layout Plain Layout
 
-		# test_file.jtl		
+		# test.jtl		
 \end_layout
 
 \begin_layout Plain Layout
@@ -456,8 +624,8 @@ Note the semi-colon at the end of the function, follows the same syntax
 
 \begin_layout Standard
 Open a command line, shell or terminal in your operating system and then
- to run the above test on the function we just wrote can be done with the
- following command line: 
+ to run the above test on the function we just wrote type the following
+ command line: 
 \end_layout
 
 \begin_layout Standard
@@ -468,7 +636,7 @@ status open
 
 \begin_layout Plain Layout
 
-		jit-testing some_file.c --test-file test_file.jtl 
+		jit-testing cfile.c -t test.jtl 
 \end_layout
 
 \end_inset
@@ -477,8 +645,29 @@ status open
 \end_layout
 
 \begin_layout Standard
-You will see some output reporting the results of executing the function
- defined in the test file.
+The first argument 
+\emph on
+jit-testing
+\emph default
+ receives is your C source code, then the command line flag 
+\emph on
+-t filename 
+\emph default
+indicates what is the test file.
+ You
+\emph on
+ 
+\emph default
+will see some output reporting the results of executing the function defined
+ in the test file.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:jit-testing-output"
+
+\end_inset
+
+ describes what the output means.
 \end_layout
 
 \begin_layout Standard
@@ -488,7 +677,7 @@ jit-testing
 \emph default
  is as simple as typing the function in the test file as if you were calling
  a function in C code.
- What the tool will do is to take the given test function 
+ What the tool will do is taking the given test function 
 \emph on
 my_function()
 \emph default
@@ -573,7 +762,7 @@ status open
 
 \begin_layout Plain Layout
 
-		jit-testing some_file.c --test-file test_file.jtl 
+		jit-testing cfile.c -t test.jtl 
 \end_layout
 
 \end_inset
@@ -608,7 +797,11 @@ ed and the execution of any program depends on the return values of such
 
 \begin_layout Standard
 You can compare the actual result of a given function with an expected result
- with the following syntax in your test file.
+ with the following syntax in your 
+\emph on
+test file
+\emph default
+.
 \end_layout
 
 \begin_layout Standard
@@ -649,7 +842,7 @@ status open
 
 \begin_layout Plain Layout
 
-		jit-testing some_file.c --test-file test_file.jtl 
+		jit-testing cfile.c -t test.jtl 
 \end_layout
 
 \end_inset
@@ -887,7 +1080,7 @@ status open
 
 \begin_layout Plain Layout
 
-			unsigned i = 1;   
+			int i = 1;   
 \end_layout
 
 \begin_layout Plain Layout
@@ -908,11 +1101,19 @@ status open
 \end_inset
 
 
+\begin_inset CommandInset label
+LatexCommand label
+name "example-factor"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-Try writing your own versions of these two functions and test them all using
- 
+Try writing some tests for these two functions in the test file.
+ Also try writing your own versions of these two functions and test them
+ all using 
 \emph on
 jit-testing
 \emph default
@@ -951,7 +1152,7 @@ Any non-trivial program will contain its own state represented as a set
  of data structures which are modified by a series of function calls.
  Sometimes a given function behavior depends not only on the parameter values
  it receives but also on the current value of one or several global variables
- or structures.
+ or structures, or even calling other functions before in a specific order.
 \end_layout
 
 \begin_layout Standard
@@ -1011,30 +1212,33 @@ status open
 
 \begin_layout Standard
 You have to write the 
+\family typewriter
+before
+\family default
 \emph on
-before 
+ 
 \emph default
 keyword before the function you want to test and type the 
-\emph on
+\family typewriter
 after
-\emph default
+\family default
  keyword after the function you want to test.
  The curly braces are mandatory for both the 
-\emph on
+\family typewriter
 before
-\emph default
+\family default
  and 
-\emph on
+\family typewriter
 after
-\emph default
+\family default
  keywords.
  The squared brackets indicate that either statement are optional for your
  test.
 \end_layout
 
 \begin_layout Standard
-The important thing to note here is that any statement you specify inside
- the curly brace 
+The important thing to note here is that you can specify 3 types of statements
+ inside the curly braces that 
 \series bold
 will be executed 
 \emph on
@@ -1046,7 +1250,7 @@ after
 \series default
  
 \emph default
-the function under test respectively.
+the function under test respectively in the order they appear.
  You can have 3 different of statements inside the curly braces and they
  are described with the following examples.
 \end_layout
@@ -1115,8 +1319,28 @@ status open
 
 \begin_layout Standard
 Run this test through the command line.
- Remember that the C standard specificies that global variables will be
- initialized to 0, thus our test succeeds and 
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		jit-testing cfile.c -t test.jtl 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Remember that the C standard specificies that global variables will be initializ
+ed to 0, thus our test succeeds and 
 \emph on
 jit-testing
 \emph default
@@ -1342,8 +1566,23 @@ get_state()
 after
 \family default
  statement we also call the function that modifies the global variable.
- Calling this function for this toy example is useless, but you can think
- of calling a function that cleans up all the things done in the 
+ Calling this function in the 
+\family typewriter
+after
+\family default
+\emph on
+ 
+\emph default
+statement
+\emph on
+ 
+\emph default
+for
+\emph on
+ 
+\emph default
+this toy example is useless, but you can think of calling a function that
+ cleans up all the things done in the 
 \family typewriter
 before
 \family default
@@ -1364,17 +1603,28 @@ after
 \family typewriter
 before
 \family default
- statements and then restore their original value right before starting
- executing the next.
+ statements using the assignment operator 
+\family typewriter
+=
+\family default
+ and then restore their original value right before starting executing the
+ next.
  Thus leaving the program state in its original value before starting execution
  of the current.
  However, 
 \emph on
 jit-testing
 \emph default
- will not detect when a function called in the after or before statements
- has modified a global variable, thus the modified variables will remain
- with this new value for the next test that is run.
+ will not detect when a function called in the 
+\family typewriter
+after
+\family default
+ or 
+\family typewriter
+before
+\family default
+ statements has modified a global variable, thus the modified variables
+ will remain with this new value for the next test that is run.
  If you call any 
 \emph on
 setup
@@ -1401,22 +1651,37 @@ Summary
 
 \begin_layout Standard
 In this section we just learned that we can use the 
-\emph on
+\family typewriter
 before
-\emph default
+\family default
  and 
-\emph on
+\family typewriter
 after
-\emph default
+\family default
  keywords to execute three different types of statements:
 \end_layout
 
 \begin_layout Enumerate
-Variable assignment 'variable = X' where X is any value as described in
- section 
+Variable assignment 
+\family typewriter
+variable = X
+\family default
+ where X is any value as described in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Expected-results"
+
+\end_inset
+
+ and 
+\family typewriter
+variable
+\family default
+ is a global variable of any type.
+ For pointer types see section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Automatic-memory-allocation"
 
 \end_inset
 
@@ -1487,7 +1752,7 @@ before
 \emph on
 after 
 \emph default
-statements or none of them.
+statements or none of them in any order.
  The squared bracket indicate that both the before and after statements
  are optional for a function under test.
 \end_layout
@@ -1575,17 +1840,27 @@ The reason to have groups is mainly to 2 things:
 \begin_layout Enumerate
 Provide a program state for a set of tests in order to avoid having redundant
 \emph on
- before
+ 
+\family typewriter
 \emph default
+before
+\family default
  and 
+\family typewriter
+after
+\family default
 \emph on
-after 
+ 
 \emph default
 statements for the same set of tests.
 \end_layout
 
 \begin_layout Enumerate
-Provide a way to filter and customize the reports by set of tests.
+Provide a way to filter and customize the reports for each 
+\family typewriter
+group
+\family default
+ of tests.
 \end_layout
 
 \begin_layout Subsubsection
@@ -1594,11 +1869,11 @@ The default group
 
 \begin_layout Standard
 Taking all the examples we've done in the previous section you should have
- the 
+ a 
 \emph on
-test_file.jtl
+test.jtl
 \emph default
- that looks somewhat like this:
+ file that looks somewhat like this:
 \end_layout
 
 \begin_layout Standard
@@ -1633,12 +1908,12 @@ status open
 
 \begin_layout Plain Layout
 
-		fact_1(3) == 6;
+		fact_1(3) == 6; # provided in section 2.1 Summary
 \end_layout
 
 \begin_layout Plain Layout
 
-		fact_2(3) == 6;
+		fact_2(3) == 6; # provided in section 2.1 Summary
 \end_layout
 
 \begin_layout Plain Layout
@@ -1661,14 +1936,20 @@ By default
 \emph on
 jit-testing
 \emph default
- adds all the tests in a test file into the 'default group' which is named
+ adds all the tests in a test file into a 
+\emph on
+default
+\emph default
  
+\emph on
+group
+\emph default
+ which is named 
 \emph on
 group_0
 \emph default
 .
- This is merely for implementation convenience and you will see in the test
- reports a 'group_0' for every test you run.
+ You will see in the test reports a 'group_0' for every test you run.
 \end_layout
 
 \begin_layout Subsubsection
@@ -1816,15 +2097,16 @@ after
 \emph on
 group
 \emph default
- of tests using the same 
+ of tests using the 
 \family typewriter
-before
+before_all
 \family default
  and 
 \family typewriter
-after
+after_all
 \family default
  keywords.
+ This is their syntax:
 \end_layout
 
 \begin_layout Standard
@@ -1845,13 +2127,13 @@ status open
 
 \begin_layout Plain Layout
 
-			[after_all { ...
- }]
+			...
 \end_layout
 
 \begin_layout Plain Layout
 
-			...
+			[after_all { ...
+ }]
 \end_layout
 
 \begin_layout Plain Layout
@@ -1866,16 +2148,19 @@ status open
 
 \begin_layout Standard
 These two keywords will modify the program state for the current group they
- belong to, just like we saw in section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Managing-program-state"
-
-\end_inset
-
- they modify the state for a given test this time it applies to the current
- group.
- 
+ belong to.
+ Note that both statements are optional.
+ The only restriction if they are used is that the 
+\family typewriter
+before_all
+\family default
+ statement has to be defined at the beginning of the group before all the
+ tests and the 
+\family typewriter
+after_all
+\family default
+ statement has to be defined at the end of the group after all the tests
+ in that group.
 \end_layout
 
 \begin_layout Standard
@@ -1895,11 +2180,6 @@ status open
 \begin_layout Plain Layout
 
 			before_all { state = 10; } # Executed before all the tests in this group
-\end_layout
-
-\begin_layout Plain Layout
-
-			after_all  { state == 20; } # Executed after all the tests in this group
 \end_layout
 
 \begin_layout Plain Layout
@@ -1939,6 +2219,15 @@ status open
 \begin_layout Plain Layout
 
 			modify_state(); # test 3
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+			after_all  { state == 20; } # Executed after all the tests in this group
 \end_layout
 
 \begin_layout Plain Layout
@@ -2002,12 +2291,21 @@ status open
 
 \begin_layout Plain Layout
 
-			after_all { modify_state(); }
+			
 \end_layout
 
 \begin_layout Plain Layout
 
 			get_state() == 0;
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+			after_all { modify_state(); }
 \end_layout
 
 \begin_layout Plain Layout
@@ -2027,13 +2325,18 @@ status open
 
 \begin_layout Standard
 All these are valid tests and they all pass.
- Try running writing these tests in your file 
+ Try running writing these tests in your 
 \emph on
-test_file.jtl.
+test.jtl 
+\emph default
+file
+\emph on
+.
  
 \emph default
 If you have any doubt regarding the results of these tests and when the
- global variables are modified please refer to the note in section 
+ global variables are modified please refer to the note at the end of section
+ 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Calling-functions-before"
@@ -2053,7 +2356,7 @@ In this section we learned how to group tests by using the keyword
 group
 \family default
 .
- We also learned how to modify the prorgam state for a specific group by
+ We also learned how to modify the program state for a specific group by
  using the keywords 
 \family typewriter
 before_all
@@ -2093,13 +2396,13 @@ group [Name] {
 
 \begin_layout Plain Layout
 
-	[after_all  { <variable assignment>* | <function call>* | <variable comparison>
-* }]
+	...
 \end_layout
 
 \begin_layout Plain Layout
 
-	...
+	[after_all  { <variable assignment>* | <function call>* | <variable comparison>
+* }]
 \end_layout
 
 \begin_layout Plain Layout
@@ -2137,12 +2440,8 @@ before_all
 \family typewriter
 after_all
 \family default
- statements, they need to defined after the left curly bracket after the
- 
-\family typewriter
-group
-\family default
- keyword.
+ statements, they need to be defined at the beginning and end of the group
+ respectively.
  A group can also have an optional name.
  If you omit this name the tool will assign this group an automatically
  generated group name.
@@ -2181,6 +2480,11 @@ If you are using a structure as a global variable to keep track of your
 \begin_inset listings
 inline false
 status open
+
+\begin_layout Plain Layout
+
+		/* Example C code */
+\end_layout
 
 \begin_layout Plain Layout
 
@@ -2229,6 +2533,7 @@ The important thing here is that you have to provide a valid initialization
  at the end of the struct.
  Any variable which is not given an initiazilation value using this syntax
  will be initialized to 0.
+ For instance:
 \end_layout
 
 \begin_layout Standard
@@ -2258,7 +2563,7 @@ name "sub:Struct-initialization-list"
 \end_layout
 
 \begin_layout Standard
-Let us write a funciton that prints the contents of a global struct.
+Let us write a function that prints the contents of a global struct.
  See section 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -2269,7 +2574,7 @@ reference "sub:Testing-code-which"
  on how to use the C standard library.
  Open your 
 \emph on
-some_file.c
+cfile.c
 \emph default
  and type the following.
 \end_layout
@@ -2372,14 +2677,14 @@ n", global_pair.a);
 
 			printf("global_pair.b = %d
 \backslash
-n", global_pair.a); 	
+n", global_pair.b); 	
 \end_layout
 
 \begin_layout Plain Layout
 
 			printf("global_pair.subpair.a = %d
 \backslash
-n", global_pair.nested.a); 	
+n", global_pair.nested.a);
 \end_layout
 
 \begin_layout Plain Layout
@@ -2515,9 +2820,12 @@ jit-testing
 global_pair
 \family default
 .
- On the following tests we just modify the contents of such struct one element
- at a time to appreciate how the struct initialization works, even for nested
- structs.
+ On the following tests we just modify the contents of the struct 
+\family typewriter
+global_pair
+\family default
+ one element at a time to appreciate how the struct initialization works,
+ even for nested structs.
  Note that you cannot assign values starting from the last element in the
  struct, it hast to start from the first element.
 \end_layout
@@ -2528,7 +2836,7 @@ Pointers to structs
 
 \begin_layout Standard
 The initialization of structs through a pointer is pretty much the same
- as we just saw.
+ as we just saw with a little difference.
  However we need to explain how 
 \emph on
 jit-testing
@@ -2571,8 +2879,8 @@ Pointers
 \end_layout
 
 \begin_layout Standard
-As C programmer you already know the importance of pointers and how the
- design of functions revolves around the usage of pointers.
+As C programmer you already know the importance of pointers and how many
+ times the design of functions revolves around the usage of pointers.
  Many functions that take a pointer to any data type assume that the memory
  for that data type was already allocated somwhere else in the code.
  This poses a problem for testing functions that make use of pointers.
@@ -2782,8 +3090,8 @@ jit-testing
 \end_layout
 
 \begin_layout Standard
-This means that could allocate enough memory for an array of integers by
- writing the following test.
+This means that you could allocate enough memory for an array of integers
+ by writing the following test.
 \end_layout
 
 \begin_layout Standard
@@ -2891,9 +3199,9 @@ status open
 
 \begin_layout Standard
 We just add a colon and then we pass an non-negative integer value 
-\emph on
-'x'
-\emph default
+\family typewriter
+x
+\family default
  to indicate an initialization value to be stored in every 
 \series bold
 byte
@@ -2940,7 +3248,7 @@ After running the test you will see that the contents of the memory allocated
 To wrap up this exercise write down the following C function in your file
  
 \emph on
-some_file.c:
+cfile.c:
 \end_layout
 
 \begin_layout Standard
@@ -3079,10 +3387,25 @@ jit-testing
 unsigned char
 \family default
  and passing that pointer to the function.
- Then we passed the size of the array which is 20 (rememeber the size of
- an unsigned char is 1 byte).
+ Then we passed the size of the array which is of 20 
+\family typewriter
+unsigned char
+\family default
+s (rememeber the size of an unsigned char is 1 byte).
  After running that function you will see printed on screen the contents
  of the array which is 6.
+\end_layout
+
+\begin_layout Standard
+If this function received a pointer to an integer 
+\family typewriter
+int *
+\family default
+ 
+\emph on
+jit-testing 
+\emph default
+would have allocated memory for 20 integers, that is 80 bytes.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3091,7 +3414,8 @@ Pointers to structures
 
 \begin_layout Standard
 If you had a global variable which is a pointer to a struct or a function
- that receives a pointer to a struct the section 
+ that receives a pointer to a struct and you want to initialize that pointer
+ the section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Automatic-memory-allocation"
@@ -3119,7 +3443,7 @@ reference "sub:Struct-initialization-list"
  The following example demonstrates this.
  Write this function in your file 
 \emph on
-some_file.c
+cfile.c
 \emph default
 .
 \end_layout
@@ -3226,11 +3550,6 @@ reference "sub:Struct-initialization-list"
 .
 \end_layout
 
-\begin_layout Standard
-NOTE: Struct initialization list for global pointers to structs is not yet
- implemented, is still work in progress :)
-\end_layout
-
 \begin_layout Subsubsection
 Summary
 \end_layout
@@ -3251,6 +3570,30 @@ n*sizeof(<data type>)
 x
 \family default
 .
+ If the pointer points to a struct we can allocate memory and initialize
+ the values of the struct with the sintax 
+\family typewriter
+[n:{...}].
+\end_layout
+
+\begin_layout Subsection
+End of tutorial
+\end_layout
+
+\begin_layout Standard
+This concludes all the features available in 
+\emph on
+jit-testing
+\emph default
+.
+ We hope you have found our tool interesting and useful.
+ If you find any error or bug please send both C source file and test file
+ to the authors.
+\end_layout
+
+\begin_layout Standard
+Please fill up the survey you have received along with the tutorial.
+ Thank you!
 \end_layout
 
 \begin_layout Standard
@@ -3274,7 +3617,236 @@ Advanced topics
 \end_layout
 
 \begin_layout Subsection
-Testing code which uses the C standard library.
+Complex expressions in 
+\emph on
+jit-testing language
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+jit-testing 
+\emph default
+does not support complex expressions like the C programming language does.
+ For instance the following expression is not supported:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		int var = 0;
+\end_layout
+
+\begin_layout Plain Layout
+
+		...
+\end_layout
+
+\begin_layout Plain Layout
+
+		var = fact(1) + fact(3);
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The reason to not support complex expressions is that the author didn't
+ want the 
+\emph on
+jit-testing language
+\emph default
+ to become another programming language on its own.
+ The objectives behind the design of this language has always been to keep
+ it small and simple, therefore a small portion of some statements syntax
+ was borrowed from the C language in adition to the keywords 
+\family typewriter
+group
+\family default
+, 
+\family typewriter
+before
+\family default
+, 
+\family typewriter
+after
+\family default
+, 
+\family typewriter
+before_all
+\family default
+, and 
+\family typewriter
+after_al
+\family default
+l that reflect some common concepts, i.e.
+
+\series bold
+ test fixtures
+\series default
+, from the 
+\emph on
+Test Driven Development
+\emph default
+ methodology.
+\end_layout
+
+\begin_layout Standard
+The whole 
+\emph on
+jit-testing language 
+\emph default
+syntax can be summarized like this (this is not a BNF notation):
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+		[before {
+\end_layout
+
+\begin_layout Plain Layout
+
+			<variable assignment>*
+\end_layout
+
+\begin_layout Plain Layout
+
+			| <function call>*
+\end_layout
+
+\begin_layout Plain Layout
+
+			| <variable comparison>*
+\end_layout
+
+\begin_layout Plain Layout
+
+		}]
+\end_layout
+
+\begin_layout Plain Layout
+
+		<test function>
+\end_layout
+
+\begin_layout Plain Layout
+
+		[after {
+\end_layout
+
+\begin_layout Plain Layout
+
+			<variable assignment>*
+\end_layout
+
+\begin_layout Plain Layout
+
+			| <function call>*
+\end_layout
+
+\begin_layout Plain Layout
+
+			| <variable comparison>*
+\end_layout
+
+\begin_layout Plain Layout
+
+		}]
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+		group [NAME] {
+\end_layout
+
+\begin_layout Plain Layout
+
+			[before_all {
+\end_layout
+
+\begin_layout Plain Layout
+
+				<variable assignment>*
+\end_layout
+
+\begin_layout Plain Layout
+
+				| <function call>*
+\end_layout
+
+\begin_layout Plain Layout
+
+				| <variable comparison>*
+\end_layout
+
+\begin_layout Plain Layout
+
+			}]
+\end_layout
+
+\begin_layout Plain Layout
+
+			...
+\end_layout
+
+\begin_layout Plain Layout
+
+			[after_all {
+\end_layout
+
+\begin_layout Plain Layout
+
+				<variable assignment>*
+\end_layout
+
+\begin_layout Plain Layout
+
+				| <function call>*
+\end_layout
+
+\begin_layout Plain Layout
+
+				| <variable comparison>*
+\end_layout
+
+\begin_layout Plain Layout
+
+			}]
+\end_layout
+
+\begin_layout Plain Layout
+
+		}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The square brackets indicate optional statements.
+ The start next to some statements indicate they are optional.
+ Groups are optional and they can contain nested groups or just tests.
+\end_layout
+
+\begin_layout Subsection
+Testing code which uses the C standard library
 \begin_inset CommandInset label
 LatexCommand label
 name "sub:Testing-code-which"
@@ -3311,8 +3883,11 @@ status open
 \end_layout
 
 \begin_layout Standard
-For linux users this won't be much of a problem because jit-testing will
- probably find the correct path to the standard library if it was properly
+For linux users this won't be much of a problem because 
+\emph on
+jit-testing
+\emph default
+ will probably find the correct path to the standard library if it was properly
  installed using the proper package manager or installer.
 \end_layout
 
@@ -3342,7 +3917,14 @@ status open
 \end_layout
 
 \begin_layout Subsection
-Testing code which uses a 3rd party library.
+3rd party libraries
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:3rd-party-libraries."
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -3362,15 +3944,11 @@ reference "sub:Testing-code-which"
 
 \end_layout
 
-\begin_layout Standard
-[TODO: Improve this section]
-\end_layout
-
-\begin_layout Subsection
-Testing code spread in different source files.
+\begin_layout Section
+Current Limitations
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:Testing-code-spread"
+name "sec:Limitations"
 
 \end_inset
 
@@ -3378,12 +3956,88 @@ name "sub:Testing-code-spread"
 \end_layout
 
 \begin_layout Standard
-
+The 
 \emph on
 jit-testing
 \emph default
- only supports processing one source file (.c file) at a time.
- Support for handling multiple source files is being implemented as of now.
+ tool has the following limitations:
+\end_layout
+
+\begin_layout Itemize
+It can process only 1 C source file at a time, but this will change in the
+ short time.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This restricts testing of code spread into several C source files.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Output customization.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The end user can't customize the info and format of what is printed on screen
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Decimal notation only for integers in the test file.
+\end_layout
+
+\begin_layout Section
+Under development
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Under-development"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The author is actively working to support the following features:
+\end_layout
+
+\begin_layout Itemize
+Quick function mockup generation.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The tool generates a default function definition and uses it to replace
+ whatever function the user desires for a specific test.
+ This feature works with function declarations and function definitions.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Process several C source files in one command line.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The user will be able to test code spread across several files.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Output customization.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The user will be able to customize the tool output with command line arguments
+ or a file that describes how the output should be.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Support for hexadecimal and octal notation for integer values.
 \end_layout
 
 \end_body

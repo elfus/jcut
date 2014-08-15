@@ -16,7 +16,7 @@ for dir in $DIRECTORIES
 do
     echo "Running tests in folder $dir"
     cd $dir
-    $JIT_TESTING test_group.c --test-file test-file.txt 2> stderr.txt 1> stdoutput.txt 
+    $JIT_TESTING test_group.c -t test-file.txt 2> stderr.txt 1> stdoutput.txt 
     echo "Return code $?"
     FAILED=$((FAILED+$?))
     cd ..
