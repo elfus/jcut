@@ -241,21 +241,13 @@ reference "sub:3rd-party-libraries."
 \emph on
 Test file
 \emph default
-: This is a text file with the extension 
-\emph on
-jtl
-\emph default
-.
+: This is a plain text file with any extension.
  In order for this tool to understand what you want to test and expecting
  from a test you need to use the 
 \emph on
 Jit-Testing Language
 \emph default
- (
-\emph on
-jtl
-\emph default
-).
+.
  Don't worry about learning a new language, you will see in the rest of
  this tutorial that this language is really small, simple and based on a
  small subset of the C syntax.
@@ -271,10 +263,7 @@ Upon receiving these 2 inputs the tool will analyze the C code using Clang
 \end_layout
 
 \begin_layout Standard
-From a high level perspective the following diagram describes how 
-\emph on
-jit-testing
-\emph default
+From a high level perspective the following diagram describes how JIT-TESTING
  works.
 \end_layout
 
@@ -3574,7 +3563,7 @@ x
 \family default
 .
  If the pointer points to a struct we can allocate memory and initialize
- the values of the struct with the sintax 
+ the values of the struct with the syntax 
 \family typewriter
 [n:{...}].
 \end_layout
@@ -3592,11 +3581,9 @@ jit-testing
  We hope you have found our tool interesting and useful, feel free to keep
  using it or even try to break it.
  If you find any error or bug please send both C source file and test file
- to the authors at 
+ to the authors email 
 \family typewriter
-elfus0.1@gmail.com
-\family default
-.
+elfus0.1@gmail.com.
 \end_layout
 
 \begin_layout Standard
