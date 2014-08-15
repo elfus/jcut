@@ -69,15 +69,14 @@ string extractTestFile(SmallVector<const char *, 16> & Args)
 	auto it = Args.begin();
 
 	for (; it != Args.end(); it++) {
-		if (string(*it) == "--test-file") {
+		if (string(*it) == "-t") {
 			++delete_count;
 			auto it_2 = it + 1;
 			fileName = string(*it_2);
+			Args.erase(it, it+2);// 1 past the end so we can erase the file name
 			break;
 		}
-	}
-
-	Args.erase(it, it+2);// 1 past the end so we can erase the file name
+	}	
 
 	return fileName;
 }
@@ -95,9 +94,10 @@ bool extractDumpFlag(SmallVector<const char *, 16> & Args)
 
 int main(int argc, const char **argv, char * const *envp)
 {
-    if (argc < 4) {
+    if (argc < 4 && string(argv[1]).compare("--help") != 0 ) {
         cerr << "Wrong command line." << endl;
-        cerr << "Usage:\n\t"<<argv[0]<<" <c files> --test-file <test-file> [--dump]"<<endl;
+        cerr << "Usage:\n\t"<<argv[0]<< " <c files> -t <test-file> [--dump]"<<endl;
+		cerr << argv[1] << endl;
         return -1;
     }
 	void *MainAddr = (void*) (intptr_t) GetExecutablePath;
@@ -118,6 +118,7 @@ int main(int argc, const char **argv, char * const *envp)
 	string file_name = extractTestFile(Args);
 	bool dump_functions = extractDumpFlag(Args);
 	Args.push_back("-fsyntax-only");
+	Args.push_back("-I include");// This is for windows only.
 	OwningPtr<Compilation> C(TheDriver.BuildCompilation(Args));
 	if (!C)
 		return 0;
@@ -202,6 +203,9 @@ int main(int argc, const char **argv, char * const *envp)
 				TestLoggerVisitor results_logger;
 				OutputFixerVisitor fixer(results_logger);
 				results_logger.setLogFormat(TestLoggerVisitor::LOG_ALL);
+//				| TestLoggerVisitor::LOG_TEST_SETUP| TestLoggerVisitor::LOG_TEST_TEARDOWN
+//				| TestLoggerVisitor::LOG_TEST_CLEANUP | TestLoggerVisitor::LOG_GROUP_CLEANUP
+//				| TestLoggerVisitor::LOG_GROUP_SETUP | TestLoggerVisitor::LOG_GROUP_TEARDOWN );
 				// @note The following two calls have to happen in this exact
 				// same order:
 				//  1st OutputFixerVisitor so we can get the right widths of all the output
