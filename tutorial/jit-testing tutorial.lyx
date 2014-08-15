@@ -271,7 +271,10 @@ Upon receiving these 2 inputs the tool will analyze the C code using Clang
 \end_layout
 
 \begin_layout Standard
-From a high level perspective the following diagram describes how JIT-TESTING
+From a high level perspective the following diagram describes how 
+\emph on
+jit-testing
+\emph default
  works.
 \end_layout
 
@@ -3586,9 +3589,14 @@ This concludes all the features available in
 jit-testing
 \emph default
 .
- We hope you have found our tool interesting and useful.
+ We hope you have found our tool interesting and useful, feel free to keep
+ using it or even try to break it.
  If you find any error or bug please send both C source file and test file
- to the authors.
+ to the authors at 
+\family typewriter
+elfus0.1@gmail.com
+\family default
+.
 \end_layout
 
 \begin_layout Standard
