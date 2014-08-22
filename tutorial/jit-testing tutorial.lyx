@@ -1032,7 +1032,7 @@ To wrap up and use all you have learned in this section try writing a function
 \end_layout
 
 \begin_layout Standard
-Today is your lucky as I will provide those functions for you :)
+Today is your lucky day, I will provide those functions for you :)
 \end_layout
 
 \begin_layout Standard
@@ -1052,7 +1052,7 @@ status open
 
 \begin_layout Plain Layout
 
-			return a * factorial(a-1); 
+			return a * fact_1(a-1); 
 \end_layout
 
 \begin_layout Plain Layout
@@ -1534,7 +1534,7 @@ status open
 
 \begin_layout Plain Layout
 
-		after { modify_state(); } # You can call a function call here to, state
+		after { modify_state(); } # You can call a function call here too, state
  == 10
 \end_layout
 
