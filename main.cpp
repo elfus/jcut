@@ -92,6 +92,18 @@ bool extractDumpFlag(SmallVector<const char *, 16> & Args)
 	return false;
 }
 
+bool extractHaltFlag(SmallVector<const char *, 16> & Args)
+{
+	for (auto it = Args.begin(); it != Args.end(); it++) {
+		// recover from parse errors
+		if (string(*it) == "--recover") {
+			Args.erase(it);
+			return true;
+		}
+	}
+	return false;
+}
+
 int main(int argc, const char **argv, char * const *envp)
 {
     if (argc < 4 && string(argv[1]).compare("--help") != 0 ) {
@@ -117,6 +129,7 @@ int main(int argc, const char **argv, char * const *envp)
 	SmallVector<const char *, 16> Args(argv, argv + argc);
 	string file_name = extractTestFile(Args);
 	bool dump_functions = extractDumpFlag(Args);
+	bool recover_on_parse_error = extractHaltFlag(Args);
 	Args.push_back("-fsyntax-only");
 	Args.push_back("-I include");// This is for windows only.
 	OwningPtr<Compilation> C(TheDriver.BuildCompilation(Args));
@@ -185,7 +198,7 @@ int main(int argc, const char **argv, char * const *envp)
 		if (file_name.empty() == false) {
 			try {
 				Exception::mCurrentFile = file_name; // quick workaround
-				TestDriver driver(file_name);
+				TestDriver driver(file_name, recover_on_parse_error);
 				TestExpr *tests = driver.ParseTestExpr(); // Parse file
 				TestGeneratorVisitor visitor(Module);
 				tests->accept(&visitor); // Generate object structure tree

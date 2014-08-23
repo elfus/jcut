@@ -748,6 +748,10 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		gm = ParseGlobalMockup();
 		gs = ParseGlobalSetup();
 	} catch (const Exception& e) {
+		// @note We are keeping error recovery just to not break the tests
+		// for error messages, however this will change in the future.
+		if (!mRecoverOnParseError)
+			throw;
 		cerr << e.what() << endl;
 		cerr << "Skipping all tests in current group "<<
 				((name)?name->getIdentifierStr():"")
@@ -825,6 +829,10 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				tests.push_back(testDefinition);
 			}
 		} catch (const exception& e) {
+			// @note We are keeping error recovery just to not break the tests
+			// for error messages, however this will change in the future.
+			if (!mRecoverOnParseError)
+				throw;
 			cerr << e.what() << endl;
 
 			for(auto*& ptr : tests)
@@ -880,6 +888,10 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	try {
 		gt = ParseGlobalTeardown();
 	} catch (const Exception& e) {
+		// @note We are keeping error recovery just to not break the tests
+		// for error messages, however this will change in the future.
+		if (!mRecoverOnParseError)
+			throw;
 		cerr << e.what() << endl;
 		cerr << "Skipping all tests in current group "<<
 				((name)?name->getIdentifierStr():"")

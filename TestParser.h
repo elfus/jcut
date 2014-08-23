@@ -1423,13 +1423,20 @@ private:
     bool mTestFixtureException;
     bool mParsingSetup;
     bool mParsingTearDown;
+    // This variable is used to know whether the test parser should stop or
+    // not when there is an error. For instance when is set to false the test
+    // parser will try to recover from a parsing error and continue parsing
+    // as much as it can. When is set to true it will just throw the exception
+    // upon detecting the first error.
+    bool mRecoverOnParseError;
 public:
 
     TestDriver() = delete;
     TestDriver(const TestDriver&) = delete;
 
-    TestDriver(const string& file) : mTokenizer(file), mCurrentToken(0),
-    mTestFixtureException(false), mParsingSetup(false), mParsingTearDown(false) { }
+    TestDriver(const string& file, bool recover = false) : mTokenizer(file), mCurrentToken(0),
+    mTestFixtureException(false), mParsingSetup(false), mParsingTearDown(false),
+    mRecoverOnParseError(recover){ }
 
     ~TestDriver() {
     }
