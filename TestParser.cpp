@@ -1,3 +1,4 @@
+#include "JTLScanner.h"
 #include "TestParser.h"
 #include <iostream>
 #include <exception>
@@ -7,6 +8,9 @@ using namespace tp;
 
 int TestGroup::group_count = 0;
 string Exception::mCurrentFile;
+
+extern unsigned column;
+extern "C" int yylex();
 
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
 mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0),
@@ -18,6 +22,14 @@ mPrevLine(0), mPrevCol(0)
 	}
 
 	mInput.seekg(0);
+
+	yyin = fopen( filename.c_str(), "r" );
+	int type = TokenType::TOK_ERR;
+	while((type = yylex()) != TOK_EOF) {
+		mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column)));
+		cout << yylineno <<":"<<column<<": "<<string(yytext,yyleng)<<endl;
+	}
+	cout << yylineno << ":" << column << ": EOF" << endl;
 }
 
 bool Tokenizer::isCharIgnored(char c)
@@ -30,7 +42,7 @@ bool Tokenizer::isCharIgnored(char c)
 
 int Tokenizer::peekToken()
 {
-	Token oldToken = mCurrentToken;
+	TType oldToken = mCurrentToken;
 	char oldChar = mLastChar;
 	string oldStr = mTokStrValue;
 	unsigned oldPrevLine = mPrevLine;
@@ -252,7 +264,7 @@ unsigned LLVMFunctionHolder::warning_count = 0;
 
 Argument* TestDriver::ParseArgument()
 {
-	Argument *Number = new Argument(mTokenizer.getTokenStringValue(), (Tokenizer::Token)mCurrentToken);
+	Argument *Number = new Argument(mTokenizer.getTokenStringValue(), (Tokenizer::TType)mCurrentToken);
 	mCurrentToken = mTokenizer.nextToken(); // eat current argument, move to next
 	return Number;
 }
@@ -260,13 +272,13 @@ Argument* TestDriver::ParseArgument()
 BufferAlloc* TestDriver::ParseBufferAlloc()
 {
 	if (mCurrentToken != Tokenizer::TOK_BUFF_ALLOC) // @todo change to '['
-		throw Exception(mTokenizer.line(), mTokenizer.column(),
+		throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
 			"Expected a '['BufferAlloc",
 			"Received "+mTokenizer.getTokenStringValue()+" instead.");
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '['
 
 	if (mCurrentToken != Tokenizer::TOK_INT)
-		throw Exception(mTokenizer.line(), mTokenizer.column(),
+		throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
 			"Expected an integer constant stating the buffer size.",
 			"Received "+mTokenizer.getTokenStringValue()+" instead.");
 	// @todo Create an integer class and stop using argument
@@ -430,7 +442,7 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 Identifier* TestDriver::ParseFunctionName()
 {
 	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER)
-		throw Exception(mTokenizer.line(),mTokenizer.column(),
+		throw Exception(mTokenizer.line(),mTokenizer.getColumn(),
 				"Expected a valid function name.",
 				"Received "+ mTokenizer.getTokenStringValue()+" instead.");
 	return ParseIdentifier(); // Missing a 'FunctionName' class that wraps an Identifier
@@ -443,7 +455,7 @@ FunctionCall* TestDriver::ParseFunctionCall()
 	if (mCurrentToken != '(') {
             string extra = functionName->getIdentifierStr()+mTokenizer.getTokenStringValue();
             delete functionName;
-            throw Exception(mTokenizer.line(),mTokenizer.column(),
+            throw Exception(mTokenizer.line(),mTokenizer.getColumn(),
                             "Expected a left parenthesis in function call but received " + mTokenizer.getTokenStringValue(),
                             extra);
         }
@@ -461,7 +473,7 @@ FunctionCall* TestDriver::ParseFunctionCall()
 			for (auto*& ptr : Args)
 				delete ptr;
                         delete functionName;
-			throw Exception(mTokenizer.line(), mTokenizer.column(),
+			throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
 					"Expected a comma or right parenthesis in function call but received "
 					+ mTokenizer.getTokenStringValue());
 		}
@@ -488,7 +500,7 @@ ComparisonOperator* TestDriver::ParseComparisonOperator()
 		mCurrentToken = mTokenizer.nextToken(); // consume TOK_COMPARISON_OP
 		return cmp;
 	}
-	throw Exception(mTokenizer.line(), mTokenizer.column(),
+	throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
 			"Expected 'ComparisonOperator' but received " + mTokenizer.getTokenStringValue(),
 			"ComparisonOperators are: ==, !=, >=, <=, <, or >");
 }
@@ -514,7 +526,7 @@ Constant* TestDriver::ParseConstant()
     if(mCurrentToken == Tokenizer::TOK_CHAR)
 		C = new Constant(new CharConstant(mTokenizer.getTokenStringValue()[0]));
 	else
-		throw Exception(mTokenizer.line(), mTokenizer.column(),
+		throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
 				"Expected a Constant (int, float, string or char).",
 				"Received "+ mTokenizer.getTokenStringValue()+" instead.");
 	// This is a workaround for float and double values. Let LLVM do the work
@@ -688,7 +700,7 @@ MockupFixture* TestDriver::ParseMockupFixture()
 		if (mCurrentToken != ';') {
                     for(auto*& ptr : MockupFunctions) delete ptr;
                     for(auto*& ptr : MockupVariables) delete ptr;
-			throw Exception(mTokenizer.line(),mTokenizer.column(),
+			throw Exception(mTokenizer.line(),mTokenizer.getColumn(),
 					"Expected a semi colon ';' at the end of the test mockup",//@todo improve message
 					"Received "+mTokenizer.getTokenStringValue());
                 }

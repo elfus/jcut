@@ -314,7 +314,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	string variable_name = VA->getIdentifier()->getIdentifierStr();
 	GlobalVariable* global_variable = mModule->getGlobalVariable(variable_name);
 	assert(global_variable && "Variable not found!");
-	Tokenizer::Token tokenType = VA->getTokenType();
+	Tokenizer::TType tokenType = VA->getTokenType();
 	string real_value;
 
 	if(VA->getArgument()) {

@@ -114,9 +114,46 @@ public:
 
 namespace tp { // tp stands for test parser
 
+class Token {
+public:
+    enum Type {
+        TOK_ERR = -1,
+        TOK_EOF = -2,
+        TOK_ASCII_CHAR = -3,
+        TOK_IDENTIFIER = -4, // An identifier is a string representing a function or variable name
+        TOK_EQ_OP = -5,
+        TOK_INT = -6,
+        TOK_FLOAT = -7, // Will handle floats too
+        TOK_CHAR = -8,
+        TOK_STRING = -9,
+        TOK_BUFF_ALLOC = -10,
+        TOK_ARRAY_INIT = -11,
+        TOK_COMPARISON_OP = -12,
+        TOK_STRUCT_INIT = -13,
+        // keywords
+        TOK_BEFORE = -100,
+        TOK_AFTER = -101,
+        TOK_MOCKUP = -102,
+        TOK_BEFORE_ALL = -103,
+        TOK_AFTER_ALL = -104,
+        TOK_MOCKUP_ALL = -105,
+        TOK_TEST_INFO = -106,
+        TOK_GROUP = -107,
+    };
+    Token() = delete;
+    Token(char* lex, int size, int type, unsigned line, unsigned column) :
+    mType(type), mLine(line), mColumn(column), mLexeme(lex,size) {}
+
+private:
+    int    mType;
+    unsigned mLine, mColumn;
+    string  mLexeme;
+};
+
+
 class Tokenizer {
 public:
-    enum Token {
+    enum TType {
         TOK_ERR = -1,
         TOK_EOF = -2,
         TOK_ASCII_CHAR = -3,
@@ -152,7 +189,7 @@ public:
 
     ~Tokenizer() {}
 
-    Token currentToken() {
+    TType currentToken() {
         return mCurrentToken;
     }
 
@@ -176,7 +213,7 @@ public:
     /// Gets the line number of the current token
     unsigned line() const { return mLineNum; }
     /// Gets the column number of the current token
-    unsigned column() const { return mColumnNum; }
+    unsigned getColumn() const { return mColumnNum; }
 
     /// Gets the line number of the PREVIOUS token
     unsigned previousLine() const { return mPrevLine; }
@@ -184,7 +221,7 @@ public:
     unsigned previousColumn() const { return mPrevCol; }
 private:
     std::ifstream mInput;
-    Token mCurrentToken;
+    TType mCurrentToken;
     string mFunction;
     char mEqOp;
     int mInt;
@@ -198,6 +235,7 @@ private:
     unsigned mColumnNum;
     unsigned mPrevLine;
     unsigned mPrevCol;
+    vector<Token>   mTokens;
 };
 
 class TestExpr {
@@ -452,10 +490,10 @@ public:
 class Argument : public TestExpr {
 protected:
     string StringRepresentation;
-    Tokenizer::Token TokenType;
+    Tokenizer::TType TokenType;
 public:
 
-    Argument(const string& str, Tokenizer::Token token) :
+    Argument(const string& str, Tokenizer::TType token) :
     StringRepresentation(str), TokenType(token) {
         if (TokenType == Tokenizer::TOK_CHAR) {
             // Convert the char to its integer value
@@ -471,7 +509,7 @@ public:
     ~Argument() {}
 
     const string& getStringRepresentation() const { return StringRepresentation; }
-    Tokenizer::Token getTokenType() const { return TokenType; }
+    Tokenizer::TType getTokenType() const { return TokenType; }
 
     void dump() {
         cout << StringRepresentation;
@@ -784,7 +822,7 @@ public:
     bool isArgument() const { return (mArgument) ? true : false; }
     bool isStructInitializer() const { return (mStructInitializer) ? true : false; }
     bool isBufferAlloc() const { return (mBufferAlloc) ? true : false; }
-    Tokenizer::Token getTokenType() const {
+    Tokenizer::TType getTokenType() const {
         if (mArgument)
             return mArgument->getTokenType();
         if (mBufferAlloc)
@@ -1368,7 +1406,7 @@ public:
             delete argBuffAlloc;
     }
 
-    Tokenizer::Token getTokenType() const {
+    Tokenizer::TType getTokenType() const {
         if(argArgument) return argArgument->getTokenType();
         return Tokenizer::TOK_BUFF_ALLOC;
     }
