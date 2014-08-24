@@ -127,7 +127,7 @@ FunctionArgument* TestDriver::ParseFunctionArgument()
 
 InitializerValue* TestDriver::ParseInitializerValue()
 {
-	if (mCurrentToken == TOK_STRUCT_INIT) {
+	if (mCurrentToken == '{') {
 		StructInitializer* val = ParseStructInitializer();
 		return new InitializerValue(val);
 	}
@@ -230,7 +230,7 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '='
 
-	if (mCurrentToken == TOK_STRUCT_INIT) {
+	if (mCurrentToken == '{') {
 		StructInitializer* struct_init = ParseStructInitializer();
 		return new VariableAssignment(identifier, struct_init);
 	}
