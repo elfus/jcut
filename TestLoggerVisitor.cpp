@@ -84,8 +84,11 @@ string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)
 				break;
 			case Constant::Type::STRING:
 			{
-				string s = C->getStringConstant()->getString();
-				ss << &s.c_str()[0] << "(" << s << ")";
+				const string& s = C->getStringConstant()->getString();
+				stringstream tmp;
+				tmp << static_cast<const void*>(s.c_str());
+				unsigned long addr =  stoul(tmp.str(), nullptr, 16);
+				ss << "0x" << std::hex << addr << " (" << s << ")";
 			}
 				break;
 			case Constant::Type::CHAR:

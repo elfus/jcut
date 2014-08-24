@@ -46,6 +46,7 @@ t5('a',0) == 'a';
 t6(-1,-1) != 'b';
 t7('a',0) == 'a';
 t8(-1,-1) != 'b';# Negative testing
+t7('a',0) != "hola mundo";
 
 # This test should fail, check what happens here
 # TODO Work on these ones

@@ -149,6 +149,16 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 		assert(ss.str().size() && "Invalid numeric string!");
 	}
 
+	if(EC->isStringConstant()) {
+		const string& str = ER->getExpectedConstant()->getConstant()->getStringConstant()->getString();
+		stringstream tmp;
+		tmp << static_cast<const void*>(str.c_str());
+		unsigned long addr =  stoul(tmp.str(), nullptr, 16);
+		ss << addr;
+		cout << "STRING: " << str << "ss: " << ss.str() << endl;
+		assert(ss.str().size() && "Invalid string constant!");
+	}
+
 	llvm::Value* c = createValue(returnedType, ss.str());
 
 	string InstName = "ComparisonInstruction";

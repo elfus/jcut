@@ -275,7 +275,7 @@ public:
         v->VisitStringConstant(this);
     }
 
-    string getString() const { return mStr; }
+    const string& getString() const { return mStr; }
 };
 
 class CharConstant : public TestExpr{
