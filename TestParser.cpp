@@ -18,9 +18,8 @@ ostream& tp::operator << (ostream& os, Token& token)
     return os;
 }
 
-Tokenizer::Tokenizer(const string& filename) : mInput(filename),
-mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0), mBuffAlloc(""),
-mTokens(), mNextToken(nullptr)
+Tokenizer::Tokenizer(const string& filename) : mInput(filename), mTokens(),
+	mNextToken(nullptr)
 {
 	if (!mInput) {
 		throw Exception("Could not open file " + filename);

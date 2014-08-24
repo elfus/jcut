@@ -157,22 +157,10 @@ public:
     Token nextToken();
     Token peekToken();
 
-    int getInteger() { return mInt; }
-
-    float getFloat() { return mFloat; }
-
-    string getBuffAlloc() { return mBuffAlloc;  }
-
-    Identifier getIdentifierType() {  return mIdType;  }
+    Identifier getIdentifierType() {  assert(false && "Stop using this");  }
 
 private:
     std::ifstream mInput;
-    string mFunction;
-    char mEqOp;
-    int mInt;
-    float mFloat; /// @note WE may want to add more precision by using double
-    string mBuffAlloc;
-    Identifier mIdType;
     vector<Token>   mTokens;
     vector<Token>::iterator mNextToken;
 };
