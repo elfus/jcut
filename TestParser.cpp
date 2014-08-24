@@ -12,6 +12,12 @@ string Exception::mCurrentFile;
 extern unsigned column;
 extern "C" int yylex();
 
+ostream& tp::operator << (ostream& os, Token& token)
+{
+    os << token.mLine << ":" << token.mColumn << ": [" << token.mType << "] " << token.mLexeme;
+    return os;
+}
+
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
 mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0),
 mBuffAlloc(""), mTokStrValue(""), mLastChar('\0'), mLineNum(1), mColumnNum(1),
@@ -27,9 +33,9 @@ mPrevLine(0), mPrevCol(0)
 	int type = TokenType::TOK_ERR;
 	while((type = yylex()) != TOK_EOF) {
 		mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column)));
-		cout << yylineno <<":"<<column<<": "<<string(yytext,yyleng)<<endl;
 	}
-	cout << yylineno << ":" << column << ": EOF" << endl;
+	mTokens.push_back(std::move(Token("EOF", 3, type, yylineno, column+1)));
+	fclose(yyin);
 }
 
 bool Tokenizer::isCharIgnored(char c)

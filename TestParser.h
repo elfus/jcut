@@ -144,12 +144,12 @@ public:
     Token(char* lex, int size, int type, unsigned line, unsigned column) :
     mType(type), mLine(line), mColumn(column), mLexeme(lex,size) {}
 
-private:
     int    mType;
     unsigned mLine, mColumn;
     string  mLexeme;
 };
 
+ostream& operator << (ostream& os, Token& token);
 
 class Tokenizer {
 public:
