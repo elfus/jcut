@@ -321,7 +321,10 @@ Constant* TestDriver::ParseConstant()
 		C = new Constant(new StringConstant(mCurrentToken.mLexeme));
 	else
     if(mCurrentToken == TOK_CHAR)
-		C = new Constant(new CharConstant(mCurrentToken.mLexeme[0]));
+		// Watch for the index 1, the flex parser stores the char constant with
+		// single quotes.
+		// @bug What happens when we receive an escaped character?
+		C = new Constant(new CharConstant(mCurrentToken.mLexeme[1]));
 	else
 		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 				"Expected a Constant (int, float, string or char).",

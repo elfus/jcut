@@ -84,12 +84,14 @@ string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)
 				break;
 			case Constant::Type::STRING:
 			{
-
+				string s = C->getStringConstant()->getString();
+				ss << &s.c_str()[0] << "(" << s << ")";
 			}
 				break;
 			case Constant::Type::CHAR:
 			{
-
+				unsigned u = C->getCharConstant()->getChar();
+				ss << u << " ('" << C->getCharConstant()->getChar() << "')";
 			}
 				break;
 			default:

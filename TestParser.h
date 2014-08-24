@@ -274,6 +274,8 @@ public:
     void accept(Visitor* v) {
         v->VisitStringConstant(this);
     }
+
+    string getString() const { return mStr; }
 };
 
 class CharConstant : public TestExpr{
@@ -341,6 +343,7 @@ public:
     bool isNumericConstant() const { return (mNC) ? true: false; }
     CharConstant* getCharConstant() const { return mCC; }
     NumericConstant* getNumericConstant() const { return mNC; }
+    StringConstant* getStringConstant() const { return mSC; }
 
     Type getType() const { return mType; }
 
@@ -437,7 +440,9 @@ public:
         if (mTokenType == TOK_CHAR) {
             // Convert the char to its integer value
             // then store that integer value as string
-            unsigned char c = StringRepresentation[0];
+            // the flex parser takes the single quotes too
+            // @bug what happens when we pass \n or any escaped character?
+            unsigned char c = StringRepresentation[1];
             unsigned int tmp = static_cast<unsigned int>(c);
             stringstream ss;
             ss << tmp;
