@@ -118,7 +118,7 @@ test	{ count(); return TOK_TEST_INFO;}
 void jtl_comment()
 {
 	char c;
-	while ((c = yyinput()) != '\n' && c != 0);
+	while ((c = yyinput()) != '\n'  && c != 0 && c != EOF);
 		/** putchar(c); **/
 }
 
