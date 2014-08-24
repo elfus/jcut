@@ -402,20 +402,14 @@ TestFixture* TestDriver::ParseTestFixture()
 			func = (FunctionCall*) ParseFunctionCall();
 			statements.push_back(func);
 			func = nullptr;
-		} else if (mTokenizer.getIdentifierType() == Tokenizer::ID_VARIABLE) {
-			if (mTokenizer.peekToken() == TOK_COMPARISON_OP) {
-				exp = ParseExpectedExpression();
-				statements.push_back(exp);
-				exp = nullptr;
-			} else if(mTokenizer.peekToken() == '=') {
-				var = (VariableAssignment*) ParseVariableAssignment();
-				statements.push_back(var);
-				var = nullptr;
-			}
-		} else if (mTokenizer.getIdentifierType() == Tokenizer::ID_CONSTANT) {
+		} else if (mTokenizer.peekToken() == TOK_COMPARISON_OP) {
 			exp = ParseExpectedExpression();
 			statements.push_back(exp);
 			exp = nullptr;
+		} else if(mTokenizer.peekToken() == '=') {
+			var = (VariableAssignment*) ParseVariableAssignment();
+			statements.push_back(var);
+			var = nullptr;
 		}
 
 		if (mCurrentToken != ';') {
@@ -446,12 +440,14 @@ ExpectedExpression* TestDriver::ParseExpectedExpression()
 
 Operand* TestDriver::ParseOperand()
 {
-	if(mTokenizer.getIdentifierType() == Tokenizer::ID_CONSTANT) {
-		Constant* C = ParseConstant();
-		return new Operand(C);
-	} else if(mCurrentToken == TOK_IDENTIFIER) {
+	if(mCurrentToken == TOK_IDENTIFIER) {
 		Identifier* I = ParseIdentifier();
 		return new Operand(I);
+	} else {
+		/// @bug Possible bug here, this else indicates in our grammar, a
+		/// CONSTANT(INT), FLOAT, CHAR_CONST or STRING.
+		Constant* C = ParseConstant();
+		return new Operand(C);
 	}
 	throw Exception("Expected a CONSTANT or an IDENTIFIER");
 }
