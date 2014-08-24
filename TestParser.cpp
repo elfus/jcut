@@ -68,7 +68,7 @@ Argument* TestDriver::ParseArgument()
 
 BufferAlloc* TestDriver::ParseBufferAlloc()
 {
-	if (mCurrentToken != TOK_BUFF_ALLOC) // @todo change to '['
+	if (mCurrentToken != '[')
 		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 			"Expected a '['BufferAlloc",
 			"Received "+mCurrentToken.mLexeme+" instead.");
@@ -78,19 +78,26 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 			"Expected an integer constant stating the buffer size.",
 			"Received "+mCurrentToken.mLexeme+" instead.");
-	// @todo Create an integer class and stop using argument
+	// @todo Create an integer class and stop using Argument
 	Argument* buff_size = ParseArgument();// Buffer Size
 
 	BufferAlloc *ba = nullptr;
 	if (mCurrentToken == ':') {
 		mCurrentToken = mTokenizer.nextToken(); // eat up the ':'
-		if (mCurrentToken == TOK_STRUCT_INIT) {
+		if (mCurrentToken == '{') { // indicates a StructInitializer
 			StructInitializer* struct_init = ParseStructInitializer();
 			ba = new BufferAlloc(buff_size, struct_init);
-		} else {
+		} else if(mCurrentToken == TOK_INT or mCurrentToken == TOK_FLOAT or
+				mCurrentToken == TOK_STRING or mCurrentToken == TOK_CHAR) {
+			// @todo Improve this if and they way we SHOULD handle each of those
+			// tokens.
+			// @todo Create an integer class and stop using Argument
 			Argument* default_val = ParseArgument();
 			ba = new BufferAlloc(buff_size, default_val);
-		}
+		} else
+			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+				"Unexpected token: "+mCurrentToken.mLexeme);
+
 		mCurrentToken = mTokenizer.nextToken(); // eat up the ']'
 		return ba;
 	}
@@ -110,8 +117,9 @@ Identifier* TestDriver::ParseIdentifier()
 
 FunctionArgument* TestDriver::ParseFunctionArgument()
 {
-	if (mCurrentToken == TOK_BUFF_ALLOC)
+	if (mCurrentToken == '[') { // Buffer allocation
 		return new FunctionArgument(ParseBufferAlloc());
+	}
 	else
 		return new FunctionArgument(ParseArgument());
 	throw Exception("Expected a valid Argument but received: " + mCurrentToken.mLexeme);
@@ -188,7 +196,7 @@ InitializerList* TestDriver::ParseInitializerList()
 
 StructInitializer* TestDriver::ParseStructInitializer()
 {
-	if (mCurrentToken != TOK_STRUCT_INIT)
+	if (mCurrentToken != '{')
 		throw Exception("Expected struct initializer '{' but received "+mCurrentToken.mLexeme);
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '{'
 
@@ -227,7 +235,7 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 		return new VariableAssignment(identifier, struct_init);
 	}
 
-	if (mCurrentToken == TOK_BUFF_ALLOC) {
+	if (mCurrentToken == '[') {
 		BufferAlloc* ba = ParseBufferAlloc();
 		return new VariableAssignment(identifier, ba);
 	}
