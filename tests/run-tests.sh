@@ -16,7 +16,13 @@ for dir in $DIRECTORIES
 do
     echo "Running tests in folder $dir"
     cd $dir
-    $JIT_TESTING test_group.c -t test-file.txt 2> stderr.txt 1> stdoutput.txt 
+    if [ "$dir" == "groupH" ]
+    then
+	$JIT_TESTING test_group.c -t test-file.txt --recover 2> stderr.txt 1> stdoutput.txt 
+    else
+	$JIT_TESTING test_group.c -t test-file.txt 2> stderr.txt 1> stdoutput.txt 
+    fi
+
     echo "Return code $?"
     FAILED=$((FAILED+$?))
     cd ..
