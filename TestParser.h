@@ -14,6 +14,8 @@
 #include <vector>
 #include <iostream>
 
+#include "JTLScanner.h"
+
 #include "Visitor.h"
 
 #include "llvm/ExecutionEngine/JIT.h"
@@ -116,35 +118,22 @@ namespace tp { // tp stands for test parser
 
 class Token {
 public:
-    enum Type {
-        TOK_ERR = -1,
-        TOK_EOF = -2,
-        TOK_ASCII_CHAR = -3,
-        TOK_IDENTIFIER = -4, // An identifier is a string representing a function or variable name
-        TOK_EQ_OP = -5,
-        TOK_INT = -6,
-        TOK_FLOAT = -7, // Will handle floats too
-        TOK_CHAR = -8,
-        TOK_STRING = -9,
-        TOK_BUFF_ALLOC = -10,
-        TOK_ARRAY_INIT = -11,
-        TOK_COMPARISON_OP = -12,
-        TOK_STRUCT_INIT = -13,
-        // keywords
-        TOK_BEFORE = -100,
-        TOK_AFTER = -101,
-        TOK_MOCKUP = -102,
-        TOK_BEFORE_ALL = -103,
-        TOK_AFTER_ALL = -104,
-        TOK_MOCKUP_ALL = -105,
-        TOK_TEST_INFO = -106,
-        TOK_GROUP = -107,
-    };
-    Token() = delete;
+    Token() : mType(TOK_ERR), mLine(0), mColumn(0), mLexeme("") {}
     Token(char* lex, int size, int type, unsigned line, unsigned column) :
-    mType(type), mLine(line), mColumn(column), mLexeme(lex,size) {}
+    mType(static_cast<TokenType>(type)), mLine(line), mColumn(column), mLexeme(lex,size) {}
 
-    int    mType;
+    bool operator ==(char c) {
+        string s(1,c);
+        return mLexeme == s;
+    }
+    bool operator !=(char c) {
+        string s(1,c);
+        return mLexeme != s;
+    }
+    bool operator ==(TokenType type) { return mType == type; }
+    bool operator !=(TokenType type) { return mType != type; }
+
+    TokenType    mType;
     unsigned mLine, mColumn;
     string  mLexeme;
 };
@@ -153,30 +142,6 @@ ostream& operator << (ostream& os, Token& token);
 
 class Tokenizer {
 public:
-    enum TType {
-        TOK_ERR = -1,
-        TOK_EOF = -2,
-        TOK_ASCII_CHAR = -3,
-        TOK_IDENTIFIER = -4, // An identifier is a string representing a function or variable name
-        TOK_EQ_OP = -5,
-        TOK_INT = -6,
-        TOK_FLOAT = -7, // Will handle floats too
-        TOK_CHAR = -8,
-        TOK_STRING = -9,
-        TOK_BUFF_ALLOC = -10,
-        TOK_ARRAY_INIT = -11,
-        TOK_COMPARISON_OP = -12,
-        TOK_STRUCT_INIT = -13,
-        // keywords
-        TOK_BEFORE = -100,
-        TOK_AFTER = -101,
-        TOK_MOCKUP = -102,
-        TOK_BEFORE_ALL = -103,
-        TOK_AFTER_ALL = -104,
-        TOK_MOCKUP_ALL = -105,
-        TOK_TEST_INFO = -106,
-        TOK_GROUP = -107,
-    };
 
     enum Identifier {
         ID_UNKNOWN = 0,
@@ -189,12 +154,8 @@ public:
 
     ~Tokenizer() {}
 
-    TType currentToken() {
-        return mCurrentToken;
-    }
-
-    int nextToken();
-    int peekToken();
+    Token nextToken();
+    Token peekToken();
 
     int getInteger() { return mInt; }
 
@@ -202,40 +163,18 @@ public:
 
     string getBuffAlloc() { return mBuffAlloc;  }
 
-    string getTokenStringValue() { return mTokStrValue; }
-
-    char getChar() { return mLastChar; }
-
     Identifier getIdentifierType() {  return mIdType;  }
 
-    bool isCharIgnored(char);
-
-    /// Gets the line number of the current token
-    unsigned line() const { return mLineNum; }
-    /// Gets the column number of the current token
-    unsigned getColumn() const { return mColumnNum; }
-
-    /// Gets the line number of the PREVIOUS token
-    unsigned previousLine() const { return mPrevLine; }
-    /// Gets the column number of the PREVIOUS token
-    unsigned previousColumn() const { return mPrevCol; }
 private:
     std::ifstream mInput;
-    TType mCurrentToken;
     string mFunction;
     char mEqOp;
     int mInt;
     float mFloat; /// @note WE may want to add more precision by using double
     string mBuffAlloc;
-    string mTokStrValue;
-    char mLastChar;
     Identifier mIdType;
-    unsigned mOldPos;
-    unsigned mLineNum;
-    unsigned mColumnNum;
-    unsigned mPrevLine;
-    unsigned mPrevCol;
     vector<Token>   mTokens;
+    vector<Token>::iterator mNextToken;
 };
 
 class TestExpr {
@@ -490,12 +429,12 @@ public:
 class Argument : public TestExpr {
 protected:
     string StringRepresentation;
-    Tokenizer::TType TokenType;
+    TokenType mTokenType;
 public:
 
-    Argument(const string& str, Tokenizer::TType token) :
-    StringRepresentation(str), TokenType(token) {
-        if (TokenType == Tokenizer::TOK_CHAR) {
+    Argument(const string& str, TokenType token) :
+    StringRepresentation(str), mTokenType(token) {
+        if (mTokenType == TOK_CHAR) {
             // Convert the char to its integer value
             // then store that integer value as string
             unsigned char c = StringRepresentation[0];
@@ -509,7 +448,7 @@ public:
     ~Argument() {}
 
     const string& getStringRepresentation() const { return StringRepresentation; }
-    Tokenizer::TType getTokenType() const { return TokenType; }
+    TokenType getTokenType() const { return mTokenType; }
 
     void dump() {
         cout << StringRepresentation;
@@ -743,7 +682,7 @@ public:
             mIntBuffSize(size), mIntDefaultValue(default_value),
             mStructInit(nullptr) {
                 if (default_value == nullptr)
-                    mIntDefaultValue = new Argument("0", Tokenizer::TOK_INT);
+                    mIntDefaultValue = new Argument("0", TOK_INT);
     }
 
     BufferAlloc(Argument* size, StructInitializer* init):
@@ -822,14 +761,14 @@ public:
     bool isArgument() const { return (mArgument) ? true : false; }
     bool isStructInitializer() const { return (mStructInitializer) ? true : false; }
     bool isBufferAlloc() const { return (mBufferAlloc) ? true : false; }
-    Tokenizer::TType getTokenType() const {
+    TokenType getTokenType() const {
         if (mArgument)
             return mArgument->getTokenType();
         if (mBufferAlloc)
-            return Tokenizer::TOK_BUFF_ALLOC;
+            return TOK_BUFF_ALLOC;
         if (mStructInitializer)
-            return Tokenizer::TOK_STRUCT_INIT;
-        return Tokenizer::TOK_ERR;
+            return TOK_STRUCT_INIT;
+        return TOK_ERR;
     }
 
     void dump() {
@@ -1406,9 +1345,9 @@ public:
             delete argBuffAlloc;
     }
 
-    Tokenizer::TType getTokenType() const {
+    TokenType getTokenType() const {
         if(argArgument) return argArgument->getTokenType();
-        return Tokenizer::TOK_BUFF_ALLOC;
+        return TOK_BUFF_ALLOC;
     }
 
     string toString() {
@@ -1454,7 +1393,7 @@ public:
 class TestDriver {
 private:
     Tokenizer mTokenizer;
-    int mCurrentToken;
+    Token mCurrentToken;
     // This variable is used to detect the condition in which an error is found
     // in a test-fixture (either before or after statement), so we can use it
     // to ignore the rest of the statements in the test-fixture statement.
@@ -1472,7 +1411,8 @@ public:
     TestDriver() = delete;
     TestDriver(const TestDriver&) = delete;
 
-    TestDriver(const string& file, bool recover = false) : mTokenizer(file), mCurrentToken(0),
+    TestDriver(const string& file, bool recover = false) : mTokenizer(file),
+    mCurrentToken(),
     mTestFixtureException(false), mParsingSetup(false), mParsingTearDown(false),
     mRecoverOnParseError(recover){ }
 

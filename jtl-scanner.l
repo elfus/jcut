@@ -106,9 +106,9 @@ test	{ count(); return TOK_TEST_INFO;}
 "!="	  { count(); return TOK_COMPARISON_OP; }
 "<="	  { count(); return TOK_COMPARISON_OP; }
 ">="	  { count(); return TOK_COMPARISON_OP; }
+"<"       { count(); return TOK_COMPARISON_OP; }
+">"       { count(); return TOK_COMPARISON_OP; }
 "="	  { count(); return '='; }
-"<"       { count(); return '<'; }
-">"       { count(); return '>'; }
 
 [ \t\v\n\f]		{ count(); }
 

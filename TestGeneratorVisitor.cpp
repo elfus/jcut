@@ -59,7 +59,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 					mArgs.push_back(load);
 				} else {
 					const tp::Argument* my_string = arg->getArgument();
-					assert(my_string->getTokenType() == Tokenizer::TOK_STRING && "This is not a string!");
+					assert(my_string->getTokenType() == TOK_STRING && "This is not a string!");
 					const string& my_str = my_string->getStringRepresentation();
 					ArrayType* ArrayTy_0 = ArrayType::get(IntegerType::get(mModule->getContext(), 8), my_str.size()+1); // + null
 					GlobalVariable* gvar_array__str = new GlobalVariable(/*Module=*/*mModule,
@@ -314,7 +314,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	string variable_name = VA->getIdentifier()->getIdentifierStr();
 	GlobalVariable* global_variable = mModule->getGlobalVariable(variable_name);
 	assert(global_variable && "Variable not found!");
-	Tokenizer::TType tokenType = VA->getTokenType();
+	TokenType tokenType = VA->getTokenType();
 	string real_value;
 
 	if(VA->getArgument()) {
@@ -340,8 +340,8 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
         mBackupTemp.push_back(make_tuple(backup,global_variable));
 	// TODO: Handle the rest of token types
 	switch (tokenType) {
-		case Tokenizer::TOK_INT:
-		case Tokenizer::TOK_FLOAT:
+		case TOK_INT:
+		case TOK_FLOAT:
 		{
 			// Watch for the real type of a global variable, there might be a @bug
 			Value * v = createValue(global_variable->getType()->getPointerElementType(), real_value);
@@ -349,7 +349,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 			mInstructions.push_back(store);
 		}
 			break;
-		case Tokenizer::TOK_STRUCT_INIT:
+		case TOK_STRUCT_INIT:
 		{
 			StructInitializer* str_init = VA->getStructInitializer();
 			vector<Value*> values;
@@ -357,7 +357,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 			extractInitializerValues(global_variable, str_init,&values, mInstructions);
 		}
 			break;
-		case Tokenizer::TOK_BUFF_ALLOC:
+		case TOK_BUFF_ALLOC:
 		{
 			tp::BufferAlloc* ba = VA->getBufferAlloc();
 			// global_variable is a pointer to a pointer.

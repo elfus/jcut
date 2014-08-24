@@ -19,9 +19,8 @@ ostream& tp::operator << (ostream& os, Token& token)
 }
 
 Tokenizer::Tokenizer(const string& filename) : mInput(filename),
-mCurrentToken(TOK_ERR), mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0),
-mBuffAlloc(""), mTokStrValue(""), mLastChar('\0'), mLineNum(1), mColumnNum(1),
-mPrevLine(0), mPrevCol(0)
+mFunction(""), mEqOp('\0'), mInt(0), mFloat(0.0), mBuffAlloc(""),
+mTokens(), mNextToken(nullptr)
 {
 	if (!mInput) {
 		throw Exception("Could not open file " + filename);
@@ -34,230 +33,22 @@ mPrevLine(0), mPrevCol(0)
 	while((type = yylex()) != TOK_EOF) {
 		mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column)));
 	}
-	mTokens.push_back(std::move(Token("EOF", 3, type, yylineno, column+1)));
 	fclose(yyin);
+	
+	mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column+1)));
+	mNextToken = mTokens.begin();
 }
 
-bool Tokenizer::isCharIgnored(char c)
+Token Tokenizer::peekToken()
 {
-	switch (c) {
-	default: return false;
-	}
-	return false;
+	return *mNextToken;
 }
 
-int Tokenizer::peekToken()
+Token Tokenizer::nextToken()
 {
-	TType oldToken = mCurrentToken;
-	char oldChar = mLastChar;
-	string oldStr = mTokStrValue;
-	unsigned oldPrevLine = mPrevLine;
-	unsigned oldPrevCol = mPrevCol;
-	unsigned oldLine = mLineNum;
-	unsigned oldCol = mColumnNum;
-	int peek_token = nextToken();
-	mColumnNum = oldCol;
-	mLineNum = oldLine;
-	mPrevCol = oldPrevCol;
-	mPrevLine = oldPrevLine;
-	mInput.seekg(mOldPos);
-	mCurrentToken = oldToken;
-	mLastChar = oldChar;
-	mTokStrValue = oldStr;
-	return peek_token;
-}
-
-int Tokenizer::nextToken()
-{
-	stringstream tokenStream;
-	static unsigned last_nl = 0;// Position of the last \n detected.
-	mTokStrValue = "";
-	mOldPos = mInput.tellg();
-	mIdType = ID_UNKNOWN;
-
-	do {
-		mColumnNum = static_cast<unsigned>(mInput.tellg()) - last_nl + 1;
-		mLastChar = mInput.get();
-		if (mLastChar == '\n' ) {
-			mPrevLine = mLineNum++;
-			mPrevCol = mColumnNum;
-			mColumnNum = 1;
-			last_nl = mInput.tellg();
-		}
-		if (mLastChar == EOF)
-			mColumnNum = 1;
-	} while (isspace(mLastChar) || isCharIgnored(mLastChar));
-
-	if (mLastChar == '"') {
-		while ((mLastChar = mInput.get()) != '"') {
-			mTokStrValue += mLastChar;
-		}
-		mIdType = ID_CONSTANT;
-		return mCurrentToken = TOK_STRING;
-	}
-
-	if (mLastChar == '\'') {
-		while ((mLastChar = mInput.get()) != '\'') {
-			mTokStrValue += mLastChar;
-		}
-		return mCurrentToken = TOK_CHAR;
-	}
-
-	if (mLastChar == '{') {
-		mTokStrValue = mLastChar;
-
-		if (mCurrentToken == TOK_BEFORE || mCurrentToken == TOK_AFTER ||
-				mCurrentToken == TOK_MOCKUP || mCurrentToken == TOK_MOCKUP_ALL ||
-				mCurrentToken == TOK_AFTER_ALL || mCurrentToken == TOK_BEFORE_ALL ||
-				mCurrentToken == TOK_GROUP || mCurrentToken == TOK_IDENTIFIER) {
-			mCurrentToken = TOK_ASCII_CHAR;
-			return mLastChar;
-		}
-
-		// Watch for possible @bug here. This assumes the character before '{'
-		// was an assignment operator '='
-		if (mCurrentToken == TOK_ASCII_CHAR) { // mCurrentToken == '='
-			mTokStrValue = mLastChar;
-			return mCurrentToken = TOK_STRUCT_INIT;
-		}
-
-		while ((mLastChar = mInput.get()) != '}') {
-			mTokStrValue += mLastChar;
-		}
-		mTokStrValue += mLastChar;
-		return mCurrentToken = TOK_ARRAY_INIT;
-	}
-
-	if (mLastChar == '}') {
-		mTokStrValue = mLastChar;
-		if (mCurrentToken == TOK_BEFORE || mCurrentToken == TOK_AFTER ||
-				mCurrentToken == TOK_MOCKUP || mCurrentToken == TOK_MOCKUP_ALL ||
-				mCurrentToken == TOK_AFTER_ALL || mCurrentToken == TOK_BEFORE_ALL) {
-			mCurrentToken = TOK_ASCII_CHAR;
-			mIdType = ID_CONSTANT;
-			return mLastChar;
-		}
-	}
-
-	// @todo remove this condition, this should be returned as a char constant
-	// at the very end of this function. We have to replace the usage of
-	// TOK_BUFF_ALLOC
-	if (mLastChar == '[') {
-		mTokStrValue = mLastChar;
-		mTokStrValue += mLastChar;
-		return mCurrentToken = TOK_BUFF_ALLOC;
-	}
-
-	if (isalpha(mLastChar)) { // function: [a-zA-Z][a-zA-Z0-9]*
-		mFunction = mLastChar;
-		while (isalnum((mLastChar = mInput.get())) || mLastChar == '_') {
-			mFunction += mLastChar;
-		}
-		if (mLastChar == '(') mIdType = ID_FUNCTION;
-		else mIdType = ID_VARIABLE;
-		mInput.putback(mLastChar);
-		mTokStrValue = mFunction;
-		if (mTokStrValue == "mockup") return mCurrentToken = TOK_MOCKUP;
-		if (mTokStrValue == "before") return mCurrentToken = TOK_BEFORE;
-		if (mTokStrValue == "after") return mCurrentToken = TOK_AFTER;
-		if (mTokStrValue == "before_all") return mCurrentToken = TOK_BEFORE_ALL;
-		if (mTokStrValue == "after_all") return mCurrentToken = TOK_AFTER_ALL;
-		if (mTokStrValue == "mockup_all") return mCurrentToken = TOK_MOCKUP_ALL;
-		if (mTokStrValue == "test") return mCurrentToken = TOK_TEST_INFO;
-		if (mTokStrValue == "group") return mCurrentToken = TOK_GROUP;
-		return mCurrentToken = TOK_IDENTIFIER;
-	}
-
-        /// @todo Add support for floating point numbers, detect the dot '.'
-	if (((mLastChar == '-' && isdigit(mInput.peek())) || isdigit(mLastChar))) {
-		tokenStream << mLastChar;
-		while (isdigit((mLastChar = mInput.get()))) {
-			tokenStream << mLastChar;
-		}
-		if (mLastChar != '.') {
-			mInput.putback(mLastChar);
-			tokenStream >> mInt;
-			mTokStrValue = tokenStream.str();
-			mIdType = ID_CONSTANT;
-			return mCurrentToken = TOK_INT;
-		} else { // when equals to '.' it's floating type value
-			tokenStream << mLastChar;
-			while (isdigit((mLastChar = mInput.get()))) {
-				tokenStream << mLastChar;
-			}
-			mInput.putback(mLastChar);
-			tokenStream >> mFloat;
-			mTokStrValue = tokenStream.str();
-			mIdType = ID_CONSTANT;
-			return mCurrentToken = TOK_FLOAT;
-		}
-	}
-
-	//////
-	// Conditions for boolean operators
-	if (mLastChar == '=' && mInput.peek() == '=') {
-		tokenStream << mLastChar;
-		tokenStream << (mLastChar = mInput.get());
-		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_COMPARISON_OP;
-	}
-
-	if (mLastChar == '!' && mInput.peek() == '=') {
-		tokenStream << mLastChar;
-		tokenStream << (mLastChar = mInput.get());
-		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_COMPARISON_OP;
-	}
-
-	if (mLastChar == '>' && mInput.peek() == '=') {
-		tokenStream << mLastChar;
-		tokenStream << (mLastChar = mInput.get());
-		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_COMPARISON_OP;
-	}
-
-	if (mLastChar == '<' && mInput.peek() == '=') {
-		tokenStream << mLastChar;
-		tokenStream << (mLastChar = mInput.get());
-		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_COMPARISON_OP;
-	}
-
-	if (mLastChar == '<') {
-		tokenStream << mLastChar;
-		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_COMPARISON_OP;
-	}
-
-	if (mLastChar == '>') {
-		tokenStream << mLastChar;
-		mTokStrValue = tokenStream.str();
-		return mCurrentToken = TOK_COMPARISON_OP;
-	}
-	// End of boolean operators
-	//////
-	if (mLastChar == '#') {
-		mLastChar = mInput.get();
-		while (mLastChar != '\n' && mLastChar != EOF && mLastChar != '\r') {
-			mLastChar = mInput.get();
-		}
-		mPrevLine = mLineNum++;
-		mPrevCol = mColumnNum;
-		mColumnNum = 1;
-		last_nl = mInput.tellg();
-
-		if (mLastChar != EOF)
-			return nextToken();
-	}
-
-	if (mLastChar == EOF) {
-		mTokStrValue = "EOF";
-		return TOK_EOF;
-	}
-
-	mTokStrValue = mLastChar;
-	mCurrentToken = TOK_ASCII_CHAR;
-	return mLastChar;
+	Token next = *mNextToken;
+	mNextToken++;
+	return next;
 }
 
 //===-----------------------------------------------------------===//
@@ -270,30 +61,30 @@ unsigned LLVMFunctionHolder::warning_count = 0;
 
 Argument* TestDriver::ParseArgument()
 {
-	Argument *Number = new Argument(mTokenizer.getTokenStringValue(), (Tokenizer::TType)mCurrentToken);
+	Argument *Number = new Argument(mCurrentToken.mLexeme, mCurrentToken.mType);
 	mCurrentToken = mTokenizer.nextToken(); // eat current argument, move to next
 	return Number;
 }
 
 BufferAlloc* TestDriver::ParseBufferAlloc()
 {
-	if (mCurrentToken != Tokenizer::TOK_BUFF_ALLOC) // @todo change to '['
-		throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
+	if (mCurrentToken != TOK_BUFF_ALLOC) // @todo change to '['
+		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 			"Expected a '['BufferAlloc",
-			"Received "+mTokenizer.getTokenStringValue()+" instead.");
+			"Received "+mCurrentToken.mLexeme+" instead.");
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '['
 
-	if (mCurrentToken != Tokenizer::TOK_INT)
-		throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
+	if (mCurrentToken != TOK_INT)
+		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 			"Expected an integer constant stating the buffer size.",
-			"Received "+mTokenizer.getTokenStringValue()+" instead.");
+			"Received "+mCurrentToken.mLexeme+" instead.");
 	// @todo Create an integer class and stop using argument
 	Argument* buff_size = ParseArgument();// Buffer Size
 
 	BufferAlloc *ba = nullptr;
 	if (mCurrentToken == ':') {
 		mCurrentToken = mTokenizer.nextToken(); // eat up the ':'
-		if (mCurrentToken == Tokenizer::TOK_STRUCT_INIT) {
+		if (mCurrentToken == TOK_STRUCT_INIT) {
 			StructInitializer* struct_init = ParseStructInitializer();
 			ba = new BufferAlloc(buff_size, struct_init);
 		} else {
@@ -310,25 +101,25 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 
 Identifier* TestDriver::ParseIdentifier()
 {
-	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER)
-		throw Exception("Expected an identifier but received " + mTokenizer.getTokenStringValue());
-	Identifier * id = new Identifier(mTokenizer.getTokenStringValue());
+	if (mCurrentToken != TOK_IDENTIFIER)
+		throw Exception("Expected an identifier but received " + mCurrentToken.mLexeme);
+	Identifier * id = new Identifier(mCurrentToken.mLexeme);
 	mCurrentToken = mTokenizer.nextToken(); // eat current identifier
 	return id;
 }
 
 FunctionArgument* TestDriver::ParseFunctionArgument()
 {
-	if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC)
+	if (mCurrentToken == TOK_BUFF_ALLOC)
 		return new FunctionArgument(ParseBufferAlloc());
 	else
 		return new FunctionArgument(ParseArgument());
-	throw Exception("Expected a valid Argument but received: " + mTokenizer.getTokenStringValue());
+	throw Exception("Expected a valid Argument but received: " + mCurrentToken.mLexeme);
 }
 
 InitializerValue* TestDriver::ParseInitializerValue()
 {
-	if (mCurrentToken == Tokenizer::TOK_STRUCT_INIT) {
+	if (mCurrentToken == TOK_STRUCT_INIT) {
 		StructInitializer* val = ParseStructInitializer();
 		return new InitializerValue(val);
 	}
@@ -354,7 +145,7 @@ DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 				delete id;
 				delete arg;
 			}
-			throw Exception("Unexpected token: "+mTokenizer.getTokenStringValue());
+			throw Exception("Unexpected token: "+mCurrentToken.mLexeme);
 		}
 
 		mCurrentToken = mTokenizer.nextToken(); // eat up the '.'
@@ -397,8 +188,8 @@ InitializerList* TestDriver::ParseInitializerList()
 
 StructInitializer* TestDriver::ParseStructInitializer()
 {
-	if (mCurrentToken != Tokenizer::TOK_STRUCT_INIT)
-		throw Exception("Expected struct initializer '{' but received "+mTokenizer.getTokenStringValue());
+	if (mCurrentToken != TOK_STRUCT_INIT)
+		throw Exception("Expected struct initializer '{' but received "+mCurrentToken.mLexeme);
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '{'
 
 	StructInitializer* si = nullptr;
@@ -427,16 +218,16 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 
 	if (mCurrentToken != '=') {
 		delete identifier;
-		throw Exception("Expected = but received " + mTokenizer.getTokenStringValue());
+		throw Exception("Expected = but received " + mCurrentToken.mLexeme);
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '='
 
-	if (mCurrentToken == Tokenizer::TOK_STRUCT_INIT) {
+	if (mCurrentToken == TOK_STRUCT_INIT) {
 		StructInitializer* struct_init = ParseStructInitializer();
 		return new VariableAssignment(identifier, struct_init);
 	}
 
-	if (mCurrentToken == Tokenizer::TOK_BUFF_ALLOC) {
+	if (mCurrentToken == TOK_BUFF_ALLOC) {
 		BufferAlloc* ba = ParseBufferAlloc();
 		return new VariableAssignment(identifier, ba);
 	}
@@ -447,10 +238,10 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 
 Identifier* TestDriver::ParseFunctionName()
 {
-	if (mCurrentToken != Tokenizer::TOK_IDENTIFIER)
-		throw Exception(mTokenizer.line(),mTokenizer.getColumn(),
+	if (mCurrentToken != TOK_IDENTIFIER)
+		throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
 				"Expected a valid function name.",
-				"Received "+ mTokenizer.getTokenStringValue()+" instead.");
+				"Received "+ mCurrentToken.mLexeme+" instead.");
 	return ParseIdentifier(); // Missing a 'FunctionName' class that wraps an Identifier
 }
 
@@ -459,10 +250,10 @@ FunctionCall* TestDriver::ParseFunctionCall()
 	Identifier* functionName = ParseFunctionName();
 
 	if (mCurrentToken != '(') {
-            string extra = functionName->getIdentifierStr()+mTokenizer.getTokenStringValue();
+            string extra = functionName->getIdentifierStr()+mCurrentToken.mLexeme;
             delete functionName;
-            throw Exception(mTokenizer.line(),mTokenizer.getColumn(),
-                            "Expected a left parenthesis in function call but received " + mTokenizer.getTokenStringValue(),
+            throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
+                            "Expected a left parenthesis in function call but received " + mCurrentToken.mLexeme,
                             extra);
         }
 
@@ -479,9 +270,9 @@ FunctionCall* TestDriver::ParseFunctionCall()
 			for (auto*& ptr : Args)
 				delete ptr;
                         delete functionName;
-			throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
+			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 					"Expected a comma or right parenthesis in function call but received "
-					+ mTokenizer.getTokenStringValue());
+					+ mCurrentToken.mLexeme);
 		}
 
 		mCurrentToken = mTokenizer.nextToken(); // eat the ','
@@ -501,13 +292,13 @@ ExpectedResult* TestDriver::ParseExpectedResult()
 
 ComparisonOperator* TestDriver::ParseComparisonOperator()
 {
-	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP) {
-		ComparisonOperator* cmp = new ComparisonOperator(mTokenizer.getTokenStringValue());
+	if (mCurrentToken == TOK_COMPARISON_OP) {
+		ComparisonOperator* cmp = new ComparisonOperator(mCurrentToken.mLexeme);
 		mCurrentToken = mTokenizer.nextToken(); // consume TOK_COMPARISON_OP
 		return cmp;
 	}
-	throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
-			"Expected 'ComparisonOperator' but received " + mTokenizer.getTokenStringValue(),
+	throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+			"Expected 'ComparisonOperator' but received " + mCurrentToken.mLexeme,
 			"ComparisonOperators are: ==, !=, >=, <=, <, or >");
 }
 
@@ -520,32 +311,32 @@ Constant* TestDriver::ParseConstant()
 {
 	Constant* C = nullptr;
 
-	if (mCurrentToken == Tokenizer::TOK_INT)
-		C = new Constant(new NumericConstant(mTokenizer.getInteger()));
+	if (mCurrentToken == TOK_INT)
+		C = new Constant(new NumericConstant(atoi(mCurrentToken.mLexeme.c_str())));
 	else
-    if(mCurrentToken == Tokenizer::TOK_FLOAT)
-		C = new Constant(new NumericConstant(mTokenizer.getFloat()));
+    if(mCurrentToken == TOK_FLOAT)
+		C = new Constant(new NumericConstant((float)atof(mCurrentToken.mLexeme.c_str())));
 	else
-    if(mCurrentToken == Tokenizer::TOK_STRING)
-		C = new Constant(new StringConstant(mTokenizer.getTokenStringValue()));
+    if(mCurrentToken == TOK_STRING)
+		C = new Constant(new StringConstant(mCurrentToken.mLexeme));
 	else
-    if(mCurrentToken == Tokenizer::TOK_CHAR)
-		C = new Constant(new CharConstant(mTokenizer.getTokenStringValue()[0]));
+    if(mCurrentToken == TOK_CHAR)
+		C = new Constant(new CharConstant(mCurrentToken.mLexeme[0]));
 	else
-		throw Exception(mTokenizer.line(), mTokenizer.getColumn(),
+		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 				"Expected a Constant (int, float, string or char).",
-				"Received "+ mTokenizer.getTokenStringValue()+" instead.");
+				"Received "+ mCurrentToken.mLexeme+" instead.");
 	// This is a workaround for float and double values. Let LLVM do the work
 	// on what type of precision to choose, we will just pass a string representing
 	// the floating point value.
-	C->setAsStr(mTokenizer.getTokenStringValue());
+	C->setAsStr(mCurrentToken.mLexeme);
 	mCurrentToken = mTokenizer.nextToken(); // Consume the constant
 	return C;
 }
 
 TestTeardown* TestDriver::ParseTestTearDown()
 {
-	if (mCurrentToken != Tokenizer::TOK_AFTER)
+	if (mCurrentToken != TOK_AFTER)
 		return nullptr;
 
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword 'after'
@@ -558,21 +349,21 @@ TestTeardown* TestDriver::ParseTestTearDown()
 		mParsingTearDown = false;
 		return new TestTeardown(testFixture);
 	}
-	throw Exception("Expected { but received " + mTokenizer.getTokenStringValue() + " after keyword 'after'");
+	throw Exception("Expected { but received " + mCurrentToken.mLexeme + " after keyword 'after'");
 }
 
 TestFunction* TestDriver::ParseTestFunction()
 {
 	FunctionCall *FunctionCall = ParseFunctionCall();
 	ExpectedResult* ER = nullptr;
-	if (mCurrentToken == Tokenizer::TOK_COMPARISON_OP)
+	if (mCurrentToken == TOK_COMPARISON_OP)
 		ER = ParseExpectedResult();
 	if (mCurrentToken != ';') {
             delete FunctionCall;
             if(ER) delete ER;
-            throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
+            throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
                             "Expected a semi colon ';' at the end of the test expression",
-                            "Received "+mTokenizer.getTokenStringValue());
+                            "Received "+mCurrentToken.mLexeme);
         }
 	mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	return new TestFunction(FunctionCall, ER);
@@ -580,7 +371,7 @@ TestFunction* TestDriver::ParseTestFunction()
 
 TestSetup* TestDriver::ParseTestSetup()
 {
-	if (mCurrentToken != Tokenizer::TOK_BEFORE)
+	if (mCurrentToken != TOK_BEFORE)
 		return nullptr;
 
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword 'before'
@@ -593,7 +384,7 @@ TestSetup* TestDriver::ParseTestSetup()
 		mParsingSetup = false;
 		return new TestSetup(testFixture);
 	}
-	throw Exception("Expected { but received " + mTokenizer.getTokenStringValue() + " after keyword 'before'");
+	throw Exception("Expected { but received " + mCurrentToken.mLexeme + " after keyword 'before'");
 }
 
 TestFixture* TestDriver::ParseTestFixture()
@@ -604,12 +395,12 @@ TestFixture* TestDriver::ParseTestFixture()
 	ExpectedExpression* exp = nullptr;
 
 	while (mCurrentToken != '}') {
-		if (mTokenizer.getIdentifierType() == Tokenizer::Identifier::ID_FUNCTION) {
+		if (mTokenizer.peekToken() == '(') { // this is a function
 			func = (FunctionCall*) ParseFunctionCall();
 			statements.push_back(func);
 			func = nullptr;
 		} else if (mTokenizer.getIdentifierType() == Tokenizer::ID_VARIABLE) {
-			if (mTokenizer.peekToken() == Tokenizer::TOK_COMPARISON_OP) {
+			if (mTokenizer.peekToken() == TOK_COMPARISON_OP) {
 				exp = ParseExpectedExpression();
 				statements.push_back(exp);
 				exp = nullptr;
@@ -627,9 +418,9 @@ TestFixture* TestDriver::ParseTestFixture()
 		if (mCurrentToken != ';') {
 			mTestFixtureException = true;
                         for(auto*& ptr : statements) delete ptr;
-			throw Exception(mTokenizer.previousLine(),mTokenizer.previousColumn(),
+			throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
 					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
-					"Received "+mTokenizer.getTokenStringValue());
+					"Received "+mCurrentToken.mLexeme);
 		}
 
 		if (mCurrentToken == ';')
@@ -655,7 +446,7 @@ Operand* TestDriver::ParseOperand()
 	if(mTokenizer.getIdentifierType() == Tokenizer::ID_CONSTANT) {
 		Constant* C = ParseConstant();
 		return new Operand(C);
-	} else if(mCurrentToken == Tokenizer::TOK_IDENTIFIER) {
+	} else if(mCurrentToken == TOK_IDENTIFIER) {
 		Identifier* I = ParseIdentifier();
 		return new Operand(I);
 	}
@@ -674,7 +465,7 @@ MockupFunction* TestDriver::ParseMockupFunction()
 
 	if (mCurrentToken != '=') {
 		delete func;
-		throw Exception("A mockup function needs an assignment operator, received " + mTokenizer.getTokenStringValue());
+		throw Exception("A mockup function needs an assignment operator, received " + mCurrentToken.mLexeme);
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat the '='
 
@@ -706,9 +497,9 @@ MockupFixture* TestDriver::ParseMockupFixture()
 		if (mCurrentToken != ';') {
                     for(auto*& ptr : MockupFunctions) delete ptr;
                     for(auto*& ptr : MockupVariables) delete ptr;
-			throw Exception(mTokenizer.line(),mTokenizer.getColumn(),
+			throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
 					"Expected a semi colon ';' at the end of the test mockup",//@todo improve message
-					"Received "+mTokenizer.getTokenStringValue());
+					"Received "+mCurrentToken.mLexeme);
                 }
 		mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	}
@@ -717,7 +508,7 @@ MockupFixture* TestDriver::ParseMockupFixture()
 
 TestMockup* TestDriver::ParseTestMockup()
 {
-	if (mCurrentToken != Tokenizer::TOK_MOCKUP)
+	if (mCurrentToken != TOK_MOCKUP)
 		return nullptr;
 
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword 'mockup'
@@ -728,12 +519,12 @@ TestMockup* TestDriver::ParseTestMockup()
 		mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 		return new TestMockup(mf);
 	}
-	throw Exception("Excpected { but received " + mTokenizer.getTokenStringValue());
+	throw Exception("Excpected { but received " + mCurrentToken.mLexeme);
 }
 
 TestInfo* TestDriver::ParseTestInfo()
 {
-	if (mCurrentToken != Tokenizer::TOK_TEST_INFO) {
+	if (mCurrentToken != TOK_TEST_INFO) {
 		// @todo Create default information
 		return nullptr;
 	}
@@ -779,7 +570,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		if(gs) delete gs;
 
 		unsigned parenthesis = 2; // the one from the group and the test-fixture
-		while(parenthesis and mCurrentToken!=Tokenizer::TOK_EOF)  {
+		while(parenthesis and mCurrentToken!= TOK_EOF)  {
 			if (mCurrentToken == '}')
 				parenthesis--;
 			if (mCurrentToken == '{')
@@ -800,15 +591,15 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	//
 	while (true) {
 		try {
-			if (mCurrentToken == '}' or mCurrentToken == Tokenizer::TOK_EOF or
-				mCurrentToken == Tokenizer::TOK_AFTER_ALL)
+			if (mCurrentToken == '}' or mCurrentToken == TOK_EOF or
+				mCurrentToken == TOK_AFTER_ALL)
 				break;
 
-			if (mCurrentToken == Tokenizer::TOK_GROUP) {
+			if (mCurrentToken == TOK_GROUP) {
 
 				mCurrentToken = mTokenizer.nextToken(); // eat up the group keyword
 
-				if (mCurrentToken == Tokenizer::TOK_IDENTIFIER)
+				if (mCurrentToken == TOK_IDENTIFIER)
 					new_group_name = ParseIdentifier();
 
 				if(new_group_name == nullptr)
@@ -817,9 +608,9 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				if (mCurrentToken != '{') {
 					group_exception = true;
                                         delete new_group_name;
-					throw Exception(mTokenizer.previousLine(), mTokenizer.previousLine(),
+					throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 							"Invalid group definition. Expected a left curly bracket '{' for the given group",
-							"Received: "+mTokenizer.getTokenStringValue()+" instead.");
+							"Received: "+mCurrentToken.mLexeme+" instead.");
 				}
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
@@ -832,9 +623,9 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				if(mCurrentToken != '}') {
                                     delete ngn;
                                     delete group;
-                                    throw Exception(mTokenizer.previousLine(), mTokenizer.previousColumn(),
+                                    throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
                                                     "Invalid group definition. Expected a right curly bracket '}'",
-                                                    "Received "+mTokenizer.getTokenStringValue()+" instead.");
+                                                    "Received "+mCurrentToken.mLexeme+" instead.");
                                 }
 				mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
 			} else {
@@ -869,7 +660,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 						mCurrentToken = mTokenizer.nextToken();
 					mCurrentToken = mTokenizer.nextToken(); // eat up the ';'
 					// if the test has an after statement, ignore.
-					if(mTokenizer.peekToken() == Tokenizer::TOK_AFTER) {
+					if(mTokenizer.peekToken() == TOK_AFTER) {
 						while(mCurrentToken != '}')
 							mCurrentToken = mTokenizer.nextToken();
 						mCurrentToken = mTokenizer.nextToken();// eat up the '}'
@@ -881,13 +672,13 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 
 			// Let's try to recover until the next test inside this group
 			while(group_exception == false and
-					mCurrentToken != Tokenizer::TOK_TEST_INFO and
-					mCurrentToken != Tokenizer::TOK_MOCKUP and
-					mCurrentToken != Tokenizer::TOK_BEFORE and
-					mCurrentToken != Tokenizer::TOK_IDENTIFIER and
-					mCurrentToken != Tokenizer::TOK_AFTER_ALL and
-					mCurrentToken != Tokenizer::TOK_GROUP and
-					mCurrentToken != Tokenizer::TOK_EOF) {
+					mCurrentToken != TOK_TEST_INFO and
+					mCurrentToken != TOK_MOCKUP and
+					mCurrentToken != TOK_BEFORE and
+					mCurrentToken != TOK_IDENTIFIER and
+					mCurrentToken != TOK_AFTER_ALL and
+					mCurrentToken != TOK_GROUP and
+					mCurrentToken != TOK_EOF) {
 				mCurrentToken = mTokenizer.nextToken();
 			}
 
@@ -923,7 +714,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		tests.clear();
 
 		unsigned parenthesis = 2; // the one from the group and the test-fixture
-		while(parenthesis and mCurrentToken!=Tokenizer::TOK_EOF)  {
+		while(parenthesis and mCurrentToken!= TOK_EOF)  {
 			if (mCurrentToken == '}')
 				parenthesis--;
 			if (mCurrentToken == '{')
@@ -944,7 +735,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 
 GlobalMockup* TestDriver::ParseGlobalMockup()
 {
-	if (mCurrentToken == Tokenizer::TOK_MOCKUP_ALL) {
+	if (mCurrentToken == TOK_MOCKUP_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
 		if (mCurrentToken == '{') {
 			mCurrentToken = mTokenizer.nextToken(); // eat the '{'
@@ -952,14 +743,14 @@ GlobalMockup* TestDriver::ParseGlobalMockup()
 			mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 			return new GlobalMockup(mf);
 		}
-		throw Exception("Expected { after mockup_all but received: " + mTokenizer.getTokenStringValue());
+		throw Exception("Expected { after mockup_all but received: " + mCurrentToken.mLexeme);
 	}
 	return nullptr;
 }
 
 GlobalSetup* TestDriver::ParseGlobalSetup()
 {
-	if (mCurrentToken == Tokenizer::TOK_BEFORE_ALL) {
+	if (mCurrentToken == TOK_BEFORE_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
 		if (mCurrentToken == '{') {
 			mCurrentToken = mTokenizer.nextToken(); // eat the '{'
@@ -967,14 +758,14 @@ GlobalSetup* TestDriver::ParseGlobalSetup()
 			mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 			return new GlobalSetup(mf);
 		}
-		throw Exception("Expected { after before_all but received: " + mTokenizer.getTokenStringValue());
+		throw Exception("Expected { after before_all but received: " + mCurrentToken.mLexeme);
 	}
 	return nullptr;
 }
 
 GlobalTeardown* TestDriver::ParseGlobalTeardown()
 {
-	if (mCurrentToken == Tokenizer::TOK_AFTER_ALL) {
+	if (mCurrentToken == TOK_AFTER_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
 		if (mCurrentToken == '{') {
 			mCurrentToken = mTokenizer.nextToken(); // eat the '{'
@@ -982,7 +773,7 @@ GlobalTeardown* TestDriver::ParseGlobalTeardown()
 			mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 			return new GlobalTeardown(mf);
 		}
-		throw Exception("Expected { after after_all but received: " + mTokenizer.getTokenStringValue());
+		throw Exception("Expected { after after_all but received: " + mCurrentToken.mLexeme);
 	}
 	return nullptr;
 }

@@ -434,7 +434,7 @@ static yyconst flex_int16_t yy_accept[116] =
     {   0,
         0,    0,   35,   33,   32,   32,   33,   33,    2,   33,
        18,   19,   17,   33,   33,   33,   15,   15,   24,   16,
-       30,   29,   31,   11,   11,   22,   23,   11,   11,   11,
+       29,   31,   30,   11,   11,   22,   23,   11,   11,   11,
        11,   11,   20,   21,   26,    0,   12,    0,    0,    0,
         0,    0,   15,   15,    0,   14,    1,   14,   15,    0,
        15,    0,   27,   25,   28,   11,    0,    0,   11,   11,
@@ -1065,17 +1065,17 @@ YY_RULE_SETUP
 case 29:
 YY_RULE_SETUP
 #line 109 "jtl-scanner.l"
-{ count(); return '='; }
+{ count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 110 "jtl-scanner.l"
-{ count(); return '<'; }
+{ count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 111 "jtl-scanner.l"
-{ count(); return '>'; }
+{ count(); return '='; }
 	YY_BREAK
 case 32:
 /* rule 32 can match eol */
