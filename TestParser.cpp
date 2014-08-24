@@ -489,10 +489,10 @@ MockupFixture* TestDriver::ParseMockupFixture()
 
 		MockupFunction *func = nullptr;
 		MockupVariable *var = nullptr;
-		if (mTokenizer.getIdentifierType() == Tokenizer::Identifier::ID_FUNCTION) {
+		if (mTokenizer.peekToken() == '(') {
 			func = (MockupFunction*) ParseMockupFunction();
 			MockupFunctions.push_back(func);
-		} else if (mTokenizer.getIdentifierType() == Tokenizer::Identifier::ID_VARIABLE) {
+		} else if (mTokenizer.peekToken() == TOK_IDENTIFIER) {
 			var = (MockupVariable*) ParseMockupVariable();
 			MockupVariables.push_back(var);
 		}

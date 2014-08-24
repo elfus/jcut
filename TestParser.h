@@ -142,23 +142,12 @@ ostream& operator << (ostream& os, Token& token);
 
 class Tokenizer {
 public:
-
-    enum Identifier {
-        ID_UNKNOWN = 0,
-        ID_FUNCTION,
-        ID_VARIABLE,
-        ID_CONSTANT
-    };
-
     Tokenizer(const string& filename);
 
     ~Tokenizer() {}
 
     Token nextToken();
     Token peekToken();
-
-    Identifier getIdentifierType() {  assert(false && "Stop using this");  }
-
 private:
     std::ifstream mInput;
     vector<Token>   mTokens;
