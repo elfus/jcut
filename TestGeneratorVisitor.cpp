@@ -155,7 +155,6 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 		tmp << static_cast<const void*>(str.c_str());
 		unsigned long addr =  stoul(tmp.str(), nullptr, 16);
 		ss << addr;
-		cout << "STRING: " << str << "ss: " << ss.str() << endl;
 		assert(ss.str().size() && "Invalid string constant!");
 	}
 
