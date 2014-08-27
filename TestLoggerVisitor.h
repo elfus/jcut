@@ -1,9 +1,16 @@
-/*
- * File:   TestLoggerVisitor.h
- * Author: aortegag
- *
- * Created on May 29, 2014, 11:00 AM
- */
+//===-- jit-testing/TestLoggerVisitor.h - Logging facilities ----*- C++ -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #ifndef TESTLOGGERVISITOR_H
 #define	TESTLOGGERVISITOR_H

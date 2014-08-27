@@ -1,10 +1,15 @@
-//===-- examples/clang-interpreter/main.cpp - Clang C Interpreter Example -===//
+//===-- jit-testing/main.cpp ------------------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
 //===----------------------------------------------------------------------===//
 
 #include "clang/CodeGen/CodeGenAction.h"
@@ -76,7 +81,7 @@ string extractTestFile(SmallVector<const char *, 16> & Args)
 			Args.erase(it, it+2);// 1 past the end so we can erase the file name
 			break;
 		}
-	}	
+	}
 
 	return fileName;
 }

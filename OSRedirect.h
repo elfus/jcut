@@ -1,9 +1,16 @@
-/*
- * File:   OSRedirect.h
- * Author: aortegag
- *
- * Created on August 2, 2014, 9:22 AM
- */
+//===-- jit-testing/OSRedirect.h - OSRedirect class definition --*- C++ -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #ifndef OSREDIRECT_H
 #define	OSREDIRECT_H
@@ -40,7 +47,7 @@ public:
 /// http://stackoverflow.com/questions/5419356/redirect-stdout-stderr-to-a-string
 /// From user Sir Digby Chicken Caesar
 /// The credit of the following code goes to that user!
-/// I dit not write this code.
+/// I am not the author of the StdCapture class..
 
 // For some reason Mingw32 did not defined this one, but I'll leave it here
 // for future reference

@@ -1,9 +1,16 @@
-/*
- * File:   TestParser.h
- * Author: Adrián Ortega García
- *
- * Created on April 17, 2014, 10:09 AM
- */
+//===-- jit-testing/TestParser.h - Grammar Rules ----------------*- C++ -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #ifndef TESTPARSER_H
 #define	TESTPARSER_H

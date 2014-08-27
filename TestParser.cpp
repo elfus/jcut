@@ -1,3 +1,16 @@
+//===-- jit-testing/TestParser.cpp - Parse the test definitions -*- C++ -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 #include "JTLScanner.h"
 #include "TestParser.h"
 #include <iostream>
@@ -33,7 +46,7 @@ Tokenizer::Tokenizer(const string& filename) : mInput(filename), mTokens(),
 		mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column)));
 	}
 	fclose(yyin);
-	
+
 	mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column+1)));
 	mNextToken = mTokens.begin();
 }

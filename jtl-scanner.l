@@ -1,5 +1,17 @@
 %top {
-/** TESTING TOP **/
+//===-- jit-testing/JTLScanner.h - Flex generated scanner ---------*- C -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 #include <string>
 #define YY_DECL extern "C" int yylex()
 extern void comment();
@@ -31,10 +43,22 @@ enum TokenType {
         TOK_TEST_INFO = -106,
         TOK_GROUP = -107,
     };
-/***** end of top ****/
 }
 
 %{
+//===-- jit-testing/JTLScanner.cpp - Flex generated scanner -------*- C -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 #include <iostream>
 #include <string>
 

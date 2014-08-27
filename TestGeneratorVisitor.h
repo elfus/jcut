@@ -1,9 +1,16 @@
-/*
- * File:   TestGeneratorVisitor.h
- * Author: aortegag
- *
- * Created on May 1, 2014, 7:39 PM
- */
+//===-- jit-testing/Te.h - OSRedirect class definition ----------*- C++ -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #ifndef TESTGENERATORVISITOR_H
 #define	TESTGENERATORVISITOR_H
