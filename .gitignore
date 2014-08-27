@@ -2,5 +2,7 @@
 nbproject
 stderr.txt
 stdoutput.txt
+stdout.txt
 *~
 *.exe
+.idea
