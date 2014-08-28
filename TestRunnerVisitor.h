@@ -1,9 +1,16 @@
-/*
- * File:   TestRunnerVisitor.h
- * Author: aortegag
- *
- * Created on May 25, 2014, 3:51 PM
- */
+//===-- jcut/TestRunnerVisitor.h - Grammar Rules ----------------*- C++ -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #ifndef TESTRUNNERVISITOR_H
 #define	TESTRUNNERVISITOR_H

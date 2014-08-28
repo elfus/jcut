@@ -1,98 +1,51 @@
-jit-testing
+jcut
 ===========
 
-Clang based tool meant to be used for C code unit testing based on LLVM JIT engine
+jcut is a simple command line tool to perform unit testing in C code
+using the LLVM Just In Time (JIT) engine and some of the Clang APIs.
 
-----------
-Compiling
-==========
-This tool assumes is compiled within the clang source tree.
+Under the folder 'tutorial' you will find a PDF/txt file with a small tutorial
+covering the usage and features of the jcut tool. In there you will
+find an example C file and an example test file.
 
-Compiling windows binaries:
-When configuring your llvm project issue the following command line:
-CC=i686-w64-mingw32-gcc CXX=i686-w64-mingw32-g++ CPP=i686-w64-mingw32-cpp CXXCPP=i686-w64-mingw32-cpp LDFLAGS="-static -static-libgcc -static-libstdc++" ../llvm34/configure --prefix=$HOME/llvm-win --enable-optimized --enable-doxygen --host=i686-w64-mingw32
+jcut is open source software. You may freely distribute it under the
+terms of the license agreement found in LICENSE.txt.
 
-This assumes you have installed a cross compiler. Also note the linker flags
-(LDFLAGS) are important to link statically to any library the tool may need.
----------
-Test File Grammar
-========
+jcut is in its really early stages of life, so any feedback or bug
+report can be sent to:
 
-<test-expr> := <test-file>
+	adrianog.sw@gmail.com
 
-<test-file> :=  <test-group>
+Thanks for using this tool!
 
-<global-mockup> := mockup_all "{" <mockup-fixture> "}"
+Compiling.
+-----------
+The LLVM and clang version used to develop this tool is 3.4! Once there is
+an official release for 3.5 the porting to such version will be done :)
 
-<global-setup> := before_all "{" <test-fixture> "}"
+This project has to be compiled as part of the clang source tree. Follow
+the steps here
 
-<global-teardown> := after_all "{" <test-fixture> "}"
+http://clang.llvm.org/get_started.html
 
-# Even thought <global-teardown> needs to be defined before a <test-definition>, it will
-# actually be executed after the <test-definition>
-<test-group> := [<global-mockup> | <global-setup> ] <test-definition>+ [ <global-teardown> ]| group [<identifier>] "{" <test-group>+ "}"
+And right before step number 6 make sure you clone the jit-testing folder in
+the following location:
 
-# TODO Right we are forcing the user to use this order, however it would be better
-# if we let the use define test-info, test-mockup, and test-setup in whatever order
-<test-definition> := [<test-info> | <test-mockup> | <test-setup>] <test-function> [<test-teardown>]
+cd llvm/tools/clang/tools
+git clone https://github.com/elfus/jcut.git
 
-<test-info> := test <identifier>
+Then modify the Makefile
 
-<test-mockup> := mockup "{" <mockup-fixture> "}"
+llvm/tools/clang/tools/Makefile
 
-<test-setup> :=  before "{"  <test-fixture> "}"
+To add the jcut folder as part of the compilation process, i.e. I
+added this to end of the Makefile before include directive.
 
-<test-function> := <function-call> [<expected-result>] ;
+...
+DIRS += jcut
+
+include $(CLANG_LEVEL)/Makefile
+<eof>
 
 
-<test-teardown> := after "{" <test-fixture> "}"
 
-<test-fixture> := <function-call>;* | <var-assignment>;* | <expected-expression>;*
-
-<mockup-fixture> := <mockup-function>;* | <mockup-variable>;*
-
-<mockup-function> :=  <function-call> = <argument>
-
-<mockup-variable> := <var-assignment>
-
-<expected-result> :=  <comparison-operator> <expected-constant> 
-
-# We may want to remove constant and just put NumericConstant and CharConstant
-# for ExpectedConstant
-<expected-constant> := <constant>
-<constant> := <numeric-constant> | <string-constant>| <char-constant>
-<numeric-constant> := [-][<integer>|<float>] 
-<string-constant> := string (the usual enclosed string with quotes like this "string" )
-<char-constant> := char ( a single character with single quote like this 'a' )
-
-<expected-expression> := <operand> <comparison-operator> <operand>
-<operand> := <constant> | <identifier>
-
-<comparison-operator> := "==" | "!=" | ">=" | "<=" | "<" | ">"
-
-# Until here
-<var-assignment> := <identifier> = <argument> | <struct-initializer> | <buffer-alloc>
-
-<function-call> := <function-name>"(" <function-argument>* ")"
-
-<function-argument> := {<argument> | <buffer-alloc>}
-
-<argument> := [-]<number> | string |  char | <array-initializer>
-
-<number> := int | double |  float
-
-<buffer-alloc> := "[" int [":" [int | <struct-initializer> ]] "]"
-
-<array-initializer> := { <number>+ }
-
-<struct-initializer> := { <initializer-list> | <designated-initializer> }
-
-<intializer-list> := (<initializer-value> [,])+
-
-<designated-initializer> := ( .<identifier> = <initializer-value> [,])+
-
-<initializer-value> := <argument> | <struct-initializer> 
-
-<function-name> := <identifier>
-
-<identifier> := identifier string

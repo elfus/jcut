@@ -1,9 +1,16 @@
-/**
- * @file Visitor.h
- * @author Adrian Ortega
- *
- * Created on May 1, 2014, 9:19 AM
- */
+//===-- jcut/TestVisitor.h - Grammar Rules ----------------------*- C++ -*-===//
+//
+//                     The LLVM Compiler Infrastructure
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #ifndef VISITOR_H
 #define	VISITOR_H

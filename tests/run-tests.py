@@ -19,13 +19,13 @@ def main():
 
     start_time = time.clock()
 
-    JIT_TESTING = [sys.argv[1], "test_group.c", "-t", "test-file.txt", "--recover"]
+    JCUT = [sys.argv[1], "test_group.c", "-t", "test-file.txt", "--recover"]
     test_report = []
     for group in sorted([dir for dir in os.listdir(os.getcwd()) if "group" in dir]):
         os.chdir(group)
         with open("stdout.txt", 'w') as stdout:
             with open("stderr.txt", 'w') as stderr:
-                ret = subprocess.call(JIT_TESTING, stdout=stdout, stderr=stderr)
+                ret = subprocess.call(JCUT, stdout=stdout, stderr=stderr)
         test_report.append((ret, group))
         os.chdir("..")
 
