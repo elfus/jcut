@@ -1,4 +1,4 @@
-//===-- jit-testing/TestLoggerVisitor.h - Logging facilities ----*- C++ -*-===//
+//===-- jcut/TestLoggerVisitor.h - Logging facilities -----------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //

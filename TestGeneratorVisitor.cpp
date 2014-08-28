@@ -1,4 +1,4 @@
-//===-- jit-testing/TestGeneratorVisitor.cpp - Code generation --*- C++ -*-===//
+//===-- jcut/TestGeneratorVisitor.cpp - Code generation ---------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //

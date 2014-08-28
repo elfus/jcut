@@ -1,5 +1,5 @@
 %top {
-//===-- jit-testing/JTLScanner.h - Flex generated scanner ---------*- C -*-===//
+//===-- jcut/JCUTScanner.h - Flex generated scanner ---------------*- C -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -46,7 +46,7 @@ enum TokenType {
 }
 
 %{
-//===-- jit-testing/JTLScanner.cpp - Flex generated scanner -------*- C -*-===//
+//===-- jcut/JCUTScanner.cpp - Flex generated scanner -------------*- C -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -66,7 +66,7 @@ using namespace std;
 %}
 /* Tell the scanner to keep track of the line number */
 %option yylineno
-%option outfile="JTLScanner.cpp" header-file="JTLScanner.h"
+%option outfile="JCUTScanner.cpp" header-file="JCUTScanner.h"
 /** Watch for this option */
 /* %option nounistd */
 

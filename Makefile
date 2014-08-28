@@ -9,11 +9,11 @@
 
 CLANG_LEVEL := ../..
 
-TOOLNAME = jit-testing
+TOOLNAME = jcut
 
 
 SOURCES = main.cpp TestGeneratorVisitor.cpp TestParser.cpp TestLoggerVisitor.cpp \
-    JTLScanner.cpp
+    JCUTScanner.cpp
 
 # No plugins, optimize startup time.
 TOOL_NO_EXPORTS = 1

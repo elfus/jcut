@@ -1,4 +1,4 @@
-//===-- jit-testing/TestParser.cpp - Parse the test definitions -*- C++ -*-===//
+//===-- jcut/TestParser.cpp - Parse the test definitions --------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -11,7 +11,7 @@
 /// \brief
 ///
 //===----------------------------------------------------------------------===//
-#include "JTLScanner.h"
+#include "JCUTScanner.h"
 #include "TestParser.h"
 #include <iostream>
 #include <exception>

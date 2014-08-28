@@ -1,4 +1,4 @@
-//===-- jit-testing/TestParser.h - Grammar Rules ----------------*- C++ -*-===//
+//===-- jcut/TestParser.h - Grammar Rules -----------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -21,7 +21,7 @@
 #include <vector>
 #include <iostream>
 
-#include "JTLScanner.h"
+#include "JCUTScanner.h"
 
 #include "Visitor.h"
 

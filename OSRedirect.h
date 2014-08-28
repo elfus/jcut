@@ -1,4 +1,4 @@
-//===-- jit-testing/OSRedirect.h - OSRedirect class definition --*- C++ -*-===//
+//===-- jcut/OSRedirect.h - OSRedirect class definition ---------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //

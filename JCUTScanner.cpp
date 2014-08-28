@@ -1,6 +1,6 @@
-#line 2 "JTLScanner.cpp"
-#line 2 "jtl-scanner.l"
-//===-- jit-testing/JTLScanner.h - Flex generated scanner ---------*- C -*-===//
+#line 2 "JCUTScanner.cpp"
+#line 2 "jcut-scanner.l"
+//===-- jcut/JCUTScanner.h - Flex generated scanner ---------------*- C -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -47,7 +47,7 @@ enum TokenType {
 
 
 
-#line 51 "JTLScanner.cpp"
+#line 51 "JCUTScanner.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -56,7 +56,7 @@ enum TokenType {
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 37
+#define YY_FLEX_SUBMINOR_VERSION 35
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -189,7 +189,15 @@ typedef unsigned int flex_uint32_t;
 
 /* Size of default input buffer. */
 #ifndef YY_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k.
+ * Moreover, YY_BUF_SIZE is 2*YY_READ_BUF_SIZE in the general case.
+ * Ditto for the __ia64__ case accordingly.
+ */
+#define YY_BUF_SIZE 32768
+#else
 #define YY_BUF_SIZE 16384
+#endif /* __ia64__ */
 #endif
 
 /* The state buf must be large enough to hold one state per character in the main buffer.
@@ -201,12 +209,7 @@ typedef unsigned int flex_uint32_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
-#endif
-
-extern yy_size_t yyleng;
+extern int yyleng;
 
 extern FILE *yyin, *yyout;
 
@@ -245,6 +248,11 @@ extern FILE *yyin, *yyout;
 
 #define unput(c) yyunput( c, (yytext_ptr)  )
 
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
@@ -262,7 +270,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -332,8 +340,8 @@ static YY_BUFFER_STATE * yy_buffer_stack = 0; /**< Stack as an array. */
 
 /* yy_hold_char holds the character lost when yytext is formed. */
 static char yy_hold_char;
-static yy_size_t yy_n_chars;		/* number of characters read into yy_ch_buf */
-yy_size_t yyleng;
+static int yy_n_chars;		/* number of characters read into yy_ch_buf */
+int yyleng;
 
 /* Points to current character in buffer. */
 static char *yy_c_buf_p = (char *) 0;
@@ -361,7 +369,7 @@ static void yy_init_buffer (YY_BUFFER_STATE b,FILE *file  );
 
 YY_BUFFER_STATE yy_scan_buffer (char *base,yy_size_t size  );
 YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str  );
-YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,yy_size_t len  );
+YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,int len  );
 
 void *yyalloc (yy_size_t  );
 void *yyrealloc (void *,yy_size_t  );
@@ -393,7 +401,7 @@ void yyfree (void *  );
 
 /* Begin user sect3 */
 
-#define yywrap() 1
+#define yywrap(n) 1
 #define YY_SKIP_YYWRAP
 
 typedef unsigned char YY_CHAR;
@@ -619,10 +627,10 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "jtl-scanner.l"
+#line 1 "jcut-scanner.l"
 
-#line 49 "jtl-scanner.l"
-//===-- jit-testing/JTLScanner.cpp - Flex generated scanner -------*- C -*-===//
+#line 49 "jcut-scanner.l"
+//===-- jcut/JCUTScanner.cpp - Flex generated scanner --------------*- C -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -653,7 +661,7 @@ using namespace std;
  */
 /* Hexadecimal  | Octal      | Decimal   | CHAR CONST! */
 /* 23e3434f   |   34.34343             | 34.34e3434 */
-#line 657 "JTLScanner.cpp"
+#line 665 "JCUTScanner.cpp"
 
 #define INITIAL 0
 
@@ -692,7 +700,7 @@ FILE *yyget_out (void );
 
 void yyset_out  (FILE * out_str  );
 
-yy_size_t yyget_leng (void );
+int yyget_leng (void );
 
 char *yyget_text (void );
 
@@ -734,7 +742,12 @@ static int input (void );
 
 /* Amount of stuff to slurp up with each read. */
 #ifndef YY_READ_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k */
+#define YY_READ_BUF_SIZE 16384
+#else
 #define YY_READ_BUF_SIZE 8192
+#endif /* __ia64__ */
 #endif
 
 /* Copy whatever the last rule matched to the standard output. */
@@ -835,9 +848,9 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 100 "jtl-scanner.l"
+#line 100 "jcut-scanner.l"
 
-#line 841 "JTLScanner.cpp"
+#line 854 "JCUTScanner.cpp"
 
 	if ( !(yy_init) )
 		{
@@ -911,7 +924,7 @@ yy_find_action:
 
 		if ( yy_act != YY_END_OF_BUFFER && yy_rule_can_match_eol[yy_act] )
 			{
-			yy_size_t yyl;
+			int yyl;
 			for ( yyl = 0; yyl < yyleng; ++yyl )
 				if ( yytext[yyl] == '\n' )
 					   
@@ -932,183 +945,183 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 101 "jtl-scanner.l"
+#line 101 "jcut-scanner.l"
 { comment(); }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 102 "jtl-scanner.l"
+#line 102 "jcut-scanner.l"
 {jtl_comment();}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 103 "jtl-scanner.l"
+#line 103 "jcut-scanner.l"
 { count(); return TOK_GROUP;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 104 "jtl-scanner.l"
+#line 104 "jcut-scanner.l"
 { count(); return TOK_BEFORE;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 105 "jtl-scanner.l"
+#line 105 "jcut-scanner.l"
 { count(); return TOK_AFTER;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 106 "jtl-scanner.l"
+#line 106 "jcut-scanner.l"
 { count(); return TOK_MOCKUP;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 107 "jtl-scanner.l"
+#line 107 "jcut-scanner.l"
 { count(); return TOK_BEFORE_ALL;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 108 "jtl-scanner.l"
+#line 108 "jcut-scanner.l"
 { count(); return TOK_AFTER_ALL;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 109 "jtl-scanner.l"
+#line 109 "jcut-scanner.l"
 { count(); return TOK_MOCKUP_ALL;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 110 "jtl-scanner.l"
+#line 110 "jcut-scanner.l"
 { count(); return TOK_TEST_INFO;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 112 "jtl-scanner.l"
+#line 112 "jcut-scanner.l"
 { count(); return TOK_IDENTIFIER; }
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 114 "jtl-scanner.l"
+#line 114 "jcut-scanner.l"
 { count(); return TOK_STRING; }
 	YY_BREAK
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 115 "jtl-scanner.l"
+#line 115 "jcut-scanner.l"
 { count(); return TOK_CHAR; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 117 "jtl-scanner.l"
+#line 117 "jcut-scanner.l"
 { count(); return TOK_FLOAT; }
 	YY_BREAK
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 118 "jtl-scanner.l"
+#line 118 "jcut-scanner.l"
 { count(); return TOK_INT; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 120 "jtl-scanner.l"
+#line 120 "jcut-scanner.l"
 { count(); return ';'; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 121 "jtl-scanner.l"
+#line 121 "jcut-scanner.l"
 { count(); return ','; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 122 "jtl-scanner.l"
+#line 122 "jcut-scanner.l"
 { count(); return '('; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 123 "jtl-scanner.l"
+#line 123 "jcut-scanner.l"
 { count(); return ')'; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 124 "jtl-scanner.l"
+#line 124 "jcut-scanner.l"
 { count(); return '{'; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 125 "jtl-scanner.l"
+#line 125 "jcut-scanner.l"
 { count(); return '}'; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 126 "jtl-scanner.l"
+#line 126 "jcut-scanner.l"
 { count(); return '['; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 127 "jtl-scanner.l"
+#line 127 "jcut-scanner.l"
 { count(); return ']'; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 128 "jtl-scanner.l"
+#line 128 "jcut-scanner.l"
 { count(); return ':'; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 129 "jtl-scanner.l"
+#line 129 "jcut-scanner.l"
 { count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 130 "jtl-scanner.l"
+#line 130 "jcut-scanner.l"
 { count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 131 "jtl-scanner.l"
+#line 131 "jcut-scanner.l"
 { count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 132 "jtl-scanner.l"
+#line 132 "jcut-scanner.l"
 { count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 133 "jtl-scanner.l"
+#line 133 "jcut-scanner.l"
 { count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 134 "jtl-scanner.l"
+#line 134 "jcut-scanner.l"
 { count(); return TOK_COMPARISON_OP; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 135 "jtl-scanner.l"
+#line 135 "jcut-scanner.l"
 { count(); return '='; }
 	YY_BREAK
 case 32:
 /* rule 32 can match eol */
 YY_RULE_SETUP
-#line 137 "jtl-scanner.l"
+#line 137 "jcut-scanner.l"
 { count(); }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 139 "jtl-scanner.l"
+#line 139 "jcut-scanner.l"
 { print("IGNORED");}/* ignore unprocessed characters */
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 140 "jtl-scanner.l"
+#line 140 "jcut-scanner.l"
 { count(); return TOK_EOF;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 141 "jtl-scanner.l"
+#line 141 "jcut-scanner.l"
 ECHO;
 	YY_BREAK
-#line 1112 "JTLScanner.cpp"
+#line 1125 "JCUTScanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1292,21 +1305,21 @@ static int yy_get_next_buffer (void)
 
 	else
 		{
-			yy_size_t num_to_read =
+			int num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
 			{ /* Not enough room in the buffer - grow it. */
 
 			/* just a shorter name for the current buffer */
-			YY_BUFFER_STATE b = YY_CURRENT_BUFFER_LVALUE;
+			YY_BUFFER_STATE b = YY_CURRENT_BUFFER;
 
 			int yy_c_buf_p_offset =
 				(int) ((yy_c_buf_p) - b->yy_ch_buf);
 
 			if ( b->yy_is_our_buffer )
 				{
-				yy_size_t new_size = b->yy_buf_size * 2;
+				int new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1337,7 +1350,7 @@ static int yy_get_next_buffer (void)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			(yy_n_chars), num_to_read );
+			(yy_n_chars), (size_t) num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars);
 		}
@@ -1432,7 +1445,7 @@ static int yy_get_next_buffer (void)
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 	yy_is_jam = (yy_current_state == 115);
 
-		return yy_is_jam ? 0 : yy_current_state;
+	return yy_is_jam ? 0 : yy_current_state;
 }
 
     static void yyunput (int c, register char * yy_bp )
@@ -1447,7 +1460,7 @@ static int yy_get_next_buffer (void)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		register yy_size_t number_to_move = (yy_n_chars) + 2;
+		register int number_to_move = (yy_n_chars) + 2;
 		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
 		register char *source =
@@ -1500,7 +1513,7 @@ static int yy_get_next_buffer (void)
 
 		else
 			{ /* need more input */
-			yy_size_t offset = (yy_c_buf_p) - (yytext_ptr);
+			int offset = (yy_c_buf_p) - (yytext_ptr);
 			++(yy_c_buf_p);
 
 			switch ( yy_get_next_buffer(  ) )
@@ -1665,6 +1678,10 @@ static void yy_load_buffer_state  (void)
 	yyfree((void *) b  );
 }
 
+#ifndef __cplusplus
+extern int isatty (int );
+#endif /* __cplusplus */
+    
 /* Initializes or reinitializes a buffer.
  * This function is sometimes called more than once on the same buffer,
  * such as during a yyrestart() or at EOF.
@@ -1777,7 +1794,7 @@ void yypop_buffer_state (void)
  */
 static void yyensure_buffer_stack (void)
 {
-	yy_size_t num_to_alloc;
+	int num_to_alloc;
     
 	if (!(yy_buffer_stack)) {
 
@@ -1874,12 +1891,12 @@ YY_BUFFER_STATE yy_scan_string (yyconst char * yystr )
  * 
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len )
+YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, int  _yybytes_len )
 {
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	yy_size_t i;
+	int i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -1961,7 +1978,7 @@ FILE *yyget_out  (void)
 /** Get the length of the current token.
  * 
  */
-yy_size_t yyget_leng  (void)
+int yyget_leng  (void)
 {
         return yyleng;
 }
@@ -2112,7 +2129,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 141 "jtl-scanner.l"
+#line 141 "jcut-scanner.l"
 
 
 void jtl_comment()
