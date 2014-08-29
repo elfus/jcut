@@ -73,6 +73,8 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 // A help message for this specific tool can be added afterwards.
 static cl::extrahelp MoreHelp("\njit-testing OPTIONS:\n");
 static cl::opt<string> TestFileOpt("t", cl::Required, cl::desc("Input test file"), cl::value_desc("filename"));
+static cl::opt<bool> RecoverOpt("recover", cl::init(false), cl::Optional, cl::desc("Whether the test parser should recover"), cl::value_desc("filename"));
+static cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
 
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -87,36 +89,14 @@ std::string GetExecutablePath(const char *Argv0)
 	return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
 }
 
-static void removeJitTestingOptions(SmallVector<const char *, 16>& args) {
+static void removeJcutOptions(SmallVector<const char *, 16>& args, const char* opt) {
 	SmallVector<const char *, 16>::iterator it = nullptr;
 	for(it = args.begin(); it != args.end(); ++it) {
-		if(string(*it).find("-t") != string::npos)
+		if(string(*it).find(opt) != string::npos) {
 			args.erase(it);
 			break;
-	}
-}
-
-bool extractDumpFlag(SmallVector<const char *, 16> & Args)
-{
-	for (auto it = Args.begin(); it != Args.end(); it++) {
-		if (string(*it) == "--dump") {
-			Args.erase(it);
-			return true;
 		}
 	}
-	return false;
-}
-
-bool extractHaltFlag(SmallVector<const char *, 16> & Args)
-{
-	for (auto it = Args.begin(); it != Args.end(); it++) {
-		// recover from parse errors
-		if (string(*it) == "--recover") {
-			Args.erase(it);
-			return true;
-		}
-	}
-	return false;
 }
 
 int main(int argc, const char **argv, char * const *envp)
@@ -158,9 +138,13 @@ int main(int argc, const char **argv, char * const *envp)
 
 	SmallVector<const char *, 16> Args(argv, argv + argc);
 
-	bool dump_functions = extractDumpFlag(Args);
-	bool recover_on_parse_error = extractHaltFlag(Args);
-	removeJitTestingOptions(Args);
+	// If we leave jcut command line options the clang API will complain, so
+	// we better remove it. There should be a better way to avoid this problem.
+	removeJcutOptions(Args, "-t");
+	removeJcutOptions(Args, TestFileOpt.getValue().c_str());
+	removeJcutOptions(Args, "-recover");
+	removeJcutOptions(Args, "-dump");
+
 	Args.push_back("-I include");// This is for windows only.
 	Args.push_back("-fsyntax-only"); // we don't want to link
 	OwningPtr<clang::driver::Compilation> C(TheDriver.BuildCompilation(Args));
@@ -232,7 +216,7 @@ int main(int argc, const char **argv, char * const *envp)
 		// add my code here
 		try {
 			Exception::mCurrentFile = TestFileOpt.getValue(); // quick workaround
-			TestDriver driver(TestFileOpt.getValue(), recover_on_parse_error);
+			TestDriver driver(TestFileOpt.getValue(), RecoverOpt.getValue());
 			TestExpr *tests = driver.ParseTestExpr(); // Parse file
 			TestGeneratorVisitor visitor(module);
 			tests->accept(&visitor); // Generate object structure tree
@@ -240,7 +224,7 @@ int main(int argc, const char **argv, char * const *envp)
 			// Initialize the JIT Engine only once
 			llvm::InitializeNativeTarget();
 			std::string Error;
-			TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(module, &Error),dump_functions,module);
+			TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(module, &Error),DumpOpt.getValue(),module);
 			if (runner.isValidExecutionEngine() == false) {
 				llvm::errs() << "unable to make execution engine: " << Error << "\n";
 				return 255;

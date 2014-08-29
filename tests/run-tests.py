@@ -19,7 +19,7 @@ def main():
 
     start_time = time.clock()
 
-    JCUT = [sys.argv[1], "test_group.c", "-t", "test-file.txt", "--recover"]
+    JCUT = [sys.argv[1], "test_group.c", "-t", "test-file.txt", "-recover", "--"]
     test_report = []
     for group in sorted([dir for dir in os.listdir(os.getcwd()) if "group" in dir]):
         os.chdir(group)
