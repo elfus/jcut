@@ -17,6 +17,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Instructions.h"
 #include "TestParser.h"
+#include "JCUTScanner.h"
 
 using namespace llvm;
 
@@ -66,26 +67,44 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 					mArgs.push_back(load);
 				} else {
 					const tp::Argument* my_string = arg->getArgument();
-					assert(my_string->getTokenType() == TOK_STRING && "This is not a string!");
-					const string& my_str = my_string->getStringRepresentation();
-					ArrayType* ArrayTy_0 = ArrayType::get(IntegerType::get(mModule->getContext(), 8), my_str.size()+1); // + null
-					GlobalVariable* gvar_array__str = new GlobalVariable(/*Module=*/*mModule,
-						   /*Type=*/ArrayTy_0,
-						   /*isConstant=*/true,
-						   /*Linkage=*/GlobalValue::PrivateLinkage,
-						   /*Initializer=*/0, // has initializer, specified below
-						   /*Name=*/".str");
-					gvar_array__str->setAlignment(1);
-					llvm::Constant *array_str = ConstantDataArray::getString(mModule->getContext(), my_str, true);
-					gvar_array__str->setInitializer(array_str);
+					const TokenType type = my_string->getTokenType();
+					if(type == TOK_STRING) {
+						const string& my_str = my_string->getStringRepresentation();
+						ArrayType* ArrayTy_0 = ArrayType::get(IntegerType::get(mModule->getContext(), 8), my_str.size()+1); // + null
+						GlobalVariable* gvar_array__str = new GlobalVariable(/*Module=*/*mModule,
+							   /*Type=*/ArrayTy_0,
+							   /*isConstant=*/true,
+							   /*Linkage=*/GlobalValue::PrivateLinkage,
+							   /*Initializer=*/0, // has initializer, specified below
+							   /*Name=*/".str");
+						gvar_array__str->setAlignment(1);
+						llvm::Constant *array_str = ConstantDataArray::getString(mModule->getContext(), my_str, true);
+						gvar_array__str->setInitializer(array_str);
 
-					std::vector<llvm::Constant*> indices;
-					ConstantInt* zero = ConstantInt::get(mModule->getContext(), APInt(32, StringRef("0"), 10));
-					indices.push_back(zero);
-					indices.push_back(zero);
-					llvm::Constant *str_ptr = ConstantExpr::getGetElementPtr(gvar_array__str, indices);
+						std::vector<llvm::Constant*> indices;
+						ConstantInt* zero = ConstantInt::get(mModule->getContext(), APInt(32, StringRef("0"), 10));
+						indices.push_back(zero);
+						indices.push_back(zero);
+						llvm::Constant *str_ptr = ConstantExpr::getGetElementPtr(gvar_array__str, indices);
 
-					mArgs.push_back(str_ptr);
+						mArgs.push_back(str_ptr);
+					} else {
+						const string& my_str = my_string->getStringRepresentation();
+						// We will only allow initializing to 0 (nullptr) for the cases
+						// in which the users want to test the flow for handling nullptrs,
+						// however we may remove this 'feature' if it causes too much
+						// trouble.
+						if(type == TOK_INT and my_str == "0") {
+							PointerType * ptrType = dyn_cast<PointerType>(llvm_arg.getType());
+							mArgs.push_back(ConstantPointerNull::get(ptrType));
+							break;
+						}
+						// Any other integer or float constant cannot be used to initialize
+						// a pointer.
+						/// @todo Get the info on which line and column this token is located at
+						throw Exception(0,0,"Cannot initialize pointer with arbitrary address "+my_str,
+							"Use the syntax [n:x] so I can allocate the memory for you.");
+					}
 				}
 				break;
 			}
