@@ -69,7 +69,9 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 					const tp::Argument* my_string = arg->getArgument();
 					const TokenType type = my_string->getTokenType();
 					if(type == TOK_STRING) {
-						const string& my_str = my_string->getStringRepresentation();
+						const string& quoted = my_string->getStringRepresentation();
+						// Remove the quotes "
+						const string my_str = quoted.substr(1,quoted.size()-2);
 						ArrayType* ArrayTy_0 = ArrayType::get(IntegerType::get(mModule->getContext(), 8), my_str.size()+1); // + null
 						GlobalVariable* gvar_array__str = new GlobalVariable(/*Module=*/*mModule,
 							   /*Type=*/ArrayTy_0,
