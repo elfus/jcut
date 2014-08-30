@@ -68,7 +68,9 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 				} else {
 					const tp::Argument* my_string = arg->getArgument();
 					const TokenType type = my_string->getTokenType();
-					if(type == TOK_STRING) {
+					Type * ptrElementType = llvm_arg.getType()->getPointerElementType();
+					// We can only use strings when pointing to a char (8 bits)
+					if(type == TOK_STRING and ptrElementType == mBuilder.getInt8Ty() ) {
 						const string& quoted = my_string->getStringRepresentation();
 						// Remove the quotes "
 						const string my_str = quoted.substr(1,quoted.size()-2);
@@ -90,7 +92,18 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 						llvm::Constant *str_ptr = ConstantExpr::getGetElementPtr(gvar_array__str, indices);
 
 						mArgs.push_back(str_ptr);
-					} else {
+						break;
+					}
+
+					if(type == TOK_STRING and ptrElementType != mBuilder.getInt8Ty() ) {
+						const string& quoted = my_string->getStringRepresentation();
+						/// @todo Get the info on which line and column this token is located at
+						throw Exception(0,0,"Cannot initialize pointer with string constant "+quoted,
+							"'char *' or 'unsigned char *' can only be initialized with string constants.");
+					}
+
+					if(type == TOK_INT || type == TOK_FLOAT)
+					{
 						const string& my_str = my_string->getStringRepresentation();
 						// We will only allow initializing to 0 (nullptr) for the cases
 						// in which the users want to test the flow for handling nullptrs,
