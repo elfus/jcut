@@ -829,11 +829,9 @@ FunctionCall::FunctionCall(Identifier* name, const vector<FunctionArgument*>& ar
 FunctionName(name), FunctionArguments(arg), mReturnType(nullptr)
 {
 	unsigned i = 0;
-	for (auto*& ptr : FunctionArguments) {
-		if (FunctionArgument * arg = dynamic_cast<FunctionArgument*> (ptr)) {
-			arg->setParent(this);
-			arg->setIndex(i);
-		}
+	for (auto*& arg : FunctionArguments) {
+		arg->setParent(this);
+		arg->setIndex(i);
 		++i;
 	}
 }

@@ -783,6 +783,7 @@ private:
 public:
 
     MockupVariable(VariableAssignment *var) : mVariableAssignment(nullptr) {
+        /// @todo remove dynamic_cast
         mVariableAssignment = dynamic_cast<VariableAssignment*> (var);
         if (mVariableAssignment == nullptr)
             throw Exception("Invalid Variable Assignment Expression type");
@@ -814,10 +815,11 @@ public:
     MockupFunction(FunctionCall *call, Argument *arg) :
     mFunctionCall(nullptr), mArgument(nullptr),
     mOriginalFunction(nullptr), mMockupFunction(nullptr) {
+        /// @todo remove dynamic_cast
         mFunctionCall = dynamic_cast<FunctionCall*> (call);
         if (mFunctionCall == nullptr)
             throw Exception("Invalid FunctionCallExpr type");
-
+        /// @todo remove dynamic_cast
         mArgument = dynamic_cast<Argument*> (arg);
         if (mArgument == nullptr)
             throw Exception("Invalid Argument type");
