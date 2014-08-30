@@ -81,3 +81,10 @@ after { gpp_int = [1]; gpp_int != 0; }
 get_ptr_func_addr() == 0;
 
 pp_math([1]);
+
+print_str("hello world") == 0;
+
+print_str("this is a larger string, hello world\n") == 0; # todo, debug escaped characters
+
+print_str(0) == -1;
+

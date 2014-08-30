@@ -206,3 +206,15 @@ ptr_func pf;
 unsigned get_ptr_func_addr() {
 	return (unsigned)pf;
 }
+
+int print_str(char * s) {
+    printf("s = %p\n",s);
+    if(s) {
+        printf("%s\n",s);
+        return 0;
+    }
+    else {
+        printf("Invalid pointer!\n");
+        return -1;
+    }
+}
