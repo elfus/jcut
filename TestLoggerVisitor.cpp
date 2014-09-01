@@ -23,8 +23,12 @@ string TestLoggerVisitor::getColumnString(ColumnName name, TestFunction *TF)
 		case FUD:
 			return TF->getFunctionCall()->getFunctionCalledString();
         case RESULT:
-			/// @todo Detect individually the conditions of the teardown functions
-			return (TF->getPassingValue()?"PASSED" : "FAILED");
+        {
+        	bool passed = TF->getPassingValue();
+        	if(TF->getFailedExpectedExpressions().size())
+        		passed = false;
+			return (passed?"PASSED" : "FAILED");
+        }
 		case ACTUAL_RESULT:
 			return getActualResultString(TF);
 		case EXPECTED_RES:

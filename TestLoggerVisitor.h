@@ -140,7 +140,7 @@ public:
     void VisitTestDefinitionFirst(TestDefinition *TD) {
         // Print the columns in the given order, then print a new line and
 	// optionally print more information about the current test.
-	mCurrentTestPassed = TD->getTestFunction()->getPassingValue();
+	mCurrentTestPassed = TD->testPassed();
         if(mCurrentTestPassed && (mFmt & (LOG_ALL | LOG_PASSING)) ){
             for(auto column : mOrder)
 		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
@@ -151,6 +151,17 @@ public:
 		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
             cout << endl;
         }
+    }
+
+    void VisitExpectedExpression(ExpectedExpression *EE) {
+    	if(mCurrentTestPassed) {
+			if((mFmt & (LOG_ALL | LOG_PASSING)))
+				logFunction(EE, EE->getLLVMFunction()->getName());
+		}
+		else {
+			if((mFmt & (LOG_ALL | LOG_FAILING)))
+				logFunction(EE, EE->getLLVMFunction()->getName());
+		}
     }
 
     void VisitTestSetup(TestSetup *TS) {

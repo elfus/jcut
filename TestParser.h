@@ -628,7 +628,7 @@ public:
     ExpectedConstant* getExpectedConstant() const { return mEC; }
 };
 
-class ExpectedExpression : public TestExpr {
+class ExpectedExpression : public TestExpr, public LLVMFunctionHolder {
 private:
     Operand* mLHS;
     ComparisonOperator* mCO;
@@ -1029,6 +1029,9 @@ class TestFunction : public TestExpr, public LLVMFunctionHolder {
 private:
     FunctionCall* mFunctionCall;
     ExpectedResult* mExpectedResult;
+    // Do not delete these pointers! They belong to someone else!
+    // We only store ExpectedExpressions that are known to have failed.
+    std::vector<ExpectedExpression*> mFailedEE;
 public:
     TestFunction(FunctionCall *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
             mExpectedResult(E) {}
@@ -1051,6 +1054,13 @@ public:
             mExpectedResult->accept(v);
         v->VisitTestFunction(this);
     }
+
+    void setFailedExpectedExpressions(std::vector<ExpectedExpression*> failed) {
+    	mFailedEE = failed;
+    }
+
+    const std::vector<ExpectedExpression*>&
+    getFailedExpectedExpressions() const { return mFailedEE; }
 };
 
 class TestTeardown : public TestExpr, public LLVMFunctionHolder {
@@ -1152,6 +1162,13 @@ public:
         FunctionCall->setGroupName(LLVMFunctionHolder::getGroupName());
         if(mTestSetup) mTestSetup->setGroupName(LLVMFunctionHolder::getGroupName());
         if(mTestTeardown) mTestTeardown->setGroupName(LLVMFunctionHolder::getGroupName());
+    }
+
+    bool testPassed() const {
+    	bool passed = FunctionCall->getPassingValue();
+    	if(FunctionCall->getFailedExpectedExpressions().size())
+    		passed = false;
+    	return passed;
     }
 };
 

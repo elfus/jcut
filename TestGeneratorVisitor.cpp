@@ -227,19 +227,20 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	ComparisonOperator* CO = EE->getComparisonOperator();
 	Value* L = nullptr;
 	Value* R = nullptr;
+	std::vector<llvm::Instruction*> instructions;
 
 	if (LHS->isIdentifier()) {
 		llvm::GlobalVariable* g = mModule->getGlobalVariable(LHS->getIdentifier()->getIdentifierStr());
 		assert(g && "LHS Operator not found!");
 		L = mBuilder.CreateLoad(g);
-		mInstructions.push_back((llvm::Instruction*)L);
+		instructions.push_back((llvm::Instruction*)L);
 	}
 
 	if (RHS->isIdentifier()) {
 		llvm::GlobalVariable* g = mModule->getGlobalVariable(RHS->getIdentifier()->getIdentifierStr());
 		assert(g && "RHS Operator not found!");
 		R = mBuilder.CreateLoad(g);
-		mInstructions.push_back((llvm::Instruction*)R);
+		instructions.push_back((llvm::Instruction*)R);
 	}
 
 	if (LHS->isConstant()) {
@@ -276,29 +277,14 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	}
 	assert(i && "Invalid ComparisonOperator");
 
-	// It means this is an ExpectedExpression in a unit test (NOT in GlobalTeardown)
-	if(mReturnValue != nullptr) {
-		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mReturnValue->getType());
-		// We perform this comparison for the cases in which we called a unit test
-		// (function) and we use its return value to chain it with the rest of
-		// comparisons.
-		llvm::Value* mainBool = mBuilder.CreateICmpEQ(mReturnValue, zext);
-		llvm::ZExtInst* zext2 = (llvm::ZExtInst*) mBuilder.CreateZExt(mainBool,mReturnValue->getType());
+	instructions.push_back((llvm::Instruction*)i);
 
-		mInstructions.push_back((llvm::Instruction*)i);
-		mInstructions.push_back(zext);
-		mInstructions.push_back((llvm::Instruction*)mainBool);
-		mInstructions.push_back(zext2);
-		mReturnValue = zext2;
-	} else {
-		// It means we are in a GlobalTeardown or GlobalSetup because mReturnValue
-		// is never assigned when processing before_all or after_all, so it always
-		// remains nullptr
-		llvm::ZExtInst* zext = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());// We know we always return int32
-		mInstructions.push_back((llvm::Instruction*)i);
-		mInstructions.push_back(zext);
-		mReturnValue = zext;
-	}
+	llvm::ZExtInst* return_value = (llvm::ZExtInst*) mBuilder.CreateZExt(i,mBuilder.getInt32Ty());
+	instructions.push_back((llvm::Instruction*)return_value);
+	mReturnValue = return_value;
+
+	llvm::Function* ee_func = generateFunction("ee_"+mCurrentFud, true, instructions);
+	EE->setLLVMFunction(ee_func);
 }
 
 void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
@@ -431,7 +417,7 @@ void TestGeneratorVisitor::VisitTestDefinitionFirst(TestDefinition *TD)
 void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
 {
     string func_name = "setup_"+mCurrentFud;
-    Function *testFunction = generateFunction(func_name, true);
+    Function *testFunction = generateFunction(func_name, true, mInstructions);
     TS->setLLVMFunction(testFunction);
 
     // Any variable assignment done in the current test pass it to the vector for
@@ -464,7 +450,7 @@ void TestGeneratorVisitor::VisitTestFunction(TestFunction *TF)
 		mInstructions.push_back(st);
 	}
 
-    Function *testFunction = generateFunction(func_name,true);
+    Function *testFunction = generateFunction(func_name,true, mInstructions);
 	result->setName("result_"+testFunction->getName());
 	TF->setResultVariable(result);
     TF->setLLVMFunction(testFunction);
@@ -475,7 +461,7 @@ void TestGeneratorVisitor::VisitTestTeardown(TestTeardown *TT)
     string func_name = "teardown_"+mCurrentFud;
     mInstructions.insert(mInstructions.begin(), mPtrAllocation.begin(), mPtrAllocation.end());
     mPtrAllocation.clear();
-    Function *testFunction = generateFunction(func_name, true);
+    Function *testFunction = generateFunction(func_name, true, mInstructions);
     TT->setLLVMFunction(testFunction);
 
     // Any variable assignment done in the current test pass it to the vector for
@@ -491,7 +477,7 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
     if(mBackupTest.size() ) {
         string func_name = "cleanup_test_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
         restoreGlobalVariables(mBackupTest);
-        Function *testFunction = generateFunction(func_name);
+        Function *testFunction = generateFunction(func_name, false, mInstructions);
         TD->setLLVMFunction(testFunction);
     }
     // The warnings may include test-setup, test-function, or test-teardown
@@ -507,7 +493,7 @@ void TestGeneratorVisitor::VisitTestGroupFirst(TestGroup *)
 void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 {
     string func_name = "group_setup_"+GS->getGroupName();
-    Function *testFunction = generateFunction(func_name, true);
+    Function *testFunction = generateFunction(func_name, true, mInstructions);
     GS->setLLVMFunction(testFunction);
 
     // Any variable assignment done in the current group pass it to the vector for
@@ -521,7 +507,7 @@ void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
 void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
 {
     string func_name = "group_teardown_"+GT->getGroupName();
-    Function *testFunction = generateFunction(func_name, true);
+    Function *testFunction = generateFunction(func_name, true, mInstructions);
     GT->setLLVMFunction(testFunction);
 
     // Any variable assignment done in the current group pass it to the vector for
@@ -537,7 +523,7 @@ void TestGeneratorVisitor::VisitTestGroup(TestGroup *TG)
     if(mBackupGroup.size()) {
         string func_name = "group_cleanup_"+TG->getGroupName();
         restoreGlobalVariables(mBackupGroup);
-        Function *cleanupFUnction = generateFunction(func_name);
+        Function *cleanupFUnction = generateFunction(func_name, false, mInstructions);
         TG->setLLVMFunction(cleanupFUnction);
     }
 }
@@ -595,15 +581,16 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	return nullptr;
 }
 
-llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
-                                                        bool use_mReturnValue)
+llvm::Function* TestGeneratorVisitor::generateFunction(
+		const string& name, bool use_mReturnValue,
+		vector<llvm::Instruction*>& instructions)
 {
     string unique_name = getUniqueTestName(name);
 	llvm::Type* return_type = nullptr;
 	if(mTestFunctionCall)
 		return_type = mTestFunctionCall->getCalledFunction()->getReturnType();
 	else
-		return_type = mBuilder.getInt8Ty();
+		return_type = mBuilder.getInt32Ty();
 	Function *function = cast<Function> (mModule->getOrInsertFunction(
 			unique_name,
 			return_type,
@@ -618,16 +605,17 @@ llvm::Function* TestGeneratorVisitor::generateFunction(const string& name,
 	else
             ret = mBuilder.CreateRet(mBuilder.getInt32(1));// the setup/teardown passed
 
-	mInstructions.push_back(ret);
+	instructions.push_back(ret);
 
 	mBuilder.SetInsertPoint(BB);
-	for (auto*& inst : mInstructions)
+	for (auto*& inst : instructions)
 		mBuilder.Insert(inst);
 
-	mInstructions.clear();
+	instructions.clear();
 	mBackup.clear();
 	mBuilder.ClearInsertionPoint();
 	mReturnValue = nullptr;
+	mTestFunctionCall = nullptr;
 
 	return function;
 }

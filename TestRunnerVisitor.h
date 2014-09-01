@@ -37,6 +37,8 @@ private:
     std::vector<llvm::GenericValue> mArgs;//Dummy arguments
     bool mDumpFunctions;
     llvm::Module* mModule;
+    // Temp vector to hold failed expected expressions
+    std::vector<ExpectedExpression*> mFailedEE;
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
         if (f) {
@@ -88,9 +90,21 @@ public:
         runFunction(TS);
     }
 
+    // ExpectedExpressions can be located either in any of after/before or
+    // after_all/before_all statements
+    void VisitExpectedExpression(ExpectedExpression* EE) {
+    	runFunction(EE);
+    	// The ExpectedExpression failed.
+    	bool passed = EE->getReturnValue().IntVal.getBoolValue();
+    	if(false == passed) {
+    		mFailedEE.push_back(EE);
+    	}
+    }
+
     // The actual function under test
     void VisitTestFunction(TestFunction *TF) {
         runFunction(TF);
+
         // We used the getPointerToGlobal instead because it works with JIT engine
         // and the previous method works only with MCJIT.
         llvm::GlobalVariable* g = TF->getResultVariable();
@@ -112,6 +126,12 @@ public:
     // The cleanup
     void VisitTestDefinition(TestDefinition *TD) {
         runFunction(TD); // do the cleanup
+
+        // Include failing ExpectedExpressions from before and after statements.
+        if(mFailedEE.size()) {
+        	TD->getTestFunction()->setFailedExpectedExpressions(mFailedEE);
+        	mFailedEE.clear();
+		}
     }
 
 };

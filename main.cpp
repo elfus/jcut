@@ -253,11 +253,5 @@ int main(int argc, const char **argv, char * const *envp)
 		break; //@todo Implement multiple C files
 	}
 
-	cout << "Number of jobs: " << Jobs.size() << endl;
-	
-	for(auto& file : Sources) {
-		cout << "Source file: " << file << endl;
-	}
-
 	return failed;
 }
