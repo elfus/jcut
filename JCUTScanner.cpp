@@ -630,7 +630,7 @@ char *yytext;
 #line 1 "jcut-scanner.l"
 
 #line 49 "jcut-scanner.l"
-//===-- jcut/JCUTScanner.cpp - Flex generated scanner --------------*- C -*-===//
+//===-- jcut/JCUTScanner.cpp - Flex generated scanner -------------*- C -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -2159,6 +2159,7 @@ loop:
 
 
 unsigned column = 0;
+unsigned ccount = 0;
 
 void print(const string& str) {
 	cout << yylineno <<":"<<column<<":"<<str<<": "<<string(yytext,yyleng)<<endl;
@@ -2170,11 +2171,13 @@ void count()
 
 	for (i = 0; yytext[i] != '\0'; i++)
 		if (yytext[i] == '\n')
-			column = 0;
+			ccount = 0;
 		else if (yytext[i] == '\t')
-			column += 8 - (column % 8);
+			ccount += 8 - (ccount % 8);
 		else
-			column++;
+			ccount++;
+	
+	column = ccount - i + 1;
 
 	/* ECHO; */
 }

@@ -4,7 +4,7 @@
 
 #line 6 "JCUTScanner.h"
 #line 2 "jcut-scanner.l"
-//===-- jcut/JCUTScanner.h - Flex generated scanner ----------------*- C -*-===//
+//===-- jcut/JCUTScanner.h - Flex generated scanner ---------------*- C -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
