@@ -160,8 +160,13 @@ public:
 			}
 		}
 		else {
-			if(EE->getReturnValue().IntVal.getBoolValue() == false)
-				cout << endl << "Expected condition " << EE->toString() << " is false" << endl;
+			if(EE->getReturnValue().IntVal.getBoolValue() == false) {
+				stringstream ss;
+				ss << Exception::mCurrentFile << ":" << EE->getLine()
+				   << ":" << EE->getColumn() << ": ";
+				cout << ss.str() << "Expected condition "
+					 << EE->toString() << " is false" << endl;
+			}
 			if((mFmt & (LOG_ALL | LOG_FAILING)))
 				logFunction(EE, EE->getLLVMFunction()->getName());
 		}

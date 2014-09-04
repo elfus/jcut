@@ -164,7 +164,7 @@ private:
 class TestExpr {
 public:
 
-    TestExpr() { ++leaks; }
+    TestExpr() : line(0), column(0) { ++leaks; }
 
     virtual void dump() = 0;
 
@@ -173,6 +173,18 @@ public:
     virtual ~TestExpr() {--leaks;}
 
     static int leaks;
+
+    // The line and column where this expression start.
+    // Due to time constraints only a few subclasses will set these values.
+    /// @todo Make sure all subclasses set these values to do a better
+    /// error reporting.
+    void setLine(int l) { line = l; }
+    int getLine() const { return line; }
+    void setColumn(int c) { column = c; }
+    int getColumn() const { return column; }
+protected:
+    int line;
+    int column;
 };
 
 class ComparisonOperator : public TestExpr {
@@ -644,8 +656,12 @@ private:
     ComparisonOperator* mCO;
     Operand* mRHS;
 public:
-    ExpectedExpression(Operand* LHS, ComparisonOperator* CO, Operand* RHS) :
-    mLHS(LHS), mCO(CO), mRHS(RHS) {  }
+    ExpectedExpression(Operand* LHS, ComparisonOperator* CO, Operand* RHS,
+    		int l=0, int c=0) :
+    mLHS(LHS), mCO(CO), mRHS(RHS) {
+    	setLine(l);
+    	setColumn(c);
+    }
     ~ExpectedExpression() {
         delete mLHS;
         delete mCO;

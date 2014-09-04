@@ -452,10 +452,14 @@ TestFixture* TestDriver::ParseTestFixture()
 
 ExpectedExpression* TestDriver::ParseExpectedExpression()
 {
+	// In case the ExpectedExpression is well formed, this token represents
+	// the position where it starts.
+	int line = mCurrentToken.mLine;
+	int column = mCurrentToken.mColumn;
 	Operand* LHS = ParseOperand();
 	ComparisonOperator* CO = ParseComparisonOperator();
 	Operand* RHS = ParseOperand();
-	return new ExpectedExpression(LHS, CO, RHS);
+	return new ExpectedExpression(LHS, CO, RHS, line, column);
 }
 
 Operand* TestDriver::ParseOperand()
