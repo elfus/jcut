@@ -212,7 +212,7 @@ public:
     }
 
     Type getType() const { return mType; }
-    string getTypeStr() const { return mStringRepresentation; }
+    string toString() const { return mStringRepresentation; }
 private:
     string mStringRepresentation;
     Type mType;
@@ -331,6 +331,7 @@ public:
 
     Type getType() const { return mType; }
 
+    // @todo Rename getAsStr method to something else
     string getAsStr() const { return mStr; }
     void setAsStr(const string& str) { mStr = str; }
 };
@@ -388,6 +389,15 @@ public:
     bool isIdentifier() const { return (mI) ? true : false; }
     Identifier* getIdentifier() const { return mI;}
     Constant* getConstant() const { return mC; }
+    string toString() const {
+    	if(isIdentifier())
+    		return mI->getIdentifierStr();
+
+    	if(isConstant())
+    		return mC->getAsStr();
+
+    	return "";
+    }
 };
 
 class ExpectedConstant : public TestExpr {
@@ -658,6 +668,11 @@ public:
     Operand* getLHSOperand() const { return mLHS; }
     Operand* getRHSOperand() const { return mRHS; }
     ComparisonOperator* getComparisonOperator() const { return mCO; }
+    string toString() const {
+    	string str;
+    	str = mLHS->toString() + " " + mCO->toString() + " " + mRHS->toString();
+    	return str;
+    }
 };
 
 class BufferAlloc : public TestExpr {

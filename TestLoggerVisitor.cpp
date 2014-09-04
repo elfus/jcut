@@ -82,13 +82,12 @@ string TestLoggerVisitor::getActualResultString(TestFunction *TF)
 
 string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)
 {
-	// @todo Get the actual outcome from the call function
 	// @todo detect what failed, after conditions?
 	ExpectedResult* ER = TF->getExpectedResult();
 	if (ER) {
 		stringstream ss;
 		Constant* C = ER->getExpectedConstant()->getConstant();
-		ss << ER->getComparisonOperator()->getTypeStr() << " ";
+		ss << ER->getComparisonOperator()->toString() << " ";
 		switch(C->getType()){
 			case Constant::Type::NUMERIC:
 			{

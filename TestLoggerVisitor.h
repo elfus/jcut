@@ -155,10 +155,13 @@ public:
 
     void VisitExpectedExpression(ExpectedExpression *EE) {
     	if(mCurrentTestPassed) {
-			if((mFmt & (LOG_ALL | LOG_PASSING)))
+			if((mFmt & (LOG_ALL | LOG_PASSING))) {
 				logFunction(EE, EE->getLLVMFunction()->getName());
+			}
 		}
 		else {
+			if(EE->getReturnValue().IntVal.getBoolValue() == false)
+				cout << endl << "Expected condition " << EE->toString() << " is false" << endl;
 			if((mFmt & (LOG_ALL | LOG_FAILING)))
 				logFunction(EE, EE->getLLVMFunction()->getName());
 		}
