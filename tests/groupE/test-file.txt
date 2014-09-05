@@ -74,9 +74,22 @@ before { gpp_int = [1]; }
 math_gpp_int() == 0;
 after { gpp_int != 0; }
 
+before { gpp_int == 0; gpp_int = [1]; }
+math_gpp_int() == 0;
+after { gpp_int != 0; }
+
+before { gpp_int == 0; gpp_int = [1]; gpp_int != 0;}
+math_gpp_int() == 0;
+after { gpp_int != 0; }
+
 math_gpp_int() == 1;
 after { gpp_int = [1]; gpp_int != 0; }
 
+math_gpp_int() == 1;
+after { gpp_int == 0; gpp_int = [1];  }
+
+math_gpp_int() == 1;
+after { gpp_int == 0; gpp_int = [1]; gpp_int != 0; }
 
 get_ptr_func_addr() == 0;
 
