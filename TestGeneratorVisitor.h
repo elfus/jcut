@@ -52,7 +52,7 @@ private:
     /// we actually use the instructions when we really need them, that is when we
     /// VisitTestFunction we just insert these instructions at the very beginning
     /// of the mInstructions vector.
-    std::vector<llvm::Instruction*> mPtrAllocation;
+//    std::vector<llvm::Instruction*> mPtrAllocation;
     /// Used to hold the arguments for each FunctionCallExpr
     std::vector<llvm::Value*> mArgs;
     /// Used to hold backup values of global variables and their original values
@@ -67,14 +67,16 @@ private:
     std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupTest;
     std::vector<tuple<llvm::GlobalVariable*,llvm::GlobalVariable*>> mBackupGroup;
     llvm::Value *mReturnValue;
+    llvm::Value *mFUDReturnValue;
     std::map<string,bool> mMockupNames;//used to create unique mockup names
     /// Store all the warnings for a single TestDefinition.
     std::vector<Exception> mWarnings;
     std::string mCurrentFud; // Current Function Under Test
+    llvm::ZExtInst* mTestResult;
 
     /**
- * Creates a new Value of the same Type as type with real_value
- */
+	 * Creates a new Value of the same Type as type with real_value
+	 */
     llvm::Value* createValue(llvm::Type* type,
                              const std::string& real_value);
 
@@ -95,7 +97,7 @@ private:
      * @return Function
      */
     llvm::Function* generateFunction(
-    		const string& name, bool use_mReturnValue,
+    		const string& name, bool use_mFUDReturnValue,
     		vector<llvm::Instruction*>& instructions);
 
     /**
@@ -184,9 +186,8 @@ public:
     void VisitTestSetup(TestSetup *);
     /// Generates an LLVM Function that calls a function, assigns a variable or
     /// checks an expected expression.
-    void VisitTestTeardown(TestTeardown *);
-    /// Generates the LLVM Function that calls our function under test (FUD)
     void VisitTestFunction(TestFunction *);
+    void VisitTestTeardown(TestTeardown *);
     /// Restores whatever global variable was modified in VisitTestSetup or VisitTestTeardown
     void VisitTestDefinition(TestDefinition *);
     void VisitTestDefinitionFirst(TestDefinition *);
@@ -197,7 +198,6 @@ public:
     /// Generates an LLVM Function that restores whatever was done in before_all
     /// and after_all
     void VisitTestGroup(TestGroup *);
-    void VisitTestGroupFirst(TestGroup *);
 
 };
 

@@ -38,7 +38,7 @@ private:
     bool mDumpFunctions;
     llvm::Module* mModule;
     // Temp vector to hold failed expected expressions
-    std::vector<ExpectedExpression*> mFailedEE;
+    std::vector<ExpectedExpression*> mExpExpr;
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
         if (f) {
@@ -86,51 +86,48 @@ public:
         runFunction(TG);
     }
 
-    void VisitTestSetup(TestSetup* TS) {
-        runFunction(TS);
-    }
-
     // ExpectedExpressions can be located either in any of after/before or
     // after_all/before_all statements
     void VisitExpectedExpression(ExpectedExpression* EE) {
-    	runFunction(EE);
-    	// The ExpectedExpression failed.
-    	bool passed = EE->getReturnValue().IntVal.getBoolValue();
-    	if(false == passed) {
-    		mFailedEE.push_back(EE);
-    	}
+    	mExpExpr.push_back(EE);
     }
 
-    // The actual function under test
-    void VisitTestFunction(TestFunction *TF) {
-        runFunction(TF);
-
-        // We used the getPointerToGlobal instead because it works with JIT engine
-        // and the previous method works only with MCJIT.
-        llvm::GlobalVariable* g = TF->getResultVariable();
-        if(g) {
-            string result_name = TF->getResultVariable()->getName().str();
-            unsigned char* pass = static_cast<unsigned char*>(mEE->getPointerToGlobal(g));
-            if(pass) {
-                TF->setPassingValue(static_cast<bool>(*pass));
-            }
-        } else
-            assert(false && "Invalid global variable for result!");
-
-    }
-
-    void VisitTestTeardown(TestTeardown *TT) {
-        runFunction(TT);
-    }
 
     // The cleanup
     void VisitTestDefinition(TestDefinition *TD) {
         runFunction(TD); // do the cleanup
 
+        llvm::GlobalVariable* g = TD->getGlobalVariable();
+		if(g) {
+			unsigned char* pass = static_cast<unsigned char*>(mEE->getPointerToGlobal(g));
+			if(pass) {
+				TD->setPassingValue(static_cast<bool>(*pass));
+			} else
+				assert(false && "Test result Global variable not found!");
+		} else
+			assert(false && "Invalid global variable for result!");
+
+		std::vector<ExpectedExpression*> failing;
+		for(ExpectedExpression* ptr : mExpExpr) {
+			llvm::GlobalVariable* v = ptr->getGlobalVariable();
+			if(v) {
+				unsigned char* pass = static_cast<unsigned char*>(mEE->getPointerToGlobal(v));
+				if(pass) {
+					bool passed = static_cast<bool>(*pass);
+					TD->setPassingValue(passed);
+					if(!passed)
+						failing.push_back(ptr);
+				} else
+					assert(false && "ExpectedExpression Global variable not found!");
+			} else {
+				assert(false &&  "Invalid global variable for expected expression");
+			}
+		}
+		mExpExpr.clear();
+
         // Include failing ExpectedExpressions from before and after statements.
-        if(mFailedEE.size()) {
-        	TD->getTestFunction()->setFailedExpectedExpressions(mFailedEE);
-        	mFailedEE.clear();
+        if(failing.size()) {
+        	TD->setFailedExpectedExpressions(failing);
 		}
     }
 

@@ -13,37 +13,37 @@
 //===----------------------------------------------------------------------===//
 #include <TestLoggerVisitor.h>
 
-string TestLoggerVisitor::getColumnString(ColumnName name, TestFunction *TF)
+string TestLoggerVisitor::getColumnString(ColumnName name, TestDefinition *TD)
 {
 	switch(name) {
 		case GROUP_NAME:
-			return TF->getGroupName();
+			return TD->getGroupName();
 		case TEST_NAME:
-			return TF->getLLVMFunction()->getName();
+			return TD->getLLVMFunction()->getName();
 		case FUD:
-			return TF->getFunctionCall()->getFunctionCalledString();
+			return TD->getTestFunction()->getFunctionCall()->getFunctionCalledString();
         case RESULT:
         {
-        	bool passed = TF->getPassingValue();
-        	if(TF->getFailedExpectedExpressions().size())
+        	bool passed = TD->getPassingValue();
+        	if(TD->getFailedExpectedExpressions().size())
         		passed = false;
 			return (passed?"PASSED" : "FAILED");
         }
 		case ACTUAL_RESULT:
-			return getActualResultString(TF);
+			return getActualResultString(TD);
 		case EXPECTED_RES:
-			return getExpectedResultString(TF);
+			return getExpectedResultString(TD);
 		default:
 			return "Invalid column";
 	}
 	return "Invalid column2";
 }
 
-string TestLoggerVisitor::getActualResultString(TestFunction *TF)
+string TestLoggerVisitor::getActualResultString(TestDefinition *TD)
 {
-	llvm::GenericValue result(TF->getReturnValue());
+	llvm::GenericValue result(TD->getReturnValue());
 	stringstream ss;
-	llvm::Type *returnType = TF->getFunctionCall()->getReturnType();
+	llvm::Type *returnType = TD->getTestFunction()->getFunctionCall()->getReturnType();
 	llvm::Type::TypeID type = returnType->getTypeID();
 	switch(type) {
 		case llvm::Type::TypeID::DoubleTyID:
@@ -80,10 +80,9 @@ string TestLoggerVisitor::getActualResultString(TestFunction *TF)
 	return ss.str();
 }
 
-string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)
+string TestLoggerVisitor::getExpectedResultString(TestDefinition *TD)
 {
-	// @todo detect what failed, after conditions?
-	ExpectedResult* ER = TF->getExpectedResult();
+	ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
 	if (ER) {
 		stringstream ss;
 		Constant* C = ER->getExpectedConstant()->getConstant();
@@ -122,9 +121,9 @@ string TestLoggerVisitor::getExpectedResultString(TestFunction *TF)
 	return "(none)";
 }
 
-string TestLoggerVisitor::getWarningString(TestFunction *TF)
+string TestLoggerVisitor::getWarningString(TestDefinition *TD)
 {
-	const vector<Exception>& warnings = TF->getWarnings();
+	const vector<Exception>& warnings = TD->getWarnings();
 	if(warnings.size()) {
 		stringstream ss;
 		ss << "[" << warnings.size() << "] ";

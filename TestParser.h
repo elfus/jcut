@@ -116,8 +116,8 @@ public:
     const vector<Exception>& getWarnings() const { return mWarnings; }
     void setPassingValue(bool passed) { mPassingValue = passed; }
     bool getPassingValue() const { return mPassingValue; }
-    void setResultVariable(llvm::GlobalVariable* g) { mResultVariable = g; }
-    llvm::GlobalVariable* getResultVariable() const { return mResultVariable; }
+    void setGlobalVariable(llvm::GlobalVariable* g) { mResultVariable = g; }
+    llvm::GlobalVariable* getGlobalVariable() const { return mResultVariable; }
     static unsigned warning_count;
 };
 
@@ -1032,7 +1032,7 @@ public:
     }
 };
 
-class TestSetup : public TestExpr, public LLVMFunctionHolder {
+class TestSetup : public TestExpr {
 private:
     TestFixture* mTestFixtureExpr;
 public:
@@ -1056,13 +1056,11 @@ public:
     }
 };
 
-class TestFunction : public TestExpr, public LLVMFunctionHolder {
+class TestFunction : public TestExpr {
 private:
     FunctionCall* mFunctionCall;
     ExpectedResult* mExpectedResult;
-    // Do not delete these pointers! They belong to someone else!
-    // We only store ExpectedExpressions that are known to have failed.
-    std::vector<ExpectedExpression*> mFailedEE;
+
 public:
     TestFunction(FunctionCall *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
             mExpectedResult(E) {}
@@ -1086,15 +1084,9 @@ public:
         v->VisitTestFunction(this);
     }
 
-    void setFailedExpectedExpressions(std::vector<ExpectedExpression*> failed) {
-    	mFailedEE = failed;
-    }
-
-    const std::vector<ExpectedExpression*>&
-    getFailedExpectedExpressions() const { return mFailedEE; }
 };
 
-class TestTeardown : public TestExpr, public LLVMFunctionHolder {
+class TestTeardown : public TestExpr {
 private:
     TestFixture* mTestFixture;
 public:
@@ -1141,7 +1133,9 @@ private:
     TestSetup *mTestSetup;
     TestTeardown *mTestTeardown;
     TestMockup *mTestMockup;
-
+    // Do not delete these pointers! They belong to someone else!
+	// We only store ExpectedExpressions that are known to have failed.
+	std::vector<ExpectedExpression*> mFailedEE;
 public:
 
     TestDefinition(
@@ -1190,14 +1184,21 @@ public:
     }
 
     void propagateGroupName() {
-        FunctionCall->setGroupName(LLVMFunctionHolder::getGroupName());
-        if(mTestSetup) mTestSetup->setGroupName(LLVMFunctionHolder::getGroupName());
-        if(mTestTeardown) mTestTeardown->setGroupName(LLVMFunctionHolder::getGroupName());
+//        FunctionCall->setGroupName(LLVMFunctionHolder::getGroupName());
+//        if(mTestSetup) mTestSetup->setGroupName(LLVMFunctionHolder::getGroupName());
+//        if(mTestTeardown) mTestTeardown->setGroupName(LLVMFunctionHolder::getGroupName());
     }
 
+    void setFailedExpectedExpressions(std::vector<ExpectedExpression*> failed) {
+    	mFailedEE = failed;
+    }
+
+       const std::vector<ExpectedExpression*>&
+       getFailedExpectedExpressions() const { return mFailedEE; }
+
     bool testPassed() const {
-    	bool passed = FunctionCall->getPassingValue();
-    	if(FunctionCall->getFailedExpectedExpressions().size())
+    	bool passed = getPassingValue();
+    	if(mFailedEE.size())
     		passed = false;
     	return passed;
     }

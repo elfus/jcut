@@ -65,9 +65,9 @@ private:
     int mFmt = LOG_ALL;
     bool mCurrentTestPassed = false;
 
-    string getActualResultString(TestFunction *TF);
-    string getExpectedResultString(TestFunction *TF);
-    string getWarningString(TestFunction *TF);
+    string getActualResultString(TestDefinition *TD);
+    string getExpectedResultString(TestDefinition *TD);
+    string getWarningString(TestDefinition *TD);
     void logFunction(LLVMFunctionHolder *FH, const string& name);
 public:
 
@@ -139,78 +139,35 @@ public:
 
     void VisitTestDefinitionFirst(TestDefinition *TD) {
         // Print the columns in the given order, then print a new line and
-	// optionally print more information about the current test.
-	mCurrentTestPassed = TD->testPassed();
+		// optionally print more information about the current test.
+		mCurrentTestPassed = TD->testPassed();
+		++mTestCount;
         if(mCurrentTestPassed && (mFmt & (LOG_ALL | LOG_PASSING)) ){
+        	++mTestsPassed;
             for(auto column : mOrder)
-		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
+            	cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
             cout << endl;
         }
         else if(mCurrentTestPassed==false && (mFmt & (LOG_ALL | LOG_FAILING)) ) {
+        	++mTestsFailed;
             for(auto column : mOrder)
-		cout << setw(mColumnWidth[column]) << getColumnString(column, TD->getTestFunction()) << mPadding;
+            	cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
             cout << endl;
-        }
-    }
-
-    void VisitExpectedExpression(ExpectedExpression *EE) {
-    	if(mCurrentTestPassed) {
-			if((mFmt & (LOG_ALL | LOG_PASSING))) {
-				logFunction(EE, EE->getLLVMFunction()->getName());
-			}
-		}
-		else {
-			if(EE->getReturnValue().IntVal.getBoolValue() == false) {
-				stringstream ss;
-				ss << Exception::mCurrentFile << ":" << EE->getLine()
-				   << ":" << EE->getColumn() << ": ";
-				cout << ss.str() << "Expected condition "
-					 << EE->toString() << " is false" << endl;
-			}
-			if((mFmt & (LOG_ALL | LOG_FAILING)))
-				logFunction(EE, EE->getLLVMFunction()->getName());
-		}
-    }
-
-    void VisitTestSetup(TestSetup *TS) {
-        if(mCurrentTestPassed) {
-            if((mFmt & (LOG_ALL | LOG_PASSING)) || mFmt & LOG_TEST_SETUP)
-                logFunction(TS, TS->getLLVMFunction()->getName());
-        }
-        else {
-            if((mFmt & (LOG_ALL | LOG_FAILING)) || mFmt & LOG_TEST_SETUP)
-                logFunction(TS, TS->getLLVMFunction()->getName());
-        }
-    }
-
-    void VisitTestTeardown(TestTeardown *TT) {
-        if(mCurrentTestPassed) {
-            if((mFmt & (LOG_ALL | LOG_PASSING)) || mFmt & LOG_TEST_TEARDOWN)
-                logFunction(TT, TT->getLLVMFunction()->getName());
-        }
-        else {
-            if((mFmt & (LOG_ALL | LOG_FAILING)) || mFmt & LOG_TEST_TEARDOWN)
-                logFunction(TT, TT->getLLVMFunction()->getName());
-        }
-    }
-
-    void VisitTestFunction(TestFunction *TF) {
-        ++mTestCount;
-        if(mCurrentTestPassed) {
-            ++mTestsPassed;
-            if(mFmt & (LOG_ALL | LOG_PASSING) )
-                logFunction(TF, TF->getLLVMFunction()->getName());
-        }
-        else {
-            ++mTestsFailed;
-            if(mFmt & (LOG_ALL | LOG_FAILING) )
-                logFunction(TF, TF->getLLVMFunction()->getName());
         }
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
-        if(mFmt & (LOG_ALL | LOG_TEST_CLEANUP)) {
-            logFunction(TD, "cleanup");
+		logFunction(TD, "test");
+        if(TD->testPassed() == false) {
+        	const vector<ExpectedExpression*>&
+        	ee = TD->getFailedExpectedExpressions();
+        	for(ExpectedExpression* e : ee) {
+        		stringstream ss;
+        		ss << Exception::mCurrentFile << ":" << e->getLine()
+        			<< ":" << e->getColumn() << ": ";
+        		cout << ss.str() << "Expected expression ["
+        			 << e->toString() << "] is false" << endl;
+        	}
         }
         cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
@@ -242,7 +199,7 @@ public:
 
     const vector<ColumnName>& getColumnOrder() { return mOrder; }
     const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }
-    string getColumnString(ColumnName name, TestFunction *TF);
+    string getColumnString(ColumnName name, TestDefinition *TD);
 
     unsigned getTestsFailed() const { return mTestsFailed; }
 
@@ -261,9 +218,9 @@ public:
     mOrder(mLogger.getColumnOrder()), mColumnWidth(mLogger.getColumnWidths()){
     }
 
-    void VisitTestFunction(TestFunction *TF) {
+    void VisitTestDefinition(TestDefinition *TD) {
         for(auto column : mOrder) {
-            string str = mLogger.getColumnString(column, TF);
+            string str = mLogger.getColumnString(column, TD);
             if(str.size() > mColumnWidth.at(column))
                 mLogger.setColumnWidth(column, str.size());
         }
