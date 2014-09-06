@@ -365,11 +365,9 @@ TestTeardown* TestDriver::ParseTestTearDown()
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword 'after'
 
 	if (mCurrentToken == '{') {
-		mParsingTearDown = true;
 		mCurrentToken = mTokenizer.nextToken(); // eat the '{'
 		TestFixture* testFixture = ParseTestFixture();
 		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'
-		mParsingTearDown = false;
 		return new TestTeardown(testFixture);
 	}
 	throw Exception("Expected { but received " + mCurrentToken.mLexeme + " after keyword 'after'");
@@ -400,11 +398,9 @@ TestSetup* TestDriver::ParseTestSetup()
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword 'before'
 
 	if (mCurrentToken == '{') {
-		mParsingSetup = true;
 		mCurrentToken = mTokenizer.nextToken(); // eat the '{'
 		TestFixture* testFixture = ParseTestFixture();
 		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'
-		mParsingSetup = false;
 		return new TestSetup(testFixture);
 	}
 	throw Exception("Expected { but received " + mCurrentToken.mLexeme + " after keyword 'before'");
@@ -433,8 +429,7 @@ TestFixture* TestDriver::ParseTestFixture()
 		}
 
 		if (mCurrentToken != ';') {
-			mTestFixtureException = true;
-                        for(auto*& ptr : statements) delete ptr;
+			for(auto*& ptr : statements) delete ptr;
 			throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
 					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
 					"Received "+mCurrentToken.mLexeme);
@@ -574,48 +569,22 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	GlobalTeardown *gt = nullptr;
 	vector<TestExpr*> tests;
 	Identifier* new_group_name = nullptr;
-	bool group_exception = false;
 
 	try {
 		gm = ParseGlobalMockup();
 		gs = ParseGlobalSetup();
-	} catch (const Exception& e) {
-		// @note We are keeping error recovery just to not break the tests
-		// for error messages, however this will change in the future.
-		if (!mRecoverOnParseError)
-			throw;
-		cerr << e.what() << endl;
-		cerr << "Skipping all tests in current group "<<
-				((name)?name->getIdentifierStr():"")
-			 << endl;
 
-		if(gm) delete gm;
-		if(gs) delete gs;
-
-		unsigned parenthesis = 2; // the one from the group and the test-fixture
-		while(parenthesis and mCurrentToken!= TOK_EOF)  {
-			if (mCurrentToken == '}')
-				parenthesis--;
-			if (mCurrentToken == '{')
-				parenthesis++;
-			mCurrentToken = mTokenizer.nextToken();
+		if(mCurrentToken == TOK_AFTER_ALL) {
+			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+					"The 'after_all' statement needs to be defined at the end"
+					" of the group.");
 		}
-		mTestFixtureException = false;
-		mParsingSetup = false;
-		mParsingTearDown = false;
-		// @BUG: When a there is a problem with mockup_all, before_all or after_all
-		// statements stop parsing current group. Right now I implemented a basic
-		// algorithm, but it might contain bugs. Look at the hardcoded 2.
-		return nullptr;
-	}
-
-	///////////////////////////////////////
-	// Parse all the tests
-	//
-	while (true) {
-		try {
+		///////////////////////////////////////
+		// Parse all the tests
+		//
+		while (true) {
 			if (mCurrentToken == '}' or mCurrentToken == TOK_EOF or
-				mCurrentToken == TOK_AFTER_ALL)
+					mCurrentToken == TOK_AFTER_ALL)
 				break;
 
 			if (mCurrentToken == TOK_GROUP) {
@@ -629,8 +598,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					new_group_name = groupNameFactory();
 
 				if (mCurrentToken != '{') {
-					group_exception = true;
-                                        delete new_group_name;
+					delete new_group_name;
 					throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 							"Invalid group definition. Expected a left curly bracket '{' for the given group",
 							"Received: "+mCurrentToken.mLexeme+" instead.");
@@ -644,12 +612,12 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					tests.push_back(group);
 
 				if(mCurrentToken != '}') {
-                                    delete ngn;
-                                    delete group;
-                                    throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-                                                    "Invalid group definition. Expected a right curly bracket '}'",
-                                                    "Received "+mCurrentToken.mLexeme+" instead.");
-                                }
+					delete ngn;
+					delete group;
+					throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+									"Invalid group definition. Expected a right curly bracket '}'",
+									"Received "+mCurrentToken.mLexeme+" instead.");
+				}
 				mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
 			} else {
 				TestDefinition *testDefinition = ParseTestDefinition();
@@ -657,77 +625,16 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					testDefinition->setGroupName(name->getIdentifierStr());
 				else
 					testDefinition->setGroupName("default");
-                                testDefinition->propagateGroupName();
+								testDefinition->propagateGroupName();
 				tests.push_back(testDefinition);
 			}
-		} catch (const exception& e) {
-			// @note We are keeping error recovery just to not break the tests
-			// for error messages, however this will change in the future.
-			if (!mRecoverOnParseError)
-				throw;
-			cerr << e.what() << endl;
-
-			for(auto*& ptr : tests)
-				delete ptr;
-
-			tests.clear();
-
-			if (mTestFixtureException) {
-				while(mCurrentToken != '}')
-					mCurrentToken = mTokenizer.nextToken();
-				mCurrentToken = mTokenizer.nextToken();// eat up the '}'
-				mTestFixtureException = false;
-				// If an exception was thrown in a setup statement ignore current test
-				if(mParsingSetup) {
-					while(mCurrentToken != ';')
-						mCurrentToken = mTokenizer.nextToken();
-					mCurrentToken = mTokenizer.nextToken(); // eat up the ';'
-					// if the test has an after statement, ignore.
-					if(mTokenizer.peekToken() == TOK_AFTER) {
-						while(mCurrentToken != '}')
-							mCurrentToken = mTokenizer.nextToken();
-						mCurrentToken = mTokenizer.nextToken();// eat up the '}'
-					}
-					mParsingSetup = false;
-				}
-				mParsingTearDown = false;
-			}
-
-			// Let's try to recover until the next test inside this group
-			while(group_exception == false and
-					mCurrentToken != TOK_TEST_INFO and
-					mCurrentToken != TOK_MOCKUP and
-					mCurrentToken != TOK_BEFORE and
-					mCurrentToken != TOK_IDENTIFIER and
-					mCurrentToken != TOK_AFTER_ALL and
-					mCurrentToken != TOK_GROUP and
-					mCurrentToken != TOK_EOF) {
-				mCurrentToken = mTokenizer.nextToken();
-			}
-
-			if(group_exception) {
-				while(mCurrentToken != '}')
-					mCurrentToken = mTokenizer.nextToken();
-				mCurrentToken = mTokenizer.nextToken();// eat up the '}'
-				group_exception = false;
-			}
 		}
-	}
 
-	////////////////////////////////////////
-	// Changed the syntax and parse the groups teardown at the very end of the
-	// group
-	try {
+		////////////////////////////////////////
+		// Changed the syntax and parse the groups teardown at the very end of the
+		// group
 		gt = ParseGlobalTeardown();
-	} catch (const Exception& e) {
-		// @note We are keeping error recovery just to not break the tests
-		// for error messages, however this will change in the future.
-		if (!mRecoverOnParseError)
-			throw;
-		cerr << e.what() << endl;
-		cerr << "Skipping all tests in current group "<<
-				((name)?name->getIdentifierStr():"")
-			 << endl;
+	} catch(...) {
 		if(gm) delete gm;
 		if(gs) delete gs;
 
@@ -735,22 +642,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 			delete ptr;
 
 		tests.clear();
-
-		unsigned parenthesis = 2; // the one from the group and the test-fixture
-		while(parenthesis and mCurrentToken!= TOK_EOF)  {
-			if (mCurrentToken == '}')
-				parenthesis--;
-			if (mCurrentToken == '{')
-				parenthesis++;
-			mCurrentToken = mTokenizer.nextToken();
-		}
-		mTestFixtureException = false;
-		mParsingSetup = false;
-		mParsingTearDown = false;
-		// @BUG: When a there is a problem with mockup_all, before_all or after_all
-		// statements stop parsing current group. Right now I implemented a basic
-		// algorithm, but it might contain bugs. Look at the hardcoded 2.
-		return nullptr;
+		throw;// Just cleanup before leaving current group
 	}
 
 	return new TestGroup(name, tests, gm, gs, gt);

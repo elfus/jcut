@@ -18,7 +18,6 @@ get_state() == 0;
 
 group E { 	 	
 	before_all { state = 10; } # Executed before all the tests in this group
-	after_all  { state == 20; } # Executed after all the tests in this group
 
 	get_state() == 10; # test 1
 	
@@ -27,6 +26,8 @@ group E {
 	get_state() == 15; #test 2
 
 	modify_state(); # test 3
+
+	after_all  { state == 20; } # Executed after all the tests in this group
 }
  
 group F {
@@ -39,9 +40,11 @@ group F {
 }
 
 group G { 	
-	after_all { modify_state(); }
+
 
 	get_state() == 0; 
+
+	after_all { modify_state(); }
 }
 
 get_state() == 5;
@@ -96,3 +99,6 @@ print_pair_ptr();
 
 print_ptr_pair([1:{1,2,{3,4}}]);
 
+before { state = 10; }
+get_state();
+after { state > 9; }

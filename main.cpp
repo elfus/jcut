@@ -73,7 +73,6 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 // A help message for this specific tool can be added afterwards.
 static cl::extrahelp MoreHelp("\njit-testing OPTIONS:\n");
 static cl::opt<string> TestFileOpt("t", cl::Required, cl::desc("Input test file"), cl::value_desc("filename"));
-static cl::opt<bool> RecoverOpt("recover", cl::init(false), cl::Optional, cl::desc("Whether the test parser should recover"), cl::value_desc("filename"));
 static cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
 
 // This function isn't referenced outside its translation unit, but it
@@ -142,7 +141,6 @@ int main(int argc, const char **argv, char * const *envp)
 	// we better remove it. There should be a better way to avoid this problem.
 	removeJcutOptions(Args, "-t");
 	removeJcutOptions(Args, TestFileOpt.getValue().c_str());
-	removeJcutOptions(Args, "-recover");
 	removeJcutOptions(Args, "-dump");
 
 	Args.push_back("-I include");// This is for windows only.
@@ -216,7 +214,7 @@ int main(int argc, const char **argv, char * const *envp)
 		// add my code here
 		try {
 			Exception::mCurrentFile = TestFileOpt.getValue(); // quick workaround
-			TestDriver driver(TestFileOpt.getValue(), RecoverOpt.getValue());
+			TestDriver driver(TestFileOpt.getValue());
 			TestExpr *tests = driver.ParseTestExpr(); // Parse file
 			TestGeneratorVisitor visitor(module);
 			tests->accept(&visitor); // Generate object structure tree
