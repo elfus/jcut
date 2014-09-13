@@ -327,6 +327,17 @@ ExpectedConstant* TestDriver::ParseExpectedConstant()
     return new ExpectedConstant(ParseConstant());
 }
 
+StringConstant* TestDriver::ParseStringConstant()
+{
+	if(mCurrentToken == TOK_STRING) {
+		/// @todo @bug Consume the token here! @see ParseConstant()
+		return new StringConstant(mCurrentToken.mLexeme);
+	}
+	throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+			"Expected a StringConstant.",
+			"Received "+ mCurrentToken.mLexeme+" instead.");
+}
+
 Constant* TestDriver::ParseConstant()
 {
 	Constant* C = nullptr;
@@ -338,7 +349,7 @@ Constant* TestDriver::ParseConstant()
 		C = new Constant(new NumericConstant((float)atof(mCurrentToken.mLexeme.c_str())));
 	else
     if(mCurrentToken == TOK_STRING)
-		C = new Constant(new StringConstant(mCurrentToken.mLexeme));
+		C = new Constant(ParseStringConstant());
 	else
     if(mCurrentToken == TOK_CHAR)
 		// Watch for the index 1, the flex parser stores the char constant with
@@ -540,20 +551,38 @@ TestMockup* TestDriver::ParseTestMockup()
 	throw Exception("Excpected { but received " + mCurrentToken.mLexeme);
 }
 
-TestInfo* TestDriver::ParseTestInfo()
+TestData* TestDriver::ParseTestData()
 {
-	if (mCurrentToken != TOK_TEST_INFO) {
+	if (mCurrentToken != TOK_TEST_DATA) {
 		// @todo Create default information
 		return nullptr;
 	}
-	mCurrentToken = mTokenizer.nextToken(); // eat the keyword test
-	Identifier* name = ParseIdentifier();
-	return new TestInfo(name);
+	mCurrentToken = mTokenizer.nextToken(); // eat the keyword data
+	if (mCurrentToken != '{')
+		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+				"Expected { but received " + mCurrentToken.mLexeme);
+	mCurrentToken = mTokenizer.nextToken(); // eat up the {
+
+	unique_ptr<StringConstant> name = unique_ptr<StringConstant>(ParseStringConstant());
+	// @todo This should happen inside ParseStringConstant
+	mCurrentToken = mTokenizer.nextToken(); // eat up the StringConstant
+
+	if (mCurrentToken != ';')
+				throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+						"Expected ; but received " + mCurrentToken.mLexeme);
+	mCurrentToken = mTokenizer.nextToken(); // eat up the }
+
+	if (mCurrentToken != '}')
+			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+					"Expected } but received " + mCurrentToken.mLexeme);
+	mCurrentToken = mTokenizer.nextToken(); // eat up the }
+
+	return new TestData(move(name));
 }
 
 TestDefinition* TestDriver::ParseTestDefinition()
 {
-	TestInfo *info = ParseTestInfo();
+	TestData *info = ParseTestData();
 	TestMockup *mockup = ParseTestMockup();
 	TestSetup *setup = ParseTestSetup();
 	TestFunction *testFunction = ParseTestFunction();

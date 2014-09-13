@@ -45,7 +45,7 @@ enum TokenType {
         TOK_BEFORE_ALL = -103,
         TOK_AFTER_ALL = -104,
         TOK_MOCKUP_ALL = -105,
-        TOK_TEST_INFO = -106,
+        TOK_TEST_DATA = -106,
         TOK_GROUP = -107,
     };
 

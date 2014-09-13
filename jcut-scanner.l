@@ -40,7 +40,7 @@ enum TokenType {
         TOK_BEFORE_ALL = -103,
         TOK_AFTER_ALL = -104,
         TOK_MOCKUP_ALL = -105,
-        TOK_TEST_INFO = -106,
+        TOK_TEST_DATA = -106,
         TOK_GROUP = -107,
     };
 }
@@ -107,7 +107,7 @@ mockup	{ count(); return TOK_MOCKUP;}
 before_all	{ count(); return TOK_BEFORE_ALL;}
 after_all	{ count(); return TOK_AFTER_ALL;}
 mockup_all	{ count(); return TOK_MOCKUP_ALL;}
-test	{ count(); return TOK_TEST_INFO;}
+data	{ count(); return TOK_TEST_DATA;}
 
 {IDENTIFIER}      { count(); return TOK_IDENTIFIER; }
 

@@ -1110,12 +1110,11 @@ public:
     }
 };
 
-class TestInfo : public TestExpr {
+class TestData : public TestExpr {
 private:
-    Identifier* mTestName;
+    unique_ptr<StringConstant> mDataPath;
 public:
-    TestInfo(Identifier* name) : mTestName(name) {}
-    ~TestInfo() { delete mTestName; }
+    TestData(unique_ptr<StringConstant> path) : mDataPath(move(path)) {}
 
     void dump() {
 
@@ -1128,7 +1127,7 @@ public:
 
 class TestDefinition : public TestExpr, public LLVMFunctionHolder {
 private:
-    TestInfo *mTestInfo;
+    TestData *mTestInfo;
     TestFunction *FunctionCall;
     TestSetup *mTestSetup;
     TestTeardown *mTestTeardown;
@@ -1139,7 +1138,7 @@ private:
 public:
 
     TestDefinition(
-            TestInfo *info,
+            TestData *info,
             TestFunction *function,
             TestSetup *setup = nullptr,
             TestTeardown *teardown = nullptr,
@@ -1467,6 +1466,7 @@ private:
     ExpectedConstant* ParseExpectedConstant();
     ExpectedExpression* ParseExpectedExpression();
     Operand* ParseOperand();
+    StringConstant* ParseStringConstant();
     Constant* ParseConstant();
     TestTeardown* ParseTestTearDown();
     TestFunction* ParseTestFunction();
@@ -1476,7 +1476,7 @@ private:
     MockupFunction* ParseMockupFunction();
     MockupFixture* ParseMockupFixture();
     TestMockup* ParseTestMockup();
-    TestInfo* ParseTestInfo();
+    TestData* ParseTestData();
     TestDefinition* ParseTestDefinition();
     // @arg name The name of the group to be parsed
     TestGroup* ParseTestGroup(Identifier* name);
