@@ -185,6 +185,13 @@ protected:
     int column;
 };
 
+class DataPlaceholder : public TestExpr {
+public:
+	void accept(Visitor *v) {
+		//@ note For the moment we don't need to VisitDataplaceholder
+	}
+};
+
 class ComparisonOperator : public TestExpr {
 public:
     enum Type {
@@ -382,19 +389,26 @@ public:
 class ExpectedConstant : public TestExpr {
 private:
     Constant* mC;
+    unique_ptr<DataPlaceholder> mDP;
 public:
     ExpectedConstant() = delete;
-    explicit ExpectedConstant(Constant *C) : mC(C) {}
+    explicit ExpectedConstant(Constant *C) : mC(C), mDP(nullptr) {}
+    explicit ExpectedConstant(unique_ptr<DataPlaceholder> dp) : mC(nullptr), mDP(move(dp)) {}
     ~ExpectedConstant() { delete mC;}
 
     void accept(Visitor* v) {
-        mC->accept(v);
+    	if (mC)
+    		mC->accept(v);
+    	if (mDP.get())
+    		mDP->accept(v);
         v->VisitExpectedConstant(this);
     }
 
     int getValue() const {
         return mC->getValue();
     }
+
+    bool isDataPlaceholder() const { return mDP.get() != nullptr; }
 
     Constant* getConstant() const { return mC; }
 };
@@ -537,13 +551,13 @@ class FunctionArgument;
 
 class FunctionCall : public TestExpr {
 private:
-    Identifier *FunctionName;
-    vector<FunctionArgument*> FunctionArguments;
+    Identifier *mFunctionName;
+    vector<FunctionArgument*> mFunctionArguments;
     // owned by llvm, do not delete
     llvm::Type *mReturnType;
 public:
 
-    Identifier *getIdentifier() const {return FunctionName;}
+    Identifier *getIdentifier() const {return mFunctionName;}
 
     FunctionCall(Identifier* name, const vector<FunctionArgument*>& arg);
 
@@ -554,6 +568,8 @@ public:
     string getFunctionCalledString();
     void setReturnType(llvm::Type *type) { mReturnType = type; }
     llvm::Type* getReturnType() const { return mReturnType; }
+
+    bool hasDataPlaceholders() const;
 };
 
 class ExpectedResult : public TestExpr {
@@ -576,6 +592,10 @@ public:
 
     ComparisonOperator* getComparisonOperator() const { return mCompOp; }
     ExpectedConstant* getExpectedConstant() const { return mEC; }
+
+    bool isDataPlaceholder() const {
+    	return mEC->isDataPlaceholder();
+    }
 };
 
 class ExpectedExpression : public TestExpr, public LLVMFunctionHolder {
@@ -939,6 +959,11 @@ public:
         v->VisitTestFunction(this);
     }
 
+    bool hasDataPlaceholders() const {
+    	bool p1 = mFunctionCall->hasDataPlaceholders();
+    	bool p2 = (mExpectedResult) ? mExpectedResult->isDataPlaceholder() : false;
+    	return  p1 || p2;
+    }
 };
 
 class TestTeardown : public TestExpr {
@@ -968,11 +993,16 @@ public:
     void accept(Visitor* v) {
         v->VisitTestInfo(this);
     }
+
+    string getDataPath() const {
+    	const string& path = mDataPath->getString();
+    	return path.substr(1,path.size()-2); // Remove the double quotes
+    }
 };
 
 class TestDefinition : public TestExpr, public LLVMFunctionHolder {
 private:
-    TestData *mTestInfo;
+    TestData *mTestData;
     TestFunction *FunctionCall;
     TestSetup *mTestSetup;
     TestTeardown *mTestTeardown;
@@ -988,15 +1018,16 @@ public:
             TestSetup *setup = nullptr,
             TestTeardown *teardown = nullptr,
             TestMockup *mockup = nullptr) :
-    mTestInfo(info), FunctionCall(function), mTestSetup(setup),
+    mTestData(info), FunctionCall(function), mTestSetup(setup),
     mTestTeardown(teardown), mTestMockup(mockup)  {
     }
 
+    TestData* getTestData() const { return mTestData; }
     TestFunction * getTestFunction() const {return FunctionCall;}
     TestMockup* getTestMockup() const { return mTestMockup; }
 
     virtual ~TestDefinition() {
-        if (mTestInfo) delete mTestInfo;
+        if (mTestData) delete mTestData;
         if (FunctionCall) delete FunctionCall;
         if (mTestSetup) delete mTestSetup;
         if (mTestTeardown) delete mTestTeardown;
@@ -1005,7 +1036,7 @@ public:
 
     void accept(Visitor *v) {
         v->VisitTestDefinitionFirst(this);
-        if(mTestInfo) mTestInfo->accept(v);
+        if(mTestData) mTestData->accept(v);
         if(mTestMockup) mTestMockup->accept(v);
         if(mTestSetup) mTestSetup->accept(v);
         FunctionCall->accept(v);
@@ -1161,14 +1192,17 @@ class FunctionArgument : public TestExpr{
 protected:
     Argument *argArgument;
     BufferAlloc *argBuffAlloc;
+    unique_ptr<DataPlaceholder> mDP;
     unsigned    ArgIndx;
     // This parent is only used for the TestGeneratorVisitor
     FunctionCall *Parent;// Pointer to its parent
 public:
     explicit FunctionArgument(Argument *arg) :
-        argArgument(arg), argBuffAlloc(nullptr), ArgIndx(0), Parent(nullptr) { }
+        argArgument(arg), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(0), Parent(nullptr) { }
     explicit FunctionArgument(BufferAlloc *arg) :
-        argArgument(nullptr), argBuffAlloc(arg), ArgIndx(0), Parent(nullptr) { }
+        argArgument(nullptr), argBuffAlloc(arg), mDP(nullptr),ArgIndx(0), Parent(nullptr) { }
+    explicit FunctionArgument(unique_ptr<DataPlaceholder> dp) :
+            argArgument(nullptr), argBuffAlloc(nullptr), mDP(move(dp)), ArgIndx(0), Parent(nullptr) { }
     ~FunctionArgument() {
         if(argArgument)
             delete argArgument;
@@ -1176,6 +1210,7 @@ public:
             delete argBuffAlloc;
     }
 
+    bool isDataPlaceholder() const { return mDP.get() != nullptr; }
     TokenType getTokenType() const {
         if(argArgument) return argArgument->getTokenType();
         return TOK_BUFF_ALLOC;
@@ -1231,7 +1266,7 @@ public:
 private:
     /// Generates default names for groups
     Identifier* groupNameFactory();
-
+    unique_ptr<DataPlaceholder> ParseDataPlaceholder();
     Identifier* ParseIdentifier();
     Argument* ParseArgument();
     InitializerValue* ParseInitializerValue();

@@ -215,9 +215,13 @@ int main(int argc, const char **argv, char * const *envp)
 		try {
 			Exception::mCurrentFile = TestFileOpt.getValue(); // quick workaround
 			TestDriver driver(TestFileOpt.getValue());
-			TestExpr *tests = driver.ParseTestExpr(); // Parse file
+			TestExpr *tests = driver.ParseTestExpr(); // Parse file and generate object structure tree
+
+			DataPlaceholderVisitor dp;
+			tests->accept(&dp); // Generate functions using data place holders.
+
 			TestGeneratorVisitor visitor(module);
-			tests->accept(&visitor); // Generate object structure tree
+			tests->accept(&visitor); // Generate LLVM IR code
 
 			// Initialize the JIT Engine only once
 			llvm::InitializeNativeTarget();

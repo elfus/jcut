@@ -134,6 +134,8 @@ data	{ count(); return TOK_TEST_DATA;}
 ">"       { count(); return TOK_COMPARISON_OP; }
 "="	  { count(); return '='; }
 
+"@"		  { count(); return '@'; }
+
 [ \t\v\n\f]		{ count(); }
 
 .         { print("IGNORED");}/* ignore unprocessed characters */

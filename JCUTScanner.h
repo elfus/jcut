@@ -374,7 +374,7 @@ extern int yylex (void);
 #undef YY_DECL
 #endif
 
-#line 141 "jcut-scanner.l"
+#line 143 "jcut-scanner.l"
 
 
 #line 381 "JCUTScanner.h"

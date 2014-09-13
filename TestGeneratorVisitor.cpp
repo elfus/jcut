@@ -38,6 +38,7 @@ mTestResult(nullptr)
  */
 void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 {
+	assert(arg->isDataPlaceholder()==false && "Cannot generate FunctionArgument code from a DataPlaceholder.");
 	FunctionCall* parent = arg->getParent();
 	string func_name = parent->getIdentifier()->getIdentifierStr();
 	llvm::Function *currentFunction = mModule->getFunction(func_name);
@@ -182,18 +183,21 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 
 	stringstream ss;
-	tp::Constant* EC = ER->getExpectedConstant()->getConstant();
-	if(EC->isCharConstant()) {
-		ss << EC->getValue();
+	ExpectedConstant* EC = ER->getExpectedConstant();
+	assert(EC->isDataPlaceholder() == false && "Cannot generate ExpectedResult code from a DataPlaceholder.");
+
+	tp::Constant* C = EC->getConstant();
+	if(C->isCharConstant()) {
+		ss << C->getValue();
 	}
 
-	if(EC->isNumericConstant()) {
-		ss << ER->getExpectedConstant()->getConstant()->getAsStr();
+	if(C->isNumericConstant()) {
+		ss << EC->getConstant()->getAsStr();
 		assert(ss.str().size() && "Invalid numeric string!");
 	}
 
-	if(EC->isStringConstant()) {
-		const string& str = ER->getExpectedConstant()->getConstant()->getStringConstant()->getString();
+	if(C->isStringConstant()) {
+		const string& str = EC->getConstant()->getStringConstant()->getString();
 		stringstream tmp;
 		tmp << static_cast<const void*>(str.c_str());
 		unsigned long addr =  stoul(tmp.str(), nullptr, 16);
@@ -836,4 +840,34 @@ string TestGeneratorVisitor::getUniqueTestName(const string& name)
     } while (mModule->getFunction(unique_name));
 
     return unique_name;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Replace all the DataPlaceholders to generate all the functions
+
+void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
+{
+	TestData *d = TD->getTestData();
+	TestFunction* TF = TD->getTestFunction();
+
+	if (d == nullptr && TF->hasDataPlaceholders())
+		throw Exception("You missed the data file for this test!");
+
+	if (d && TF->hasDataPlaceholders() == false)
+		return; // Do not open file
+
+	if (d && TF->hasDataPlaceholders()) {
+		string path = d->getDataPath();
+		cout << "Data path: " << path << endl;
+		FunctionCall* FC = TF->getFunctionCall();
+		ExpectedResult* ER = TF->getExpectedResult();
+		if(FC->hasDataPlaceholders())
+			cout << "Function call has placeholders" << endl;
+		if(ER && ER->isDataPlaceholder())
+			cout << "ExpectedResult is a placeholder" << endl;
+
+		cout << "This one has DataPlaceholders!" << endl;
+	}else {
+		cout << "No DataPlaceholders found!" << endl;
+	}
 }

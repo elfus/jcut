@@ -78,6 +78,17 @@ Argument* TestDriver::ParseArgument()
 	return Number;
 }
 
+unique_ptr<DataPlaceholder> TestDriver::ParseDataPlaceholder()
+{
+	if (mCurrentToken != '@')
+		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+				"Expected @ (DataPlaceholder",
+				"Received "+mCurrentToken.mLexeme+" instead");
+	unique_ptr<DataPlaceholder> pl(new DataPlaceholder);
+	mCurrentToken = mTokenizer.nextToken();
+	return pl;
+}
+
 BufferAlloc* TestDriver::ParseBufferAlloc()
 {
 	if (mCurrentToken != '[')
@@ -131,6 +142,11 @@ FunctionArgument* TestDriver::ParseFunctionArgument()
 {
 	if (mCurrentToken == '[') { // Buffer allocation
 		return new FunctionArgument(ParseBufferAlloc());
+	}
+	else
+	if (mCurrentToken == '@') { // DataPlaceholder
+		unique_ptr<DataPlaceholder> pl = ParseDataPlaceholder();
+		return new FunctionArgument(move(pl));
 	}
 	else
 		return new FunctionArgument(ParseArgument());
@@ -324,6 +340,10 @@ ComparisonOperator* TestDriver::ParseComparisonOperator()
 
 ExpectedConstant* TestDriver::ParseExpectedConstant()
 {
+	if (mCurrentToken == '@') {
+		unique_ptr<DataPlaceholder> pl = ParseDataPlaceholder();
+		return new ExpectedConstant(move(pl));
+	}
     return new ExpectedConstant(ParseConstant());
 }
 
@@ -751,10 +771,10 @@ Identifier* TestDriver::groupNameFactory()
 
 // Definitions due to conflicts with the forward declarations
 FunctionCall::FunctionCall(Identifier* name, const vector<FunctionArgument*>& arg) :
-FunctionName(name), FunctionArguments(arg), mReturnType(nullptr)
+mFunctionName(name), mFunctionArguments(arg), mReturnType(nullptr)
 {
 	unsigned i = 0;
-	for (auto*& arg : FunctionArguments) {
+	for (auto*& arg : mFunctionArguments) {
 		arg->setParent(this);
 		arg->setIndex(i);
 		++i;
@@ -763,8 +783,8 @@ FunctionName(name), FunctionArguments(arg), mReturnType(nullptr)
 
 FunctionCall::~FunctionCall()
 {
-	delete FunctionName;
-	for (FunctionArgument*& ptr : FunctionArguments) {
+	delete mFunctionName;
+	for (FunctionArgument*& ptr : mFunctionArguments) {
 		delete ptr;
 		ptr = nullptr;
 	}
@@ -772,7 +792,7 @@ FunctionCall::~FunctionCall()
 
 void FunctionCall::accept(Visitor *v)
 {
-	for (FunctionArgument*& ptr : FunctionArguments) {
+	for (FunctionArgument*& ptr : mFunctionArguments) {
 		ptr->accept(v);
 	}
 	v->VisitFunctionCall(this);
@@ -791,17 +811,24 @@ void InitializerValue::accept(Visitor *v) {
 
 
 string FunctionCall::getFunctionCalledString() {
-	string called = FunctionName->getIdentifierStr() +"(";
+	string called = mFunctionName->getIdentifierStr() +"(";
 	// @todo @bug We have to improve the way we detect and store the arguments.
 	// For instance when calling a function that receives a char, we need to
 	// print a character and not a number, and when calling a function that
 	// receives a numeric constant or integral type we have to display number.
-	if(FunctionArguments.size()) {
-		for(FunctionArgument* fa : FunctionArguments)
+	if(mFunctionArguments.size()) {
+		for(FunctionArgument* fa : mFunctionArguments)
 			called += fa->toString() + ", ";
 		called.pop_back();
 		called.pop_back();
 	}
 	called += ")";
 	return called;
+}
+
+bool FunctionCall::hasDataPlaceholders() const {
+	for(auto a : mFunctionArguments)
+		if(a->isDataPlaceholder())
+			return true;
+	return false;
 }

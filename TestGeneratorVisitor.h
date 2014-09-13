@@ -32,6 +32,10 @@ namespace llvm {
 
 using namespace tp;
 
+class DataPlaceholderVisitor : public Visitor {
+	void VisitTestDefinition(TestDefinition*);
+};
+
 class TestGeneratorVisitor : public Visitor {
 private:
     llvm::Module *mModule;
