@@ -166,8 +166,6 @@ public:
 
     TestExpr() : line(0), column(0) { ++leaks; }
 
-    virtual void dump() = 0;
-
     virtual void accept(Visitor *) = 0;
 
     virtual ~TestExpr() {--leaks;}
@@ -215,10 +213,6 @@ public:
             mType = LESS;
     }
 
-    void dump() {
-        cout << mStringRepresentation;
-    }
-
     void accept(Visitor* v) {
         v->VisitComparisonOperator(this);
     }
@@ -240,12 +234,6 @@ public:
     explicit NumericConstant(float f) : mIC(0), mFC(f), mIsInt(false) { }
     ~NumericConstant() {}
 
-    void dump() {
-        if (isInt())
-            cout << "int = " << mIC;
-        if (isFloat())
-            cout << "float = " << mFC;
-    }
     void accept(Visitor* v) {
         v->VisitNumericConstant(this);
     }
@@ -264,9 +252,6 @@ public:
 
     ~StringConstant() {}
 
-    void dump() {
-        cout << mStr;
-    }
     void accept(Visitor* v) {
         v->VisitStringConstant(this);
     }
@@ -280,9 +265,7 @@ private:
 public:
     explicit CharConstant(char C) : mC(C) {}
     ~CharConstant() {}
-    void dump() {
-        cout << "char = " << mC;
-    }
+
     void accept(Visitor* v) {
         v->VisitCharConstant(this);
     }
@@ -313,11 +296,6 @@ public:
         if(mCC) delete mCC;
     }
 
-    void dump() {
-        if(mNC) mNC->dump();
-        if(mSC) mSC->dump();
-        if(mCC) mCC->dump();
-    }
     void accept(Visitor* v) {
         if(mNC) mNC->accept(v);
         if(mSC) mSC->accept(v);
@@ -357,10 +335,6 @@ public:
 
     ~Identifier() {    }
 
-    void dump() {
-        cout << mIdentifierString;
-    }
-
     void accept(Visitor *v) {
         v->VisitIdentifier(this);
     }
@@ -380,13 +354,6 @@ public:
             delete mC;
         if(mI)
             delete mI;
-    }
-
-    void dump() {
-        if(mC)
-            mC->dump();
-        if(mI)
-            mI->dump();
     }
 
     void accept(Visitor* v) {
@@ -420,9 +387,6 @@ public:
     explicit ExpectedConstant(Constant *C) : mC(C) {}
     ~ExpectedConstant() { delete mC;}
 
-    void dump() {
-        mC->dump();
-    }
     void accept(Visitor* v) {
         mC->accept(v);
         v->VisitExpectedConstant(this);
@@ -461,10 +425,6 @@ public:
     const string& getStringRepresentation() const { return StringRepresentation; }
     TokenType getTokenType() const { return mTokenType; }
 
-    void dump() {
-        cout << StringRepresentation;
-    }
-
     void accept(Visitor *v) {
        v->VisitArgument(this); // Argument doesn't have any children
     }
@@ -482,7 +442,7 @@ public:
         mStructValue(val) {}
 
     ~InitializerValue();
-    void dump();
+
     void accept(Visitor *v);
 
     bool isArgument() const { return (mArgValue) ? true : false; }
@@ -502,13 +462,6 @@ public:
     ~InitializerList() {
         for(InitializerValue*& ptr : mArguments)
             delete ptr;
-    }
-
-    void dump() {
-        for(InitializerValue*& ptr : mArguments) {
-            ptr->dump();
-            cout<<" ";
-        }
     }
 
     void accept(Visitor *v) {
@@ -535,19 +488,6 @@ public:
             arg = get<1>(tup);
             delete id;
             delete arg;
-        }
-    }
-
-    void dump() {
-        Identifier * id = nullptr;
-        InitializerValue * arg = nullptr;
-        for(tuple<Identifier*,InitializerValue*>& tup : mInit) {
-            id = get<0>(tup);
-            arg = get<1>(tup);
-            id->dump();
-            cout<<"=";
-            arg->dump();
-            cout<<" ";
         }
     }
 
@@ -582,12 +522,6 @@ public:
         if (mInitializerList) delete mInitializerList;
         if (mDesignatedInitializer) delete mDesignatedInitializer;
     }
-    void dump() {
-        cout << "{ ";
-        if (mInitializerList) mInitializerList->dump();
-        if (mDesignatedInitializer) mDesignatedInitializer->dump();
-        cout << "}"<<endl;
-    }
 
     void accept(Visitor *v) {
         if (mInitializerList) mInitializerList->accept(v);
@@ -615,8 +549,6 @@ public:
 
     virtual ~FunctionCall();
 
-    void dump();
-
     void accept(Visitor *v);
 
     string getFunctionCalledString();
@@ -634,10 +566,6 @@ public:
     ~ExpectedResult() {
         delete mEC;
         delete mCompOp;
-    }
-    void dump() {
-        mCompOp->dump();
-        mEC->dump();
     }
 
     void accept(Visitor *v) {
@@ -666,12 +594,6 @@ public:
         delete mLHS;
         delete mCO;
         delete mRHS;
-    }
-
-    void dump() {
-        mLHS->dump();
-        mCO->dump();
-        mRHS->dump();
     }
 
     void accept(Visitor* v) {
@@ -719,12 +641,6 @@ public:
     bool isAllocatingStruct() const { return (mStructInit) ? true : false; }
 
     const StructInitializer* getStructInitializer() const { return mStructInit; }
-
-    void dump() {
-        mIntBuffSize->dump();
-        if (mIntDefaultValue) mIntDefaultValue->dump();
-        if (mStructInit) mStructInit->dump();
-    }
 
     void accept(Visitor *v) {
         mIntBuffSize->accept(v);
@@ -791,14 +707,6 @@ public:
         return TOK_ERR;
     }
 
-    void dump() {
-        mIdentifier->dump();
-        cout << " = ";
-        if (mArgument) mArgument->dump();
-        if (mStructInitializer) mStructInitializer->dump();
-        if (mBufferAlloc) mBufferAlloc->dump();
-    }
-
     void accept(Visitor *v){
         mIdentifier->accept(v);
         if (mArgument) mArgument->accept(v);
@@ -823,10 +731,6 @@ public:
     ~MockupVariable() {
         if (mVariableAssignment)
             delete mVariableAssignment;
-    }
-
-    void dump() {
-        mVariableAssignment->dump();
     }
 
     void accept(Visitor *v) {
@@ -865,12 +769,6 @@ public:
 
         if (mArgument)
             delete mArgument;
-    }
-
-    void dump() {
-        mFunctionCall->dump();
-        cout << " = ";
-        mArgument->dump();
     }
 
     void accept(Visitor *v) {
@@ -932,22 +830,6 @@ public:
             delete ptr;
     }
 
-    void dump() {
-        if (mMockupVariables.size())
-            cout << "MOCKUP VARIABLES" << endl;
-        for (auto*& ptr : mMockupVariables) {
-            ptr->dump();
-            cout << endl;
-        }
-
-        if (mMockupFunctions.size())
-            cout << "MOCKUP FUNCTIONS" << endl;
-        for (auto*& ptr : mMockupFunctions) {
-            ptr->dump();
-            cout << endl;
-        }
-    }
-
     void accept(Visitor *v) {
         for (auto*& ptr : mMockupVariables)
             ptr->accept(v);
@@ -981,12 +863,6 @@ public:
         if (mMockupFixture) delete mMockupFixture;
     }
 
-    void dump() {
-        cout << "mockup {" << endl;
-        mMockupFixture->dump();
-        cout << "}" << endl;
-    }
-
     void accept(Visitor *v) {
         mMockupFixture->accept(v);
         v->VisitTestMockup(this);
@@ -1015,16 +891,6 @@ public:
             delete ptr;
     }
 
-    void dump() {
-        if (mStmt.size()) {
-            for (auto*& ptr : mStmt) {
-                ptr->dump();
-                cout << " ";
-            }
-            cout << endl;
-        }
-    }
-
     void accept(Visitor *v) {
         for (auto*& ptr : mStmt)
             ptr->accept(v);
@@ -1042,12 +908,6 @@ public:
 
     ~TestSetup() {
         if (mTestFixtureExpr) delete mTestFixtureExpr;
-    }
-
-    void dump() {
-        cout << "before {";
-        mTestFixtureExpr->dump();
-        cout << "}" << endl;
     }
 
     void accept(Visitor *v) {
@@ -1072,11 +932,6 @@ public:
     FunctionCall* getFunctionCall() const {return mFunctionCall; }
     ExpectedResult* getExpectedResult() const {return mExpectedResult; }
 
-    void dump() {
-        mFunctionCall->dump();
-        mExpectedResult->dump();
-    }
-
     void accept(Visitor *v) {
         mFunctionCall->accept(v);
         if (mExpectedResult)
@@ -1098,12 +953,6 @@ public:
         if (mTestFixture) delete mTestFixture;
     }
 
-    void dump() {
-        cout << "after {";
-        mTestFixture->dump();
-        cout << "}" << endl << endl;
-    }
-
     void accept(Visitor *v) {
         mTestFixture->accept(v);
         v->VisitTestTeardown(this);
@@ -1115,10 +964,6 @@ private:
     unique_ptr<StringConstant> mDataPath;
 public:
     TestData(unique_ptr<StringConstant> path) : mDataPath(move(path)) {}
-
-    void dump() {
-
-    }
 
     void accept(Visitor* v) {
         v->VisitTestInfo(this);
@@ -1158,20 +1003,6 @@ public:
         if (mTestMockup) delete mTestMockup;
     }
 
-    void dump() {
-        if (mTestMockup) {
-            mTestMockup->dump();
-        }
-        if (mTestSetup) {
-            mTestSetup->dump();
-        }
-        FunctionCall->dump();
-        cout << endl;
-        if (mTestTeardown) {
-            mTestTeardown->dump();
-        }
-    }
-
     void accept(Visitor *v) {
         v->VisitTestDefinitionFirst(this);
         if(mTestInfo) mTestInfo->accept(v);
@@ -1180,12 +1011,6 @@ public:
         FunctionCall->accept(v);
         if(mTestTeardown) mTestTeardown->accept(v);
         v->VisitTestDefinition(this);
-    }
-
-    void propagateGroupName() {
-//        FunctionCall->setGroupName(LLVMFunctionHolder::getGroupName());
-//        if(mTestSetup) mTestSetup->setGroupName(LLVMFunctionHolder::getGroupName());
-//        if(mTestTeardown) mTestTeardown->setGroupName(LLVMFunctionHolder::getGroupName());
     }
 
     void setFailedExpectedExpressions(std::vector<ExpectedExpression*> failed) {
@@ -1214,12 +1039,6 @@ public:
         if (mMockupFixture) delete mMockupFixture;
     }
 
-    void dump() {
-        cout << "mockup_all {" << endl;
-        mMockupFixture->dump();
-        cout << "}" << endl << endl;
-    }
-
     void accept(Visitor *v) {
         mMockupFixture->accept(v);
         v->VisitGlobalMockup(this);
@@ -1235,12 +1054,6 @@ public:
 
     ~GlobalSetup() {
         if (mTestFixture) delete mTestFixture;
-    }
-
-    void dump() {
-        cout << "before_all {";
-        mTestFixture->dump();
-        cout << "}" << endl << endl;
     }
 
     void accept(Visitor *v) {
@@ -1263,12 +1076,6 @@ public:
 
     ~GlobalTeardown() {
         if (mTestFixture) delete mTestFixture;
-    }
-
-    void dump() {
-        cout << "after_all {" << endl;
-        mTestFixture->dump();
-        cout << "}" << endl;
     }
 
     void accept(Visitor *v) {
@@ -1310,17 +1117,6 @@ public:
             delete ptr;
     }
 
-    void dump() {
-        if (mName) mName->dump();
-        if (mGlobalMockup) mGlobalMockup->dump();
-        if (mGlobalSetup) mGlobalSetup->dump();
-        if (mGlobalTeardown) mGlobalTeardown->dump();
-        for (auto*& ptr : mTests) {
-            ptr->dump();
-            cout << endl;
-        }
-    }
-
     void accept(Visitor *v) {
         v->VisitTestGroupFirst(this);
         if (mName) mName->accept(v);
@@ -1352,10 +1148,6 @@ public:
 
     ~TestFile() {
         if (mTestGroups) delete mTestGroups;
-    }
-
-    void dump() {
-        mTestGroups->dump();
     }
 
     void accept(Visitor *v) {
@@ -1403,16 +1195,6 @@ public:
     }
 
     BufferAlloc* getBufferAlloc() const { return argBuffAlloc; }
-
-    void dump() {
-        cout<<Parent->getIdentifier()->getIdentifierStr()<<"(";
-        cout<<ArgIndx<<":";
-        if(argArgument)
-            argArgument->dump();
-        if(argBuffAlloc)
-            argBuffAlloc->dump();
-        cout<<")";
-    }
 
     void accept(Visitor *v) {
         if(argArgument)

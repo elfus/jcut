@@ -654,7 +654,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 					testDefinition->setGroupName(name->getIdentifierStr());
 				else
 					testDefinition->setGroupName("default");
-								testDefinition->propagateGroupName();
+
 				tests.push_back(testDefinition);
 			}
 		}
@@ -770,17 +770,6 @@ FunctionCall::~FunctionCall()
 	}
 }
 
-void FunctionCall::dump()
-{
-	FunctionName->dump();
-	cout << "(";
-	for (auto arg : FunctionArguments) {
-		arg->dump();
-		cout << ",";
-	}
-	cout << ")";
-}
-
 void FunctionCall::accept(Visitor *v)
 {
 	for (FunctionArgument*& ptr : FunctionArguments) {
@@ -792,11 +781,6 @@ void FunctionCall::accept(Visitor *v)
 InitializerValue::~InitializerValue() {
 	if (mArgValue) delete mArgValue;
 	if (mStructValue) delete mStructValue;
-}
-
-void InitializerValue::dump() {
-	if (mArgValue) mArgValue->dump();
-	if (mStructValue) mStructValue->dump();
 }
 
 void InitializerValue::accept(Visitor *v) {
