@@ -39,11 +39,9 @@ mTestResult(nullptr)
 void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 {
 	assert(arg->isDataPlaceholder()==false && "Cannot generate FunctionArgument code from a DataPlaceholder.");
-	FunctionCall* parent = arg->getParent();
-	string func_name = parent->getIdentifier()->getIdentifierStr();
-	llvm::Function *currentFunction = mModule->getFunction(func_name);
+	llvm::Function *currentFunction = mModule->getFunction(mCurrentFud);
 	if( currentFunction == nullptr) {
-		cout << "Function not found!: " << func_name << endl;
+		cout << "Function not found!: " << mCurrentFud << endl;
 	}
 	assert(currentFunction != nullptr && "Function not found!");
 	llvm::Function::arg_iterator arg_it = currentFunction->arg_begin();
@@ -858,26 +856,20 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 
 	if (d && TF->hasDataPlaceholders()) {
 		string path = d->getDataPath();
-		cout << "Data path: " << path << endl;
 		TestDefinition* copy = new TestDefinition(*TD);
 
+		// Get the number of DataPlaceholders in a FunctionCall
+		// Check if the ExpectedResult is a DataPlaceholder (at most 1)
+		// total number of DataPlaceholders
 		FunctionCall* FC = TF->getFunctionCall();
 		ExpectedResult* ER = TF->getExpectedResult();
+		vector<unsigned> dp_positions =  FC->getDataPlaceholdersPos();
+		for(unsigned i : dp_positions) {
+			FC->replaceDataPlaceholder(i, new FunctionArgument(new tp::Argument("10", TOK_INT)));
+		}
 
-		cout << "<<<<<<<<<<ORIGINAL TEST DEFINITION>>>>>>>>>>"<<endl;
-		if(FC->hasDataPlaceholders())
-			cout << "Function call has placeholders" << endl;
 		if(ER && ER->isDataPlaceholder())
-			cout << "ExpectedResult is a placeholder" << endl;
-
-
-		cout << "<<<<<<<<<<COPY TEST DEFINITION>>>>>>>>>>"<<endl;
-		FC = copy->getTestFunction()->getFunctionCall();
-		ER = copy->getTestFunction()->getExpectedResult();
-		if(FC->hasDataPlaceholders())
-			cout << "Function call has placeholders" << endl;
-		if(ER && ER->isDataPlaceholder())
-			cout << "ExpectedResult is a placeholder" << endl;
+			ER->replaceDataPlaceholder(new ExpectedConstant(new tp::Constant(new NumericConstant(10))));
 
 		delete copy;
 	}else {

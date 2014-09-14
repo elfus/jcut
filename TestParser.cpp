@@ -776,7 +776,6 @@ mFunctionName(name), mFunctionArguments(arg), mReturnType(nullptr)
 	TestExpr::type = TestExpr::FUNC_CALL;
 	unsigned i = 0;
 	for (auto*& arg : mFunctionArguments) {
-		arg->setParent(this);
 		arg->setIndex(i);
 		++i;
 	}
@@ -827,11 +826,22 @@ string FunctionCall::getFunctionCalledString() {
 	return called;
 }
 
-bool FunctionCall::hasDataPlaceholders() const {
+bool FunctionCall::hasDataPlaceholders() const
+{
 	for(auto a : mFunctionArguments)
 		if(a->isDataPlaceholder())
 			return true;
 	return false;
+}
+
+vector<unsigned> FunctionCall::getDataPlaceholdersPos() const
+{
+	vector<unsigned> positions;
+	unsigned i = 0;
+	for(auto p : mFunctionArguments)
+		if(p->isDataPlaceholder())
+			positions.push_back(i++);
+	return positions;
 }
 
 FunctionCall::FunctionCall(const FunctionCall& that)
@@ -840,6 +850,20 @@ FunctionCall::FunctionCall(const FunctionCall& that)
 		mFunctionName = new Identifier(*that.mFunctionName);
 	for(FunctionArgument* fa : that.mFunctionArguments)
 		mFunctionArguments.push_back(new FunctionArgument(*fa));
+}
+
+bool FunctionCall::replaceDataPlaceholder(unsigned pos, FunctionArgument* new_arg) {
+	if(pos >= mFunctionArguments.size())
+		assert(false && "Invalid replacement position!");
+
+	if(mFunctionArguments[pos]->isDataPlaceholder() == false)
+		assert(false && "This is not a DataPlaceholder!");
+
+	FunctionArgument* to_delete = mFunctionArguments[pos];
+	mFunctionArguments[pos] = new_arg;
+	delete to_delete;
+	to_delete = nullptr;
+	return true;
 }
 
 InitializerValue::InitializerValue(const InitializerValue& that)

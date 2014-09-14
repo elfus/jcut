@@ -307,9 +307,20 @@ private:
     Type    mType;
     string mStr; // String representation of this constant regardless its type
 public:
-    Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr), mType(NUMERIC) {}
-    Constant(StringConstant *C) : mNC(nullptr), mSC(C), mCC(nullptr), mType(STRING) {}
-    Constant(CharConstant *C) : mNC(nullptr), mSC(nullptr), mCC(C), mType(CHAR) {}
+    Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr), mType(NUMERIC) {
+    	stringstream ss;
+
+    	if(C->isInt())
+    		ss << C->getInt();
+    	if(C->isFloat())
+    		ss << C->getFloat();
+    	mStr = ss.str();
+    }
+    Constant(StringConstant *C) : mNC(nullptr), mSC(C), mCC(nullptr), mType(STRING),
+    		mStr(C->getString()){}
+    Constant(CharConstant *C) : mNC(nullptr), mSC(nullptr), mCC(C), mType(CHAR) {
+    		mStr = C->getChar();
+    }
     Constant(const Constant& that)
     : mNC(nullptr), mSC(nullptr), mCC(nullptr), mType(INVALID) {
     	if(that.mNC) mNC = new NumericConstant(*that.mNC);
@@ -621,6 +632,9 @@ public:
     llvm::Type* getReturnType() const { return mReturnType; }
 
     bool hasDataPlaceholders() const;
+    vector<unsigned> getDataPlaceholdersPos() const;
+
+    bool replaceDataPlaceholder(unsigned pos, FunctionArgument* new_arg);
 };
 
 class ExpectedResult : public TestExpr {
@@ -652,6 +666,14 @@ public:
 
     bool isDataPlaceholder() const {
     	return mEC->isDataPlaceholder();
+    }
+
+    bool replaceDataPlaceholder(ExpectedConstant* ER) {
+    	if(mEC->isDataPlaceholder() == false)
+    		return false;
+    	delete mEC;
+    	mEC = ER;
+    	return true;
     }
 };
 
@@ -1377,9 +1399,7 @@ public:
         return "BuffAlloc string";
     }
     unsigned getIndex() const { return ArgIndx; }
-    FunctionCall* getParent() const { return Parent; }
     void setIndex(unsigned ndx) {ArgIndx = ndx; }
-    void setParent(FunctionCall *ptr) {Parent = ptr; }
     const string& getStringRepresentation() const {
         return argArgument->getStringRepresentation();
     }
