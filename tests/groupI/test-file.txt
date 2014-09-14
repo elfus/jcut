@@ -1,0 +1,21 @@
+data { "path"; }
+sum(2,2) == 4;
+
+data { "data.txt"; }
+sum(@, 2);
+
+data { "data.txt"; }
+sum(1, @);
+
+data { "data.txt"; }
+sum(@, @);
+
+data { "data.txt"; }
+sum(@, 2) >= 2;
+
+data { "data.txt"; }
+sum(1, @) >= 1;
+
+data { "data.txt"; }
+sum(@, @) == @;
+
