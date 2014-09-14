@@ -163,8 +163,13 @@ private:
 
 class TestExpr {
 public:
-
-    TestExpr() : line(0), column(0) { ++leaks; }
+	enum Type {
+		OTHER = 0,
+		FUNC_CALL,
+		VAR_ASSIGN,
+		EXPECT_EXPR
+	};
+    TestExpr() : line(0), column(0), type(OTHER) { ++leaks; }
 
     virtual void accept(Visitor *) = 0;
 
@@ -180,9 +185,11 @@ public:
     int getLine() const { return line; }
     void setColumn(int c) { column = c; }
     int getColumn() const { return column; }
+    Type getType() const { return type; }
 protected:
     int line;
     int column;
+    Type type;
 };
 
 class DataPlaceholder : public TestExpr {
@@ -219,6 +226,8 @@ public:
         else if (mStringRepresentation == "<")
             mType = LESS;
     }
+    ComparisonOperator(const ComparisonOperator& that)
+    : mStringRepresentation(that.mStringRepresentation), mType(that.mType) {}
 
     void accept(Visitor* v) {
         v->VisitComparisonOperator(this);
@@ -239,6 +248,8 @@ private:
 public:
     explicit NumericConstant(int i) : mIC(i), mFC(0), mIsInt(true) { }
     explicit NumericConstant(float f) : mIC(0), mFC(f), mIsInt(false) { }
+    NumericConstant(const NumericConstant& that)
+    : mIC(that.mIC), mFC(that.mFC), mIsInt(that.mIsInt) {}
     ~NumericConstant() {}
 
     void accept(Visitor* v) {
@@ -256,6 +267,7 @@ private:
     string mStr;
 public:
     StringConstant(const string& str) : mStr(str) {}
+    StringConstant(const StringConstant& that) : mStr(that.mStr) {}
 
     ~StringConstant() {}
 
@@ -271,6 +283,7 @@ private:
     char mC;
 public:
     explicit CharConstant(char C) : mC(C) {}
+    CharConstant(const CharConstant& that) : mC(that.mC) {}
     ~CharConstant() {}
 
     void accept(Visitor* v) {
@@ -297,6 +310,13 @@ public:
     Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr), mType(NUMERIC) {}
     Constant(StringConstant *C) : mNC(nullptr), mSC(C), mCC(nullptr), mType(STRING) {}
     Constant(CharConstant *C) : mNC(nullptr), mSC(nullptr), mCC(C), mType(CHAR) {}
+    Constant(const Constant& that)
+    : mNC(nullptr), mSC(nullptr), mCC(nullptr), mType(INVALID) {
+    	if(that.mNC) mNC = new NumericConstant(*that.mNC);
+    	if(that.mSC) mSC = new StringConstant(*that.mSC);
+    	if(that.mCC) mCC = new CharConstant(*that.mCC);
+    	mType = that.mType;
+    }
     ~Constant() {
         if(mNC) delete mNC;
         if(mSC) delete mSC;
@@ -339,6 +359,8 @@ private:
 public:
 
     Identifier(const string& str) : mIdentifierString(str) {    }
+    Identifier(const Identifier& that)
+    : mIdentifierString(that.mIdentifierString) {}
 
     ~Identifier() {    }
 
@@ -356,6 +378,10 @@ private:
 public:
     explicit Operand(Constant* C) : mC(C), mI(nullptr) {}
     explicit Operand(Identifier* I) : mC(nullptr), mI(I) {}
+    Operand(const Operand& that) : mC(nullptr), mI(nullptr) {
+    	if(that.mC) mC = new Constant(*that.mC);
+    	if(that.mI) mI = new Identifier(*that.mI);
+    }
     ~Operand() {
         if (mC)
             delete mC;
@@ -394,6 +420,11 @@ public:
     ExpectedConstant() = delete;
     explicit ExpectedConstant(Constant *C) : mC(C), mDP(nullptr) {}
     explicit ExpectedConstant(unique_ptr<DataPlaceholder> dp) : mC(nullptr), mDP(move(dp)) {}
+    ExpectedConstant(const ExpectedConstant& that) : mC(nullptr), mDP(nullptr) {
+    	if(that.mC) mC = new Constant(*that.mC);
+    	if(that.mDP.get())
+    		mDP =  unique_ptr<DataPlaceholder>(new DataPlaceholder(*that.mDP.get()));
+    }
     ~ExpectedConstant() { delete mC;}
 
     void accept(Visitor* v) {
@@ -433,6 +464,9 @@ public:
             StringRepresentation = ss.str();
         }
     }
+    Argument(const Argument& that)
+    : StringRepresentation(that.StringRepresentation),
+      mTokenType(that.mTokenType) {}
 
     ~Argument() {}
 
@@ -454,7 +488,7 @@ public:
     explicit InitializerValue(Argument* val) : mArgValue(val), mStructValue(nullptr) {}
     explicit InitializerValue(StructInitializer* val) : mArgValue(nullptr),
         mStructValue(val) {}
-
+    InitializerValue(const InitializerValue& that);
     ~InitializerValue();
 
     void accept(Visitor *v);
@@ -473,6 +507,10 @@ private:
     vector<InitializerValue*> mArguments;
 public:
     InitializerList(vector<InitializerValue*> & arg) : mArguments(arg) {}
+    InitializerList(const InitializerList& that) {
+    	for(InitializerValue* iv : that.mArguments)
+    		mArguments.push_back(new InitializerValue(*iv));
+    }
     ~InitializerList() {
         for(InitializerValue*& ptr : mArguments)
             delete ptr;
@@ -494,6 +532,9 @@ private:
 public:
     DesignatedInitializer(vector<tuple<Identifier*,InitializerValue*>> & arg)
             : mInit(arg) {}
+    DesignatedInitializer(const DesignatedInitializer& that) {
+    	assert(false && "Not supported at the moment");
+    }
     ~DesignatedInitializer() {
         Identifier * id = nullptr;
         InitializerValue * arg = nullptr;
@@ -532,6 +573,15 @@ public:
     StructInitializer(DesignatedInitializer *init)
         : mInitializerList(nullptr), mDesignatedInitializer(init) {}
 
+    StructInitializer(const StructInitializer& that)
+    : mInitializerList(nullptr), mDesignatedInitializer(nullptr) {
+    	if (that.mInitializerList)
+    		mInitializerList = new InitializerList(*that.mInitializerList);
+    	if (that.mDesignatedInitializer)
+    		mDesignatedInitializer = new DesignatedInitializer
+    								 (*that.mDesignatedInitializer);
+    }
+
     ~StructInitializer() {
         if (mInitializerList) delete mInitializerList;
         if (mDesignatedInitializer) delete mDesignatedInitializer;
@@ -560,6 +610,7 @@ public:
     Identifier *getIdentifier() const {return mFunctionName;}
 
     FunctionCall(Identifier* name, const vector<FunctionArgument*>& arg);
+    FunctionCall(const FunctionCall& that);
 
     virtual ~FunctionCall();
 
@@ -579,6 +630,12 @@ private:
 public:
     ExpectedResult(ComparisonOperator* cmp, ExpectedConstant* Arg) :
     mCompOp(cmp), mEC(Arg) {}
+    ExpectedResult(const ExpectedResult& that) : mCompOp(nullptr), mEC(nullptr){
+    	if(that.mCompOp)
+    		mCompOp = new ComparisonOperator(*that.mCompOp);
+    	if(that.mEC)
+    		mEC = new ExpectedConstant(*that.mEC);
+    }
     ~ExpectedResult() {
         delete mEC;
         delete mCompOp;
@@ -609,6 +666,13 @@ public:
     mLHS(LHS), mCO(CO), mRHS(RHS) {
     	setLine(l);
     	setColumn(c);
+    	type = TestExpr::EXPECT_EXPR;
+    }
+    ExpectedExpression(const ExpectedExpression& that)
+    : mLHS(nullptr), mCO(nullptr), mRHS(nullptr) {
+    	mLHS = new Operand(*that.mLHS);
+    	mCO = new ComparisonOperator(*that.mCO);
+    	mRHS = new Operand(*that.mRHS);
     }
     ~ExpectedExpression() {
         delete mLHS;
@@ -650,6 +714,16 @@ public:
     BufferAlloc(Argument* size, StructInitializer* init):
             mIntBuffSize(size), mIntDefaultValue(nullptr),  mStructInit(init)  {
 
+    }
+
+    BufferAlloc(const BufferAlloc& that)
+    : mIntBuffSize(nullptr), mIntDefaultValue(nullptr), mStructInit(nullptr) {
+    	if (that.mIntBuffSize)
+    		mIntBuffSize = new Argument(*that.mIntBuffSize);
+    	if (that.mIntDefaultValue)
+    		mIntDefaultValue = new Argument(*that.mIntDefaultValue);
+    	if (that.mStructInit)
+    		mStructInit = new StructInitializer(*that.mStructInit);
     }
 
     ~BufferAlloc() {
@@ -694,13 +768,30 @@ private:
 public:
 
     explicit VariableAssignment(Identifier *id, Argument *arg) :
-    mIdentifier(id), mArgument(arg), mStructInitializer(nullptr), mBufferAlloc(nullptr) {  }
+    mIdentifier(id), mArgument(arg), mStructInitializer(nullptr), mBufferAlloc(nullptr) {
+    	type = TestExpr::VAR_ASSIGN;
+    }
 
     explicit  VariableAssignment(Identifier *id, StructInitializer *arg) :
-    mIdentifier(id), mArgument(nullptr), mStructInitializer(arg), mBufferAlloc(nullptr) {  }
+    mIdentifier(id), mArgument(nullptr), mStructInitializer(arg), mBufferAlloc(nullptr) {
+    	type = TestExpr::VAR_ASSIGN;
+    }
 
     explicit VariableAssignment(Identifier *id, BufferAlloc *ba) :
-    mIdentifier(id), mArgument(nullptr), mStructInitializer(nullptr), mBufferAlloc(ba) { }
+    mIdentifier(id), mArgument(nullptr), mStructInitializer(nullptr), mBufferAlloc(ba) {
+    	type = TestExpr::VAR_ASSIGN;
+    }
+
+    VariableAssignment(const VariableAssignment& that) :
+    mIdentifier(nullptr), mArgument(nullptr),
+    mStructInitializer(nullptr), mBufferAlloc(nullptr) {
+    	if(that.mIdentifier) mIdentifier = new Identifier(*that.mIdentifier);
+    	if(that.mArgument) mArgument = new Argument(*that.mArgument);
+    	if(that.mStructInitializer)
+    		mStructInitializer = new StructInitializer(*that.mStructInitializer);
+    	if(that.mBufferAlloc)
+    		mBufferAlloc = new BufferAlloc(*that.mBufferAlloc);
+    }
 
     ~VariableAssignment() {
         delete mIdentifier;
@@ -902,8 +993,29 @@ private:
     vector<TestExpr*> mStmt;
 public:
 
-    TestFixture(const vector<TestExpr*>& stmnt) : mStmt(stmnt) {
-
+    TestFixture(const vector<TestExpr*>& stmnt) : mStmt(stmnt) { }
+    /// @warning @bug Watch for possible bugs here. We may need tod convert
+    /// to that derived type first in order to copy!
+    TestFixture(const TestFixture& that) {
+    	for(TestExpr* t : that.mStmt) {
+    		if(t->getType() == TestExpr::FUNC_CALL) {
+    			FunctionCall* fc = static_cast<FunctionCall*>(t);
+    			mStmt.push_back(new FunctionCall(*fc));
+    			continue;
+    		}
+			if(t->getType() == TestExpr::VAR_ASSIGN) {
+				VariableAssignment* va = static_cast<VariableAssignment*>(t);
+				    			mStmt.push_back(new VariableAssignment(*va));
+				continue;
+			}
+			if(t->getType() == TestExpr::EXPECT_EXPR) {
+				ExpectedExpression* ee = static_cast<ExpectedExpression*>(t);
+				    			mStmt.push_back(new ExpectedExpression(*ee));
+				continue;
+			}
+			if(t->getType() == TestExpr::OTHER)
+				assert(false && "Fatal error!");
+    	}
     }
 
     ~TestFixture() {
@@ -925,6 +1037,10 @@ public:
 
     TestSetup(TestFixture* fixture) : mTestFixtureExpr(fixture) {
     }
+    TestSetup(const TestSetup& that) : mTestFixtureExpr(nullptr) {
+    	if (that.mTestFixtureExpr)
+    		mTestFixtureExpr = new TestFixture(*that.mTestFixtureExpr);
+    }
 
     ~TestSetup() {
         if (mTestFixtureExpr) delete mTestFixtureExpr;
@@ -944,6 +1060,14 @@ private:
 public:
     TestFunction(FunctionCall *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
             mExpectedResult(E) {}
+    TestFunction(const TestFunction& that)
+    : mFunctionCall(nullptr), mExpectedResult(nullptr) {
+    	if(that.mFunctionCall)
+    		mFunctionCall = new FunctionCall(*that.mFunctionCall);
+    	if(that.mExpectedResult)
+    		mExpectedResult = new ExpectedResult(*that.mExpectedResult);
+    }
+
     ~TestFunction() {
         if(mFunctionCall) delete mFunctionCall;
         if(mExpectedResult) delete mExpectedResult;
@@ -989,6 +1113,11 @@ private:
     unique_ptr<StringConstant> mDataPath;
 public:
     TestData(unique_ptr<StringConstant> path) : mDataPath(move(path)) {}
+    TestData(const TestData& that) : mDataPath(nullptr) {
+    	if(that.mDataPath.get())
+    		mDataPath = unique_ptr<StringConstant>
+    					(new StringConstant(*that.mDataPath.get()));
+    }
 
     void accept(Visitor* v) {
         v->VisitTestInfo(this);
@@ -1020,6 +1149,21 @@ public:
             TestMockup *mockup = nullptr) :
     mTestData(info), FunctionCall(function), mTestSetup(setup),
     mTestTeardown(teardown), mTestMockup(mockup)  {
+    }
+
+    TestDefinition(const TestDefinition& that)
+    : mTestData(nullptr), FunctionCall(nullptr), mTestSetup(nullptr),
+      mTestTeardown(nullptr), mTestMockup(nullptr), mFailedEE(that.mFailedEE) {
+    	if(that.mTestData)
+    		mTestData = new TestData(*that.mTestData);
+    	if(that.FunctionCall)
+    		FunctionCall = new TestFunction(*that.FunctionCall);
+    	if(that.mTestSetup)
+    		mTestSetup = new TestSetup(*that.mTestSetup);
+    	if(that.mTestTeardown)
+    		mTestTeardown = new TestTeardown(*that.mTestTeardown);
+    	if(that.mTestMockup)
+    		mTestMockup = new TestMockup(*that.mTestMockup);
     }
 
     TestData* getTestData() const { return mTestData; }
@@ -1203,6 +1347,17 @@ public:
         argArgument(nullptr), argBuffAlloc(arg), mDP(nullptr),ArgIndx(0), Parent(nullptr) { }
     explicit FunctionArgument(unique_ptr<DataPlaceholder> dp) :
             argArgument(nullptr), argBuffAlloc(nullptr), mDP(move(dp)), ArgIndx(0), Parent(nullptr) { }
+    FunctionArgument(const FunctionArgument& that):
+    	argArgument(nullptr), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(0), Parent(nullptr) {
+    	if(that.argArgument)
+    		argArgument = new Argument(*that.argArgument);
+    	if(that.argBuffAlloc)
+    		argBuffAlloc = new BufferAlloc(*that.argBuffAlloc);
+    	if(that.mDP.get())
+    		mDP = unique_ptr<DataPlaceholder>(new DataPlaceholder(*that.mDP.get()));
+    	ArgIndx = that.ArgIndx;
+    	// @bug what about the pointer to the parent? Check when we should set it.
+    }
     ~FunctionArgument() {
         if(argArgument)
             delete argArgument;

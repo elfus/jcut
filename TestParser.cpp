@@ -773,6 +773,7 @@ Identifier* TestDriver::groupNameFactory()
 FunctionCall::FunctionCall(Identifier* name, const vector<FunctionArgument*>& arg) :
 mFunctionName(name), mFunctionArguments(arg), mReturnType(nullptr)
 {
+	TestExpr::type = TestExpr::FUNC_CALL;
 	unsigned i = 0;
 	for (auto*& arg : mFunctionArguments) {
 		arg->setParent(this);
@@ -831,4 +832,20 @@ bool FunctionCall::hasDataPlaceholders() const {
 		if(a->isDataPlaceholder())
 			return true;
 	return false;
+}
+
+FunctionCall::FunctionCall(const FunctionCall& that)
+: mFunctionName(nullptr), mFunctionArguments(), mReturnType(nullptr) {
+	if (that.mFunctionName)
+		mFunctionName = new Identifier(*that.mFunctionName);
+	for(FunctionArgument* fa : that.mFunctionArguments)
+		mFunctionArguments.push_back(new FunctionArgument(*fa));
+}
+
+InitializerValue::InitializerValue(const InitializerValue& that)
+: mArgValue(nullptr), mStructValue(nullptr) {
+	if (that.mArgValue)
+		mArgValue = new Argument(*that.mArgValue);
+	if (that.mStructValue)
+		mStructValue = new StructInitializer(*that.mStructValue);
 }

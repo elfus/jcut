@@ -859,14 +859,27 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 	if (d && TF->hasDataPlaceholders()) {
 		string path = d->getDataPath();
 		cout << "Data path: " << path << endl;
+		TestDefinition* copy = new TestDefinition(*TD);
+
 		FunctionCall* FC = TF->getFunctionCall();
 		ExpectedResult* ER = TF->getExpectedResult();
+
+		cout << "<<<<<<<<<<ORIGINAL TEST DEFINITION>>>>>>>>>>"<<endl;
 		if(FC->hasDataPlaceholders())
 			cout << "Function call has placeholders" << endl;
 		if(ER && ER->isDataPlaceholder())
 			cout << "ExpectedResult is a placeholder" << endl;
 
-		cout << "This one has DataPlaceholders!" << endl;
+
+		cout << "<<<<<<<<<<COPY TEST DEFINITION>>>>>>>>>>"<<endl;
+		FC = copy->getTestFunction()->getFunctionCall();
+		ER = copy->getTestFunction()->getExpectedResult();
+		if(FC->hasDataPlaceholders())
+			cout << "Function call has placeholders" << endl;
+		if(ER && ER->isDataPlaceholder())
+			cout << "ExpectedResult is a placeholder" << endl;
+
+		delete copy;
 	}else {
 		cout << "No DataPlaceholders found!" << endl;
 	}
