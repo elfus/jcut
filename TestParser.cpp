@@ -31,17 +31,15 @@ ostream& tp::operator << (ostream& os, Token& token)
     return os;
 }
 
-Tokenizer::Tokenizer(const string& filename) : mInput(filename), mTokens(),
-	mNextToken(nullptr)
+void Tokenizer::tokenize(const string& filename)
 {
-	if (!mInput) {
-		throw Exception("Could not open file " + filename);
-	}
-
-	mInput.seekg(0);
+	mTokens.clear();
 
 	yyin = fopen( filename.c_str(), "r" );
+	if(yyin == nullptr)
+		throw Exception("Could not open file "+filename);
 	int type = TokenType::TOK_ERR;
+
 	while((type = yylex()) != TOK_EOF) {
 		mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column)));
 	}
@@ -49,6 +47,24 @@ Tokenizer::Tokenizer(const string& filename) : mInput(filename), mTokens(),
 
 	mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column+1)));
 	mNextToken = mTokens.begin();
+}
+
+void Tokenizer::tokenize(const char* buffer)
+{
+	mTokens.clear();
+
+	YY_BUFFER_STATE state = yy_scan_string(buffer);
+
+	int type = TokenType::TOK_ERR;
+
+	while((type = yylex()) != TOK_EOF) {
+		mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column)));
+	}
+
+	mTokens.push_back(std::move(Token(yytext, yyleng, type, yylineno, column+1)));
+	mNextToken = mTokens.begin();
+
+	yy_delete_buffer(state);
 }
 
 Token Tokenizer::peekToken()
@@ -838,9 +854,11 @@ vector<unsigned> FunctionCall::getDataPlaceholdersPos() const
 {
 	vector<unsigned> positions;
 	unsigned i = 0;
-	for(auto p : mFunctionArguments)
+	for(auto p : mFunctionArguments) {
 		if(p->isDataPlaceholder())
-			positions.push_back(i++);
+			positions.push_back(i);
+		++i;
+	}
 	return positions;
 }
 
@@ -872,4 +890,76 @@ InitializerValue::InitializerValue(const InitializerValue& that)
 		mArgValue = new Argument(*that.mArgValue);
 	if (that.mStructValue)
 		mStructValue = new StructInitializer(*that.mStructValue);
+}
+
+///////
+// CSVDriver
+CSVDriver::CSVDriver(const string& filename) : TestDriver(), rows(0), columns(0)
+{
+	ifstream csv(filename);
+	if(!csv)
+		throw Exception("CSV File: "+filename+" not found!");
+	string line;
+	getline(csv, line);
+	vector<string> items = split(line,',');
+	columns = items.size();
+	mMatrix.push_back(items);
+
+	while(getline(csv, line)) {
+		items = split(line, ',');
+		if(items.size() != columns)
+			throw Exception("Column mismatch in CSV file: "+filename);
+
+		mMatrix.push_back(items);
+	}
+	rows = mMatrix.size();
+}
+
+vector<string> CSVDriver::split(string line, char split_char)
+{
+	vector<string> splitted;
+	string item;
+	for(auto c : line) {
+		if(c == split_char) {
+			if(item.size())
+				splitted.push_back(item);
+			item = "";
+			continue;
+		}
+		item += c;
+	}
+	if(item.size())
+		splitted.push_back(item);
+	return splitted;
+}
+
+unsigned CSVDriver::columnCount()
+{
+	return columns;
+}
+
+unsigned CSVDriver::rowCount()
+{
+	return rows;
+}
+
+FunctionArgument* CSVDriver::getFunctionArgumentAt(unsigned i, unsigned j)
+{
+	string str = mMatrix[i][j];
+	mTokenizer.tokenize(str.c_str());
+	mCurrentToken = mTokenizer.nextToken();
+	if(mCurrentToken == '@')
+		assert(false && "DataPlaceholders not supported in CVS file.");
+
+	return ParseFunctionArgument();
+}
+
+ExpectedConstant* CSVDriver::getExpectedConstantAt(unsigned i, unsigned j)
+{
+	string str = mMatrix[i][j];
+	mTokenizer.tokenize(str.c_str());
+	mCurrentToken = mTokenizer.nextToken();
+	if(mCurrentToken == '@')
+			assert(false && "DataPlaceholders not supported in CVS file.");
+	return ParseExpectedConstant();
 }

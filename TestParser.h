@@ -149,14 +149,16 @@ ostream& operator << (ostream& os, Token& token);
 
 class Tokenizer {
 public:
-    Tokenizer(const string& filename);
+	Tokenizer() : mTokens(), mNextToken(nullptr) {}
 
     ~Tokenizer() {}
+
+    void tokenize(const string& filename);
+    void tokenize(const char* buffer);
 
     Token nextToken();
     Token peekToken();
 private:
-    std::ifstream mInput;
     vector<Token>   mTokens;
     vector<Token>::iterator mNextToken;
 };
@@ -323,7 +325,15 @@ public:
     }
     Constant(const Constant& that)
     : mNC(nullptr), mSC(nullptr), mCC(nullptr), mType(INVALID) {
-    	if(that.mNC) mNC = new NumericConstant(*that.mNC);
+    	if(that.mNC) {
+    		mNC = new NumericConstant(*that.mNC);
+    		stringstream ss;
+    		if(mNC->isInt())
+				ss << mNC->getInt();
+			if(mNC->isFloat())
+				ss << mNC->getFloat();
+			mStr = ss.str();
+    	}
     	if(that.mSC) mSC = new StringConstant(*that.mSC);
     	if(that.mCC) mCC = new CharConstant(*that.mCC);
     	mType = that.mType;
@@ -1398,7 +1408,9 @@ public:
     string toString() {
         if(argArgument)
             return argArgument->getStringRepresentation();
-        return "BuffAlloc string";
+        if(mDP.get())
+        	return "@";
+        return "BufferAlloc";
     }
     unsigned getIndex() const { return ArgIndx; }
     void setIndex(unsigned ndx) {ArgIndx = ndx; }
@@ -1424,23 +1436,23 @@ public:
 };
 
 class TestDriver {
-private:
-    Tokenizer mTokenizer;
-    Token mCurrentToken;
 public:
-
-    TestDriver() = delete;
+    TestDriver() {}
     TestDriver(const TestDriver&) = delete;
 
-    TestDriver(const string& file) : mTokenizer(file),
-    mCurrentToken() { }
+    TestDriver(const string& file) : mTokenizer(),
+    mCurrentToken() {
+    	mTokenizer.tokenize(file);
+    }
 
     ~TestDriver() { }
 
     TestExpr* ParseTestExpr();
-    const Tokenizer& getTokenizer() const { return mTokenizer; }
 
-private:
+protected:
+    Tokenizer mTokenizer;
+	Token mCurrentToken;
+
     /// Generates default names for groups
     Identifier* groupNameFactory();
     unique_ptr<DataPlaceholder> ParseDataPlaceholder();
@@ -1478,6 +1490,21 @@ private:
     GlobalSetup* ParseGlobalSetup();
     GlobalTeardown* ParseGlobalTeardown();
     TestFile* ParseTestFile();
+};
+
+class CSVDriver : public TestDriver{
+public:
+	CSVDriver(const string& filename);
+
+	unsigned columnCount();
+	unsigned rowCount();
+	FunctionArgument* getFunctionArgumentAt(unsigned i, unsigned j);
+	ExpectedConstant* getExpectedConstantAt(unsigned i, unsigned j);
+private:
+	unsigned rows;
+	unsigned columns;
+	vector<string> split(string line, char split_char);
+	vector<vector<string>> mMatrix;
 };
 
 } // namespace tp

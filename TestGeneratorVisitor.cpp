@@ -848,34 +848,55 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 	TestData *d = TD->getTestData();
 	TestFunction* TF = TD->getTestFunction();
 
-	if (d == nullptr && TF->hasDataPlaceholders())
-		throw Exception("You missed the data file for this test!");
+	if (d == nullptr && TF->hasDataPlaceholders()) {
+		string func = TF->getFunctionCall()->getFunctionCalledString();
+		ExpectedResult* R = TF->getExpectedResult();
+		if(R && R->isDataPlaceholder())
+			func += " " + R->getComparisonOperator()->toString() + " @";
+		throw Exception("Missing CSV file for this test: "+func+";\n"
+				"\tAdd it with the statement: 'data { \"path-to-file.csv\"; }'");
+	}
 
 	if (d && TF->hasDataPlaceholders() == false)
 		return; // Do not open file
 
 	if (d && TF->hasDataPlaceholders()) {
 		string path = d->getDataPath();
-		vector<TestDefinition*> to_be_added;
+		CSVDriver csv(path);
 
-		///////////////////////////////////////
-		// Copy the test definition N times
-		TestDefinition* copy = new TestDefinition(*TD);
+		unsigned placeholder_count = TF->getFunctionCall()->getDataPlaceholdersPos().size();
+		ExpectedResult* R = TF->getExpectedResult();
+		if(R)
+			placeholder_count += (R->isDataPlaceholder())?1:0;
 
-		FunctionCall* FC = copy->getTestFunction()->getFunctionCall();
-		vector<unsigned> dp_positions =  FC->getDataPlaceholdersPos();
-		for(unsigned i : dp_positions) {
-			FC->replaceDataPlaceholder(i, new FunctionArgument(new tp::Argument("10", TOK_INT)));
+		if(placeholder_count > csv.columnCount()) {
+			string func = TF->getFunctionCall()->getFunctionCalledString();
+			if(R && R->isDataPlaceholder())
+				func += " " + R->getComparisonOperator()->toString() + " @";
+			throw Exception("Not enough data in CVS file "+path+" for function "+func);
 		}
 
-		ExpectedResult* ER = copy->getTestFunction()->getExpectedResult();
-		if(ER && ER->isDataPlaceholder())
-			ER->replaceDataPlaceholder(new ExpectedConstant(new tp::Constant(new NumericConstant(10))));
+		vector<TestDefinition*> to_be_added;
+		for(unsigned i = 0; i < csv.rowCount(); ++i) {
+			///////////////////////////////////////
+			// Copy the test definition N times
+			TestDefinition* copy = new TestDefinition(*TD);
 
-		to_be_added.push_back(copy);
-		//
-		/////////////////////////////////////////
+			FunctionCall* FC = copy->getTestFunction()->getFunctionCall();
+			vector<unsigned> dp_positions =  FC->getDataPlaceholdersPos();
+			unsigned j = 0;
+			for(unsigned pos : dp_positions) {
+				FC->replaceDataPlaceholder(pos, csv.getFunctionArgumentAt(i,j++));
+			}
 
+			ExpectedResult* ER = copy->getTestFunction()->getExpectedResult();
+			if(ER && ER->isDataPlaceholder())
+				ER->replaceDataPlaceholder(csv.getExpectedConstantAt(i,j++));
+
+			to_be_added.push_back(copy);
+			//
+			/////////////////////////////////////////
+		}
 		mReplacements[TD] = to_be_added;
 	}else {
 		cout << "No DataPlaceholders found!" << endl;
