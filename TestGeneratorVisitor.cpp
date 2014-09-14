@@ -856,23 +856,44 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 
 	if (d && TF->hasDataPlaceholders()) {
 		string path = d->getDataPath();
+		vector<TestDefinition*> to_be_added;
+
+		///////////////////////////////////////
+		// Copy the test definition N times
 		TestDefinition* copy = new TestDefinition(*TD);
 
-		// Get the number of DataPlaceholders in a FunctionCall
-		// Check if the ExpectedResult is a DataPlaceholder (at most 1)
-		// total number of DataPlaceholders
-		FunctionCall* FC = TF->getFunctionCall();
-		ExpectedResult* ER = TF->getExpectedResult();
+		FunctionCall* FC = copy->getTestFunction()->getFunctionCall();
 		vector<unsigned> dp_positions =  FC->getDataPlaceholdersPos();
 		for(unsigned i : dp_positions) {
 			FC->replaceDataPlaceholder(i, new FunctionArgument(new tp::Argument("10", TOK_INT)));
 		}
 
+		ExpectedResult* ER = copy->getTestFunction()->getExpectedResult();
 		if(ER && ER->isDataPlaceholder())
 			ER->replaceDataPlaceholder(new ExpectedConstant(new tp::Constant(new NumericConstant(10))));
 
-		delete copy;
+		to_be_added.push_back(copy);
+		//
+		/////////////////////////////////////////
+
+		mReplacements[TD] = to_be_added;
 	}else {
 		cout << "No DataPlaceholders found!" << endl;
 	}
+}
+
+void DataPlaceholderVisitor::VisitTestGroup(TestGroup* TG)
+{
+	vector<TestExpr*>& tests = TG->getTests();
+	for(auto& kv : mReplacements) {
+		vector<TestExpr*>::iterator to_remove = find(tests.begin(),tests.end(), kv.first);
+		if(to_remove != tests.end()) { // Found
+			delete *to_remove;
+			*to_remove = nullptr;
+			vector<TestExpr*>::iterator new_pos = tests.erase(to_remove);
+			tests.insert(new_pos, kv.second.begin(), kv.second.end());
+		}
+	}
+
+	mReplacements.clear();
 }

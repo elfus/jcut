@@ -1331,6 +1331,8 @@ public:
     GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown; }
     GlobalMockup* getGlobalMockup() const { return mGlobalMockup; }
     void setGlobalTeardown(GlobalTeardown* gt) { mGlobalTeardown = gt; }
+    // Use it with wisdom, you can modify the internal object structure.
+    vector<TestExpr*>& getTests() { return mTests; }
 };
 
 class TestFile : public TestExpr {

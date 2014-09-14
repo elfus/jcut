@@ -34,6 +34,10 @@ using namespace tp;
 
 class DataPlaceholderVisitor : public Visitor {
 	void VisitTestDefinition(TestDefinition*);
+	void VisitTestGroup(TestGroup*);
+private:
+	// key = element to be removed, value = elements to be added
+	map<TestDefinition*, vector<TestDefinition*>> mReplacements;
 };
 
 class TestGeneratorVisitor : public Visitor {
