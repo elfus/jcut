@@ -47,10 +47,10 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 	llvm::Function::arg_iterator arg_it = currentFunction->arg_begin();
 
 	unsigned i = 0;
+
 	while (arg_it != currentFunction->arg_end()) {
 		if (i == arg->getIndex()) {
 			llvm::Argument& llvm_arg = *arg_it;
-
 			if (llvm_arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
 				// this is a buffer allocation
 				if(BufferAlloc *ba = arg->getBufferAlloc()) {
@@ -117,13 +117,15 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 						}
 						// Any other integer or float constant cannot be used to initialize
 						// a pointer.
-						/// @todo Get the info on which line and column this token is located at
-						throw Exception(0,0,"Cannot initialize pointer with arbitrary address "+my_str,
-							"Use the syntax [n:x] so I can allocate the memory for you.");
+						throw Exception("Cannot initialize pointer with arbitrary address "+my_str+
+							"\nUse the syntax [n:x] so I can allocate the memory for you.");
 					}
 				}
 				break;
 			}
+			if(arg->isBufferAlloc())
+				throw Exception(arg->getLine(), arg->getColumn(),
+						"Invalid argument type [BufferAlloc] for function "+mCurrentFud);
 			// Code for non-pointer types
 			llvm::AllocaInst *alloc = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "Allocation" + Twine(i));
 			alloc->setAlignment(4);
@@ -885,9 +887,8 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 			FunctionCall* FC = copy->getTestFunction()->getFunctionCall();
 			vector<unsigned> dp_positions =  FC->getDataPlaceholdersPos();
 			unsigned j = 0;
-			for(unsigned pos : dp_positions) {
+			for(unsigned pos : dp_positions)
 				FC->replaceDataPlaceholder(pos, csv.getFunctionArgumentAt(i,j++));
-			}
 
 			ExpectedResult* ER = copy->getTestFunction()->getExpectedResult();
 			if(ER && ER->isDataPlaceholder())
@@ -898,8 +899,6 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 			/////////////////////////////////////////
 		}
 		mReplacements[TD] = to_be_added;
-	}else {
-		cout << "No DataPlaceholders found!" << endl;
 	}
 }
 

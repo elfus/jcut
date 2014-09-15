@@ -863,11 +863,14 @@ vector<unsigned> FunctionCall::getDataPlaceholdersPos() const
 }
 
 FunctionCall::FunctionCall(const FunctionCall& that)
-: mFunctionName(nullptr), mFunctionArguments(), mReturnType(nullptr) {
+: TestExpr(that), mFunctionName(nullptr), mFunctionArguments(),
+  mReturnType(nullptr) {
 	if (that.mFunctionName)
 		mFunctionName = new Identifier(*that.mFunctionName);
-	for(FunctionArgument* fa : that.mFunctionArguments)
-		mFunctionArguments.push_back(new FunctionArgument(*fa));
+	for(FunctionArgument* fa : that.mFunctionArguments) {
+		FunctionArgument* copy = new FunctionArgument(*fa);
+		mFunctionArguments.push_back(copy);
+	}
 }
 
 bool FunctionCall::replaceDataPlaceholder(unsigned pos, FunctionArgument* new_arg) {
@@ -878,6 +881,7 @@ bool FunctionCall::replaceDataPlaceholder(unsigned pos, FunctionArgument* new_ar
 		assert(false && "This is not a DataPlaceholder!");
 
 	FunctionArgument* to_delete = mFunctionArguments[pos];
+	new_arg->setIndex(to_delete->getIndex());
 	mFunctionArguments[pos] = new_arg;
 	delete to_delete;
 	to_delete = nullptr;
@@ -885,7 +889,7 @@ bool FunctionCall::replaceDataPlaceholder(unsigned pos, FunctionArgument* new_ar
 }
 
 InitializerValue::InitializerValue(const InitializerValue& that)
-: mArgValue(nullptr), mStructValue(nullptr) {
+: TestExpr(that), mArgValue(nullptr), mStructValue(nullptr) {
 	if (that.mArgValue)
 		mArgValue = new Argument(*that.mArgValue);
 	if (that.mStructValue)
