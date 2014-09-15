@@ -1,4 +1,7 @@
 "hello", " world"
 "world!", " hello"
 "testing", " with strings"
-"data place holders", " replacement"
+"data place holders", "replacement"
+0, 0
+"hello", 0
+0, "world"

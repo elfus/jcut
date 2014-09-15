@@ -1,5 +1,13 @@
 #include <stdio.h>
 
+void print(char *msg1, char *msg2) {
+	if(msg1)
+		printf("%s\n",msg1);
+	if(msg2)
+		printf("\t%s\n",msg2);
+	printf("END OF MESSAGE");
+}
+
 void my_function() {
   return;
 }

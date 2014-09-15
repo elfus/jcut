@@ -1,3 +1,4 @@
+
 my_function(); 
 group A {
 	sum(2,2);
@@ -8,6 +9,13 @@ group A {
 		}
 	}
 }
+
+data { "data.csv"; }
+sum(@, @);
+
+data { "data-strings.csv"; }
+print(@, @);
+
 
 group D {
 	fact_1(3) == 6;
@@ -102,3 +110,5 @@ print_ptr_pair([1:{1,2,{3,4}}]);
 before { state = 10; }
 get_state();
 after { state > 9; }
+
+
