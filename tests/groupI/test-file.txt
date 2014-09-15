@@ -68,3 +68,6 @@ after { msg(); gint == 5; gint = 0;}
 # ERROR Condition
 # data { "data-buffer.csv"; }
 # print_bfr([1], @);
+
+data { "data-struct.csv"; }
+print_pixel(@, @);

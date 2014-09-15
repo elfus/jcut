@@ -923,8 +923,15 @@ vector<string> CSVDriver::split(string line, char split_char)
 {
 	vector<string> splitted;
 	string item;
+	bool struct_init = false;
 	for(auto c : line) {
-		if(c == split_char) {
+		// quick workaround to detect commas inside a struct
+		// initialization and ignore them
+		if(c == '{')
+			struct_init = true;
+		if(c == '}')
+			struct_init = false;
+		if(c == split_char && !struct_init) {
 			if(item.size())
 				splitted.push_back(item);
 			item = "";
