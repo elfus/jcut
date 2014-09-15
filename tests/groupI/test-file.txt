@@ -19,13 +19,28 @@ sum(1, @) >= 1;
 data { "data.txt"; }
 sum(@, @) == @;
 
-print("hola mundo!");
+data { "data.txt"; }
+before { gint == 0; msg(); gint = 5; msg();}
+sum(@, @) == @;
+after { msg(); gint == 5; gint = 0;}
+
+data { "data-float.csv"; }
+mult(@, @) >= @;
+
+# DEBUG THIS ONE: Passing a string where an integer is expected
+# data { "data-strings.csv"; }
+# sum(2, 2) != @; 
 
 data { "data-strings.csv"; }
 print(@);
 
 data { "data-strings.csv"; }
 print_double(@,@);
+
+data { "data-strings.csv"; }
+before { gint == 0; msg(); gint = 5; msg();}
+print_double(@,@);
+after { msg(); gint == 5; gint = 0;}
 
 data { "data-buffer.csv"; }
 do_math(@);
@@ -36,6 +51,20 @@ print_bfr(@, 1);
 data { "data-buffer.csv"; }
 print_bfr(@, @);
 
+data { "data-char.csv"; }
+use_char(@) == @;
+
+data { "data-char.csv"; }
+use_char(@) != '*';
+
+data { "data-char.csv"; }
+use_char('*') != @;
+
+data { "data-char.csv"; }
+before { gint == 0; msg(); gint = 5; msg();}
+use_char(@) == @;
+after { msg(); gint == 5; gint = 0;}
+
 # ERROR Condition
-#data { "data-buffer.csv"; }
-#print_bfr([1], @);
+# data { "data-buffer.csv"; }
+# print_bfr([1], @);
