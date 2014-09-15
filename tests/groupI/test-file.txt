@@ -1,4 +1,4 @@
-data { "path"; }
+data { "path"; } # data is ignored as there are no DataPlaceholders
 sum(2,2) == 4;
 
 data { "data.txt"; }
@@ -19,3 +19,23 @@ sum(1, @) >= 1;
 data { "data.txt"; }
 sum(@, @) == @;
 
+print("hola mundo!");
+
+data { "data-strings.csv"; }
+print(@);
+
+data { "data-strings.csv"; }
+print_double(@,@);
+
+data { "data-buffer.csv"; }
+do_math(@);
+
+data { "data-buffer.csv"; }
+print_bfr(@, 1);
+
+data { "data-buffer.csv"; }
+print_bfr(@, @);
+
+# ERROR Condition
+#data { "data-buffer.csv"; }
+#print_bfr([1], @);
