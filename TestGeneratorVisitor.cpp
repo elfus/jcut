@@ -38,7 +38,14 @@ mTestResult(nullptr)
  */
 void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 {
-	assert(arg->isDataPlaceholder()==false && "Cannot generate FunctionArgument code from a DataPlaceholder.");
+	if(arg->isDataPlaceholder()) {
+		string file = __FILE__;
+		unsigned pos = file.find_last_of('/') + 1;
+		file = file.substr(pos, file.size() - pos);
+		Exception::mCurrentFile = file;
+		throw Exception(__LINE__,0,"DataPlaceholders are not allowed inside a before or after statement");
+	}
+
 	llvm::Function *currentFunction = mModule->getFunction(mCurrentFud);
 	if( currentFunction == nullptr) {
 		cout << "Function not found!: " << mCurrentFud << endl;
