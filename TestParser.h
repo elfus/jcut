@@ -1136,6 +1136,11 @@ public:
 
     TestTeardown(TestFixture* fixture) : mTestFixture(fixture) {
     }
+    TestTeardown(const TestTeardown& that)
+    : TestExpr(that), mTestFixture(nullptr){
+    	if(that.mTestFixture)
+    		mTestFixture = new TestFixture(*that.mTestFixture);
+    }
 
     ~TestTeardown() {
         if (mTestFixture) delete mTestFixture;
