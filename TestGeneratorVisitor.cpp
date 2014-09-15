@@ -542,9 +542,25 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 			mWarnings.push_back(Exception(ss.str(), "", Exception::WARNING));
 		}
 
-		if (IntegerType * intType = dyn_cast<IntegerType>(type))
+		if (IntegerType * intType = dyn_cast<IntegerType>(type)) {
+			unsigned bitwidth = intType->getBitWidth();
+			int radix = 10;
+			APInt int_value;
 			// Watch for the radix, right now we use radix 10 only
-			return cast<Value>(mBuilder.getInt(APInt(intType->getBitWidth(), value, 10)));
+			unsigned bits_needed = APInt::getBitsNeeded(StringRef(value), radix);
+			if(bits_needed > bitwidth) {
+				APInt i(bits_needed, value, radix);
+				int_value = i.trunc(bitwidth);
+				stringstream ss;
+				ss <<"Truncating integer value "<<value<<"(decimal) from "
+				   <<bits_needed<<" bits to "<<bitwidth<<" bits";
+				mWarnings.push_back(Exception(ss.str(),"",Exception::WARNING));
+			} else {
+				int_value = APInt(bitwidth, value, radix);
+			}
+
+			return cast<Value>(mBuilder.getInt(int_value));
+		}
 	}
 		break;
 	// Even though this might look a repeated case like DoubleTyID, I will just
