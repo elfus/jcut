@@ -20,6 +20,7 @@
 #include <vector>
 #include <tuple>
 #include <map>
+#include <stack>
 
 namespace llvm {
     class Function;
@@ -34,10 +35,14 @@ using namespace tp;
 
 class DataPlaceholderVisitor : public Visitor {
 	void VisitTestDefinition(TestDefinition*);
+	void VisitTestGroupFirst(TestGroup*);
 	void VisitTestGroup(TestGroup*);
 private:
 	// key = element to be removed, value = elements to be added
 	map<TestDefinition*, vector<TestDefinition*>> mReplacements;
+	/// Used to control the TestDefinition that should be replaced for the
+	/// current group.
+	stack<TestDefinition*> mTests;
 };
 
 class TestGeneratorVisitor : public Visitor {

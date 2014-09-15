@@ -1192,8 +1192,7 @@ public:
             TestTeardown *teardown = nullptr,
             TestMockup *mockup = nullptr) :
     mTestData(info), FunctionCall(function), mTestSetup(setup),
-    mTestTeardown(teardown), mTestMockup(mockup)  {
-    }
+    mTestTeardown(teardown), mTestMockup(mockup) { }
 
     TestDefinition(const TestDefinition& that)
     : TestExpr(that), mTestData(nullptr), FunctionCall(nullptr), mTestSetup(nullptr),
@@ -1384,17 +1383,15 @@ protected:
     BufferAlloc *argBuffAlloc;
     unique_ptr<DataPlaceholder> mDP;
     unsigned    ArgIndx;
-    // This parent is only used for the TestGeneratorVisitor
-    FunctionCall *Parent;// Pointer to its parent
 public:
     explicit FunctionArgument(Argument *arg) :
-        argArgument(arg), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(0), Parent(nullptr) { }
+        argArgument(arg), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(0) { }
     explicit FunctionArgument(BufferAlloc *arg) :
-        argArgument(nullptr), argBuffAlloc(arg), mDP(nullptr),ArgIndx(0), Parent(nullptr) { }
+        argArgument(nullptr), argBuffAlloc(arg), mDP(nullptr),ArgIndx(0) { }
     explicit FunctionArgument(unique_ptr<DataPlaceholder> dp) :
-            argArgument(nullptr), argBuffAlloc(nullptr), mDP(move(dp)), ArgIndx(0), Parent(nullptr) { }
+            argArgument(nullptr), argBuffAlloc(nullptr), mDP(move(dp)), ArgIndx(0) { }
     FunctionArgument(const FunctionArgument& that): TestExpr(that),
-    	argArgument(nullptr), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(that.ArgIndx), Parent(nullptr) {
+    	argArgument(nullptr), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(that.ArgIndx) {
     	if(that.argArgument)
     		argArgument = new Argument(*that.argArgument);
     	if(that.argBuffAlloc)

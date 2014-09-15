@@ -898,22 +898,34 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 			//
 			/////////////////////////////////////////
 		}
-		mReplacements[TD] = to_be_added;
+		if(to_be_added.size()) {
+			mReplacements[TD] = to_be_added;
+			mTests.push(TD);
+		}
 	}
+}
+
+void DataPlaceholderVisitor::VisitTestGroupFirst(TestGroup*)
+{
+	mTests.push(nullptr);
 }
 
 void DataPlaceholderVisitor::VisitTestGroup(TestGroup* TG)
 {
 	vector<TestExpr*>& tests = TG->getTests();
-	for(auto& kv : mReplacements) {
-		vector<TestExpr*>::iterator to_remove = find(tests.begin(),tests.end(), kv.first);
+	TestDefinition* td = nullptr;
+	while((td = mTests.top()) != nullptr) {
+		vector<TestExpr*>::iterator to_remove = find(tests.begin(),tests.end(), td);
 		if(to_remove != tests.end()) { // Found
 			delete *to_remove;
 			*to_remove = nullptr;
+			vector<TestDefinition*>& replacements = mReplacements[td];
 			vector<TestExpr*>::iterator new_pos = tests.erase(to_remove);
-			tests.insert(new_pos, kv.second.begin(), kv.second.end());
+			tests.insert(new_pos, replacements.begin(), replacements.end());
+			mReplacements.erase(td);
+			mTests.pop();
 		}
 	}
-
-	mReplacements.clear();
+	assert(mTests.top() == nullptr && "Invalid DataPlaceholder replacement!");
+	mTests.pop();
 }

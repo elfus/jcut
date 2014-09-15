@@ -71,3 +71,54 @@ after { msg(); gint == 5; gint = 0;}
 
 data { "data-struct.csv"; }
 print_pixel(@, @);
+
+group A {
+	data { "data-char.csv"; }
+	before { gint == 0; msg(); gint = 5; msg();}
+	use_char(@) == @;
+	after { msg(); gint == 5; gint = 0;}
+
+	group A {
+		data { "data-char.csv"; }
+		before { gint == 0; msg(); gint = 5; msg();}
+		use_char(@) == @;
+		after { msg(); gint == 5; gint = 0;}
+
+		data { "data-char.csv"; }
+		use_char('*') != @;
+
+		group A {
+			data { "data-char.csv"; }
+			before { gint == 0; msg(); gint = 5; msg();}
+			use_char(@) == @;
+			after { msg(); gint == 5; gint = 0;}
+
+			data { "data-char.csv"; }
+			use_char('*') != @;
+
+			data { "data-char.csv"; }
+			before { gint == 0; msg(); gint = 5; msg();}
+			use_char(@) == @;
+			after { msg(); gint == 5; gint = 0;}
+		}
+
+		data { "data-char.csv"; }
+		before { gint == 0; msg(); gint = 5; msg();}
+		use_char(@) == @;
+		after { msg(); gint == 5; gint = 0;}
+	}
+
+	data { "data-char.csv"; }
+	use_char('*') != @;
+
+	data { "data-char.csv"; }
+	before { gint == 0; msg(); gint = 5; msg();}
+	use_char(@) == @;
+	after { msg(); gint == 5; gint = 0;}
+}
+
+data { "data-struct.csv"; }
+print_pixel(@, @);
+
+data { "data-char.csv"; }
+use_char(@) == @;
