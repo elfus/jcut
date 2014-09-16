@@ -551,7 +551,7 @@ MockupFixture* TestDriver::ParseMockupFixture()
 		if (mTokenizer.peekToken() == '(') {
 			func = (MockupFunction*) ParseMockupFunction();
 			MockupFunctions.push_back(func);
-		} else if (mTokenizer.peekToken() == TOK_IDENTIFIER) {
+		} else if (mTokenizer.peekToken() == '=') {
 			var = (MockupVariable*) ParseMockupVariable();
 			MockupVariables.push_back(var);
 		}

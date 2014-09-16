@@ -261,3 +261,6 @@ group A {
 	mult(2,2) == 1;
 }
 mult(2,2) == 4;
+
+mockup { gint = 10; }
+get_gint() == 10;

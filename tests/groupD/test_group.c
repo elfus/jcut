@@ -18,3 +18,9 @@ int mult(int a, int b) {
 int op(int a, int b, int c, int d) {
 	return mult(a,b) + subs(c,d);
 }
+
+int gint;
+
+int get_gint() {
+	return gint;
+}
