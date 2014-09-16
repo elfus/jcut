@@ -29,7 +29,9 @@ mCurrentBB(nullptr),
 mReturnValue(nullptr),
 mFUDReturnValue(nullptr),
 mWarnings(),
-mTestResult(nullptr)
+mTestResult(nullptr),
+mFUDisMockup(false),
+mWrapperFunction(nullptr)
 {
 }
 
@@ -155,7 +157,14 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 {
 	string func_name = FC->getIdentifier()->getIdentifierStr();
-	Function *funcToBeCalled = mModule->getFunction(func_name);
+	Function *funcToBeCalled = nullptr;
+	if(mFUDisMockup && mWrapperFunction) {
+		funcToBeCalled = mWrapperFunction;
+		mWrapperFunction = nullptr;
+		mFUDisMockup = false;
+	} else
+		funcToBeCalled = mModule->getFunction(func_name);
+
 	if( funcToBeCalled == nullptr) {
 		cout << "Function not found!: " << func_name << endl;
 	}
@@ -392,6 +401,10 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 			g_fp->setInitializer(llvm_func);
 		}
 		assert(g_fp && WrapperF && "Either function pointer or wrapper function have not been created");
+		if(mCurrentFud == func_name) {
+			mFUDisMockup = true;
+			mWrapperFunction = WrapperF;
+		}
 
 		//////////////////////////////////////////////////////
 		// Create two functions that change the function pointer with an LLVM

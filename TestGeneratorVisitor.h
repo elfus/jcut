@@ -86,6 +86,8 @@ private:
     std::vector<Exception> mWarnings;
     std::string mCurrentFud; // Current Function Under Test
     llvm::ZExtInst* mTestResult;
+    bool mFUDisMockup;
+    llvm::Function* mWrapperFunction;
 
     /**
 	 * Creates a new Value of the same Type as type with real_value

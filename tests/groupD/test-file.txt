@@ -1,5 +1,7 @@
-# TODO: Implement mockup syntax
+##########################
+# Mockup for single functions
 
+# Normal tests and tests with mockups interleaved
 div(2,2) == 99;
 
 mockup { sum()=4; }
@@ -29,3 +31,48 @@ div(2,2) == 99;
 
 mockup { sum()=4; sum()=8; sum()=10; sum()=12;sum()=4; sum()=8; sum()=10; sum()=12;sum()=4; sum()=8; sum()=10; sum()=50;}
 div(2,2) == 50;
+
+sum(2,2) == 99;
+
+mockup { sum() = 4; }
+sum(2,2) == 4;
+
+sum(2,2) == 99;
+
+mockup { sum()=4; sum()=8; }
+sum(2,2) == 8;
+
+sum(2,2) == 99;
+
+mockup { sum()=4; sum()=8; sum()=10; }
+sum(2,2) == 10;
+
+sum(2,2) == 99;
+
+mockup { sum()=4; sum()=8; sum()=10; sum()=12;}
+sum(2,2) == 12;
+
+div(2,2) == 99;
+
+# Only mockup functions
+mockup { sum()=4; }
+div(2,2) == 4;
+mockup { sum()=4; }
+div(2,2) == 4;
+mockup { sum()=4; sum()=8; }
+div(2,2) == 8;
+mockup { sum()=4; sum()=8; sum()=10; }
+div(2,2) == 10;
+mockup { sum()=4; sum()=8; sum()=10; sum()=12;}
+div(2,2) == 12;
+mockup { sum()=4; sum()=8; sum()=10; sum()=12;sum()=4; sum()=8; sum()=10; sum()=12;sum()=4; sum()=8; sum()=10; sum()=50;}
+div(2,2) == 50;
+mockup { sum() = 4; }
+sum(2,2) == 4;
+mockup { sum()=4; sum()=8; }
+sum(2,2) == 8;
+mockup { sum()=4; sum()=8; sum()=10; }
+sum(2,2) == 10;
+mockup { sum()=4; sum()=8; sum()=10; sum()=12;}
+sum(2,2) == 12;
+
