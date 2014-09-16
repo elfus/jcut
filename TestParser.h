@@ -947,18 +947,6 @@ public:
     void setOriginalFunction(llvm::Function* mOriginalFunction) {
         this->mOriginalFunction = mOriginalFunction;
     }
-
-    void useMockupFunction() {
-        mOriginalFunction->replaceAllUsesWith(mMockupFunction);
-    }
-
-    void useOriginalFunction(llvm::ExecutionEngine *ee) {
-//        ee->freeMachineCodeForFunction(mOriginalFunction);
-        mMockupFunction->replaceAllUsesWith(mOriginalFunction);
-        mMockupFunction->dump();
-//        ee->freeMachineCodeForFunction(mMockupFunction);
-//        ee->recompileAndRelinkFunction(mOriginalFunction);
-    }
 };
 
 class MockupFixture : public TestExpr {
@@ -989,15 +977,7 @@ public:
         v->VisitMockupFixture(this);
     }
 
-    void useMockupFunction() {
-        for(MockupFunction* f : mMockupFunctions)
-            f->useMockupFunction();
-    }
-
-    void useOriginalFunction(llvm::ExecutionEngine *ee) {
-        for(MockupFunction* f : mMockupFunctions)
-            f->useOriginalFunction(ee);
-    }
+    vector<MockupFunction*> getMockupFunctions() const { return mMockupFunctions; }
 };
 
 class TestMockup : public TestExpr {
@@ -1017,13 +997,7 @@ public:
         v->VisitTestMockup(this);
     }
 
-    void useMockupFunction() {
-        mMockupFixture->useMockupFunction();
-    }
-
-    void useOriginalFunction(llvm::ExecutionEngine *ee) {
-        mMockupFixture->useOriginalFunction(ee);
-    }
+    MockupFixture* getMockupFixture() const { return mMockupFixture; }
 };
 
 class TestFixture : public TestExpr {
@@ -1212,6 +1186,8 @@ public:
     TestData* getTestData() const { return mTestData; }
     TestFunction * getTestFunction() const {return FunctionCall;}
     TestMockup* getTestMockup() const { return mTestMockup; }
+
+    bool hasTestMockup() const { return mTestMockup != nullptr; }
 
     virtual ~TestDefinition() {
         if (mTestData) delete mTestData;

@@ -49,15 +49,6 @@ private:
             }
 
             llvm::GenericValue rval = mEE->runFunction(f,mArgs);
-            //////////////////////////////////////
-            // @warning Watch out for this method. If you call it you will loose
-            // all the current values of your global variables!
-            // mEE->clearAllGlobalMappings();
-            /////////////////////////////////////
-            // @bug this method makes the code crash when VisitTestDefinition.
-            // Seems it has to be called in conjunction with the previous one.
-            // mEE->freeMachineCodeForFunction(f);
-            /////////////////////////////////////
             FW->setReturnValue(rval);
             if(!StdCapture::EndCapture())
                 cerr << "** There was a problem finishing the test output capture!" << endl;
@@ -93,8 +84,19 @@ public:
     }
 
 
-    // The cleanup
+    // The test definition
     void VisitTestDefinition(TestDefinition *TD) {
+
+    	if(TD->hasTestMockup()) {
+    		vector<MockupFunction*> mockups=
+    			TD->getTestMockup()->getMockupFixture()->getMockupFunctions();
+
+			for(MockupFunction* m : mockups) {
+				llvm::Function* change_to_mockup = m->getMockupFunction();
+				mEE->runFunction(change_to_mockup,mArgs);
+			}
+    	}
+
         runFunction(TD); // do the cleanup
 
         llvm::GlobalVariable* g = TD->getGlobalVariable();
@@ -124,6 +126,16 @@ public:
 			}
 		}
 		mExpExpr.clear();
+
+		// Do the opposite steps for the Mockups
+		if(TD->hasTestMockup()) {
+			vector<MockupFunction*> mockups =
+				TD->getTestMockup()->getMockupFixture()->getMockupFunctions();
+			for(MockupFunction* m : mockups) {
+				llvm::Function* change_to_original = m->getOriginalFunction();
+				mEE->runFunction(change_to_original,mArgs);
+			}
+		}
 
         // Include failing ExpectedExpressions from before and after statements.
         if(failing.size()) {

@@ -327,36 +327,116 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		// If no declaration is found we need to figure out the return type somehow
 		assert(false && "TODO: Implement this!");
 	} else {
-		// Function definition or declaration
-		cout << "Function found: " << func_name << endl;
-
 		tp::Argument* expected = MF->getArgument();
+
+		///////////////////////////////////////////////////////
+		// Create the mockup function which will return whatever the user
+		// defined in the test file (mockup {} statement)
 		vector<Type*> params;
-		for(llvm::Argument& arg : llvm_func->getArgumentList()) {
+		for(llvm::Argument& arg : llvm_func->getArgumentList())
 			params.push_back(arg.getType());
-		}
-
 		FunctionType* FT = FunctionType::get(llvm_func->getReturnType(),ArrayRef<Type*>(params),false);
-		Function* F = cast<Function>(mModule->getOrInsertFunction(mockup_name, FT, llvm_func->getAttributes()));
-
-		// create unique name
-		BasicBlock* MB = BasicBlock::Create(mModule->getContext(),"mockup_block",F);
+		Function* mockup_function = cast<Function>(mModule->getOrInsertFunction(mockup_name, FT, llvm_func->getAttributes()));
+		BasicBlock* MB = BasicBlock::Create(mModule->getContext(),"mockup_block",mockup_function);
 		// The expected value has to match the return value type from the llvm_func
 		llvm::Value* val = createValue(llvm_func->getReturnType(), expected->getStringRepresentation());
 		ReturnInst* ret = mBuilder.CreateRet(val);
 		MB->getInstList().push_back(ret);
-			/// WE WILL NEED TO CREATE A NEW FUNCTION EACH TIME BECAUSE OF THE
-			/// WAY THE VISITOR PATTERN IS IMPLEMENTED.
-			/// WE CREATE THE FUNCTIONS FIRST, THEN CALL THEM
-			/// THIS MEANS WE CANNOT WORK ON THE SAME FUNCTION OVER AND OVER AGAIN.
-			/// WE NEED TO BORROW IT'S ORIGINAL DECLARATION OR DEFINITION
-			/// CREATE A NEW NAME, STORE IN tp::Argument AND THEN CREATE A FUNCTION
-			/// WITH THAT NAME. THUS WE'LL HAVE TO REPLACE THE CALL OF EACH OF
-			/// THE ORIGINAL FUNCTIONS WITH A CALL TO A MOCKUP
-		// this line does what I want, but I need to understand how to change it back.
+		///////////////////////////////////////////////////////
 
-		MF->setMockupFunction(F);
-		MF->setOriginalFunction(llvm_func);
+		///////////////////////////////////////////////////////
+		// Create a function pointer which we will change at will to point
+		// to either the mockup function or the original function
+		PointerType* PointerTy_0 = PointerType::get(FT, 0);
+		GlobalVariable* gvar_ptr_mockup_pf =
+				new GlobalVariable(/*Module=*/*mModule,
+									 /*Type=*/PointerTy_0,
+									 /*isConstant=*/false,
+									 /*Linkage=*/GlobalValue::ExternalLinkage,
+									 /*Initializer=*/0, // has initializer, specified below
+									 /*Name=*/"mockup_pf");
+		gvar_ptr_mockup_pf->setAlignment(8);
+		//////////////////////////////////////////////////////
+
+		//////////////////////////////////////////////////////
+		// Create the wrapper function where we call the function pointer
+		FunctionType* WrapperFType = FunctionType::get(llvm_func->getReturnType(),ArrayRef<Type*>(params),false);
+		Function* WrapperF = cast<Function>(mModule->getOrInsertFunction("wrapper_"+func_name, WrapperFType, llvm_func->getAttributes()));
+		std::vector<Value*> args;
+		llvm::Function::arg_iterator arg = nullptr;
+		for(arg = WrapperF->arg_begin(); arg != WrapperF->arg_end(); ++arg)
+				args.push_back(arg);
+
+		LoadInst* load = mBuilder.CreateLoad(gvar_ptr_mockup_pf);
+		CallInst* call = mBuilder.CreateCall(load, args);
+		call->setCallingConv(llvm_func->getCallingConv());
+		call->setTailCall(false);
+
+		// create unique name
+		BasicBlock* WrapperBlock = BasicBlock::Create(mModule->getContext(),"wrapper_block",WrapperF);
+		WrapperBlock->getInstList().push_back(load);
+		WrapperBlock->getInstList().push_back(call);
+		WrapperBlock->getInstList().push_back(mBuilder.CreateRet(call));
+		//////////////////////////////////////////////////////
+
+		//////////////////////////////////////////////////////
+		// This is an important step: Replace all uses of the original function
+		// with our wrapper function which calls the function pointer
+		llvm_func->replaceAllUsesWith(WrapperF);
+		// Make the function pointer point to the original function so we
+		// don't affect the tests that do not use a mockup
+		gvar_ptr_mockup_pf->setInitializer(llvm_func);
+		//////////////////////////////////////////////////////
+
+		//////////////////////////////////////////////////////
+		// Create two functions that change the function pointer with an LLVM
+		// function. We could retrieve the function pointer address, but doing
+		// so requires that we know the size of it, and as far as I know the
+		// size of a function pointer is platform dependent. I may be wrong,
+		// but just in case just create these two LLVM functions because I have
+		// to meet the deadline! :)
+		std::vector<Type*> void_args;
+		FunctionType* VoidFunction = FunctionType::get(
+								/*Result=*/Type::getVoidTy(mModule->getContext()),
+								/*Params=*/void_args,
+								/*isVarArg=*/false);
+		//////////////////////////////////////////////////////
+		// LLVM Function which changes the function pointer to point to the
+		// mockup function
+		Function* change_to_mockup =
+				cast<Function>
+				(mModule->getOrInsertFunction
+						("change_to_"+mockup_name, VoidFunction));
+		change_to_mockup->setLinkage(GlobalValue::ExternalLinkage);
+		change_to_mockup->setCallingConv(CallingConv::C);
+		BasicBlock* B_2 = BasicBlock::Create
+				(mModule->getContext(),"change_to_"+mockup_name+"_block",
+														change_to_mockup);
+		StoreInst* store_2 =
+				mBuilder.CreateStore(mockup_function, gvar_ptr_mockup_pf);
+		ReturnInst* return_2 = mBuilder.CreateRetVoid();
+		B_2->getInstList().push_back(store_2);
+		B_2->getInstList().push_back(return_2);
+
+		MF->setMockupFunction(change_to_mockup);
+
+		//////////////////////////////////////////////////////
+		// LLVM Function which changes the function pointer to point to the
+		// original function
+		Function* change_to_original =
+				cast<Function>
+				(mModule->getOrInsertFunction
+						("change_to_"+func_name, VoidFunction));
+		change_to_original->setLinkage(GlobalValue::ExternalLinkage);
+		change_to_original->setCallingConv(CallingConv::C);
+		BasicBlock* B_3 = BasicBlock::Create(mModule->getContext(),"change_to_"+func_name+"_block",change_to_original);
+		StoreInst* store_3 = mBuilder.CreateStore(llvm_func, gvar_ptr_mockup_pf);
+		ReturnInst* return_3 = mBuilder.CreateRetVoid();
+		B_3->getInstList().push_back(store_3);
+		B_3->getInstList().push_back(return_3);
+
+		MF->setOriginalFunction(change_to_original);
+		//////////////////////////////////////////////////////
 	}
 }
 

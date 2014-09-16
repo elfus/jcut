@@ -1,1 +1,8 @@
 # TODO: Implement mockup syntax
+
+div(2,2) == 99;
+
+mockup { sum()=4; }
+div(2,2) == 4;
+
+div(2,2) == 99;
