@@ -39,7 +39,10 @@ private:
     llvm::Module* mModule;
     // Temp vector to hold failed expected expressions
     std::vector<ExpectedExpression*> mExpExpr;
-    // Used to properly revert the mockup replacements for nested groups
+    /// Used to properly revert the mockup replacements for nested groups.
+    /// Every time we enter in a group we store all of its MoclupFunctions
+    /// in the stack. This used by individual tests and when returning to a
+    /// different group.
     std::stack<llvm::Function*> mMockupRevert;
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
@@ -56,6 +59,24 @@ private:
                 cerr << "** There was a problem finishing the test output capture!" << endl;
             FW->setOutput(StdCapture::GetCapture());
         }
+    }
+
+    /// Executes the MockupFunctions stored in our stack, they are not discarded.
+    void executeMockupFunctionsOnTopOfStack() {
+    	std::stack<llvm::Function*> backup;
+		// Execute the mockups from parent group, but keep the Functions
+		while(!mMockupRevert.empty() && mMockupRevert.top() != nullptr) {
+			llvm::Function* previous_group_mockup = mMockupRevert.top();
+			assert(previous_group_mockup && "Invalid group mockup function");
+			mEE->runFunction(previous_group_mockup,mArgs);
+			backup.push(previous_group_mockup);
+			mMockupRevert.pop();
+		}
+		// Restore the functions back in the stack
+		while(!mMockupRevert.empty() && backup.size()) {
+			mMockupRevert.push(backup.top());
+			backup.pop();
+		}
     }
 public:
     TestRunnerVisitor() = delete;
@@ -95,20 +116,8 @@ public:
 				mMockupRevert.pop(); // Ignore current group
 			mMockupRevert.pop(); // Ignore nullptr
 
-			std::stack<llvm::Function*> backup;
-			// Execute the mockups from parent group, but keep the Functions
-        	while(!mMockupRevert.empty() && mMockupRevert.top() != nullptr) {
-        		llvm::Function* previous_group_mockup = mMockupRevert.top();
-        		assert(previous_group_mockup && "Invalid group mockup function");
-        		mEE->runFunction(previous_group_mockup,mArgs);
-        		backup.push(previous_group_mockup);
-        		mMockupRevert.pop();
-        	}
-        	// Restore the functions back in the stack
-        	while(!mMockupRevert.empty() && backup.size()) {
-        		mMockupRevert.push(backup.top());
-        		backup.pop();
-        	}
+			executeMockupFunctionsOnTopOfStack();
+
         	// If the stack is empty we are back at the root group, use the
         	// original function
         	if(mMockupRevert.empty()) {
@@ -181,6 +190,10 @@ public:
 				llvm::Function* change_to_original = m->getOriginalFunction();
 				mEE->runFunction(change_to_original,mArgs);
 			}
+
+			////////////////////////////////////////////////
+			// Point to the mockup functions for the current group
+			executeMockupFunctionsOnTopOfStack();
 		}
 
         // Include failing ExpectedExpressions from before and after statements.

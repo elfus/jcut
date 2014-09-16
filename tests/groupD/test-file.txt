@@ -205,13 +205,24 @@ group A {
 	mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
 	op(2,2,4,2) == 2;
 
-
 	group B {
 		mult(2,2) == 1;
 		
+		mockup { mult() = 1; subs() = 1; }
+		op(2,2,4,2) == 2;
+		
+		mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+		op(2,2,4,2) == 2;
+	
 		group C {
 			mockup_all { mult()=10; }
 			mult(2,2) == 10;
+			
+			mockup { mult() = 1; subs() = 1; }
+			op(2,2,4,2) == 2;
+			
+			mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+			op(2,2,4,2) == 2;
 			
 			group D {
 				mockup_all { mult()=15; }
@@ -221,12 +232,31 @@ group A {
 				group E {
 					mockup_all { mult()=30; }
 					mult(2,2) == 30;
+					
+					mockup { mult() = 1; subs() = 1; }
+					op(2,2,4,2) == 2;
+					
+					mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+					op(2,2,4,2) == 2;
 				}
 				mult(2,2) == 15;
 			}
+			
+			mockup { mult() = 1; subs() = 1; }
+			op(2,2,4,2) == 2;
+			
+			mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+			op(2,2,4,2) == 2;
+			
 			mult(2,2) == 10;
 		}
 		mult(2,2) == 1;
+		
+		mockup { mult() = 1; subs() = 1; }
+		op(2,2,4,2) == 2;
+		
+		mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+		op(2,2,4,2) == 2;
 	}
 	mult(2,2) == 1;
 }
