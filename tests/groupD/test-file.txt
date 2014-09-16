@@ -76,3 +76,73 @@ sum(2,2) == 10;
 mockup { sum()=4; sum()=8; sum()=10; sum()=12;}
 sum(2,2) == 12;
 
+##########################
+# Mockup for two functions
+# Mocking up two functions with interleaved normal tests and mockup tests
+op(2,2,4,2) == 6;
+
+mockup { mult() = 1; }
+op(2,2,4,2) == 3;
+
+op(2,2,4,2) == 6;
+
+mockup { subs() = 1; }
+op(2,2,4,2) == 5;
+
+op(2,2,4,2) == 6;
+
+mockup { mult() = 1; subs() = 1; }
+op(2,2,4,2) == 2;
+
+op(2,2,4,2) == 6;
+
+mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+op(2,2,4,2) == 2;
+
+op(2,2,4,2) == 6;
+
+mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; mult() = 1; subs() = 1;}
+op(2,2,4,2) == 2;
+
+op(2,2,4,2) == 6;
+
+mockup { mult() = 1; subs() = 1; op() = 0;}
+op(2,2,4,2) == 0;
+
+op(2,2,4,2) == 6;
+
+mockup { mult() = 1; subs() = 1;  mult() = 1; subs() = 1; op() = 0;}
+op(2,2,4,2) == 0;
+
+op(2,2,4,2) == 6;
+
+mockup {  op() = 0; mult() = 1; subs() = 1;  mult() = 1; subs() = 1;}
+op(2,2,4,2) == 0;
+
+op(2,2,4,2) == 6;
+
+# Mocking up two functions with only mockup tests
+mockup { mult() = 1; }
+op(2,2,4,2) == 3;
+
+mockup { subs() = 1; }
+op(2,2,4,2) == 5;
+
+mockup { mult() = 1; subs() = 1; }
+op(2,2,4,2) == 2;
+
+mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+op(2,2,4,2) == 2;
+
+mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; mult() = 1; subs() = 1;}
+op(2,2,4,2) == 2;
+
+mockup { mult() = 1; subs() = 1; op() = 0;}
+op(2,2,4,2) == 0;
+
+mockup { mult() = 1; subs() = 1;  mult() = 1; subs() = 1; op() = 0;}
+op(2,2,4,2) == 0;
+
+mockup {  op() = 0; mult() = 1; subs() = 1;  mult() = 1; subs() = 1;}
+op(2,2,4,2) == 0;
+
