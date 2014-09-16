@@ -172,12 +172,57 @@ group A {
 	group B {
 		mult(2,2) == 1;
 		
-		group B {
+		group C {
 			mockup_all { mult()=10; }
 			mult(2,2) == 10;
 			
-			group B {
-				mult(2,2) == 10;
+			group D {
+				mockup_all { mult()=15; }
+				
+				mult(2,2) == 15;
+				
+				group E {
+					mockup_all { mult()=30; }
+					mult(2,2) == 30;
+				}
+				mult(2,2) == 15;
+			}
+			mult(2,2) == 10;
+		}
+		mult(2,2) == 1;
+	}
+	mult(2,2) == 1;
+}
+mult(2,2) == 4;
+
+mult(2,2) == 4;
+group A {
+	mockup_all { mult()=1; }
+
+	mockup { mult() = 1; subs() = 1; }
+	op(2,2,4,2) == 2;
+	
+	mockup { mult() = 1; subs() = 1; mult() = 1; subs() = 1; }
+	op(2,2,4,2) == 2;
+
+
+	group B {
+		mult(2,2) == 1;
+		
+		group C {
+			mockup_all { mult()=10; }
+			mult(2,2) == 10;
+			
+			group D {
+				mockup_all { mult()=15; }
+				
+				mult(2,2) == 15;
+				
+				group E {
+					mockup_all { mult()=30; }
+					mult(2,2) == 30;
+				}
+				mult(2,2) == 15;
 			}
 			mult(2,2) == 10;
 		}
