@@ -146,3 +146,20 @@ op(2,2,4,2) == 0;
 mockup {  op() = 0; mult() = 1; subs() = 1;  mult() = 1; subs() = 1;}
 op(2,2,4,2) == 0;
 
+###########################
+# Mocking up functions that are called in before or after statements
+# For this case, the before and after statement will call the actual function
+mockup { mult() = 1; subs() = 0;}
+before { mult(2,2); } 
+op(2,2,4,2) == 1;
+after { subs(4,2); }
+
+mockup { op() = 1;}
+before { op(2,2,2,2); } 
+op(2,2,4,2) == 1;
+after { subs(4,2); }
+
+mockup { op() = 1; op() = 4;}
+before { op(2,2,2,2); } 
+op(2,2,4,2) == 4;
+after { subs(4,2); op(2,2,2,2);}
