@@ -1237,6 +1237,8 @@ public:
         mMockupFixture->accept(v);
         v->VisitGlobalMockup(this);
     }
+
+    MockupFixture* getMockupFixture() const { return mMockupFixture; }
 };
 
 class GlobalSetup : public TestExpr, public LLVMFunctionHolder {

@@ -64,6 +64,16 @@ public:
 
     bool isValidExecutionEngine() const { return mEE != nullptr; }
 
+    void VisitGlobalMockup(GlobalMockup *GM) {
+    	vector<MockupFunction*> mockups =
+    			GM->getMockupFixture()->getMockupFunctions();
+    	for(MockupFunction* m : mockups) {
+    		llvm::Function* change_to_mockup = m->getMockupFunction();
+    		assert(change_to_mockup && "Invalid group mockup function");
+			mEE->runFunction(change_to_mockup,mArgs);
+    	}
+    }
+
     void VisitGlobalSetup(GlobalSetup *GS) {
         runFunction(GS);
     }
@@ -75,6 +85,16 @@ public:
     // The cleanup
     void VisitTestGroup(TestGroup *TG) {
         runFunction(TG);
+        GlobalMockup *GM = TG->getGlobalMockup();
+        if(GM) {
+        	vector<MockupFunction*> mockups =
+					GM->getMockupFixture()->getMockupFunctions();
+			for(MockupFunction* m : mockups) {
+				llvm::Function* change_to_original = m->getOriginalFunction();
+				assert(change_to_original && "Invalid group mockup function");
+				mEE->runFunction(change_to_original,mArgs);
+			}
+        }
     }
 
     // ExpectedExpressions can be located either in any of after/before or

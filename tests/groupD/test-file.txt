@@ -163,3 +163,26 @@ mockup { op() = 1; op() = 4;}
 before { op(2,2,2,2); } 
 op(2,2,4,2) == 4;
 after { subs(4,2); op(2,2,2,2);}
+
+
+mult(2,2) == 4;
+group A {
+	mockup_all { mult()=1; }
+
+	group B {
+		mult(2,2) == 1;
+		
+		group B {
+			mockup_all { mult()=10; }
+			mult(2,2) == 10;
+			
+			group B {
+				mult(2,2) == 10;
+			}
+			mult(2,2) == 10;
+		}
+		mult(2,2) == 1;
+	}
+	mult(2,2) == 1;
+}
+mult(2,2) == 4;
