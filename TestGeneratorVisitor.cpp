@@ -344,55 +344,54 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		MB->getInstList().push_back(ret);
 		///////////////////////////////////////////////////////
 
-		///////////////////////////////////////////////////////
-		// Create a function pointer which we will change at will to point
-		// to either the mockup function or the original function
-		PointerType* PointerTy_0 = PointerType::get(FT, 0);
-		GlobalVariable* gvar_ptr_mockup_pf =
-				new GlobalVariable(/*Module=*/*mModule,
-									 /*Type=*/PointerTy_0,
-									 /*isConstant=*/false,
-									 /*Linkage=*/GlobalValue::ExternalLinkage,
-									 /*Initializer=*/0, // has initializer, specified below
-									 /*Name=*/"gvar_"+mockup_name);
-		gvar_ptr_mockup_pf->setAlignment(8);
-		//////////////////////////////////////////////////////
+		const string& fp_name = "gvar_fp_"+func_name;
+		const string& wrapper_name = "wrapper_"+func_name;
+		GlobalVariable* g_fp = mModule->getGlobalVariable(fp_name);
+		Function* WrapperF = mModule->getFunction(wrapper_name);
+		if(!WrapperF){
+			///////////////////////////////////////////////////////
+			// Create a function pointer which we will change at will to point
+			// to either the mockup function or the original function
+			PointerType* PointerTy_0 = PointerType::get(FT, 0);
 
-		//////////////////////////////////////////////////////
-		// Create the wrapper function where we call the function pointer
-		FunctionType* WrapperFType = FunctionType::get(llvm_func->getReturnType(),ArrayRef<Type*>(params),false);
-		Function* WrapperF = cast<Function>(mModule->getOrInsertFunction("wrapper_"+mockup_name, WrapperFType, llvm_func->getAttributes()));
-		std::vector<Value*> args;
-		llvm::Function::arg_iterator arg = nullptr;
-		for(arg = WrapperF->arg_begin(); arg != WrapperF->arg_end(); ++arg)
-				args.push_back(arg);
+			if(!g_fp) {
+				g_fp = new GlobalVariable(/*Module=*/*mModule,
+										 /*Type=*/PointerTy_0,
+										 /*isConstant=*/false,
+										 /*Linkage=*/GlobalValue::ExternalLinkage,
+										 /*Initializer=*/0, // has initializer, specified below
+										 /*Name=*/fp_name);
+				g_fp->setAlignment(8);
+			}
+			//////////////////////////////////////////////////////
+			// Create the wrapper function where we call the function pointer
+			FunctionType* WrapperFType = FunctionType::get(llvm_func->getReturnType(),ArrayRef<Type*>(params),false);
+			WrapperF = cast<Function>(mModule->getOrInsertFunction(wrapper_name, WrapperFType, llvm_func->getAttributes()));
+			std::vector<Value*> args;
+			llvm::Function::arg_iterator arg = nullptr;
+			for(arg = WrapperF->arg_begin(); arg != WrapperF->arg_end(); ++arg)
+					args.push_back(arg);
 
-		LoadInst* load = mBuilder.CreateLoad(gvar_ptr_mockup_pf);
-		CallInst* call = mBuilder.CreateCall(load, args);
-		call->setCallingConv(llvm_func->getCallingConv());
-		call->setTailCall(false);
+			LoadInst* load = mBuilder.CreateLoad(g_fp);
+			CallInst* call = mBuilder.CreateCall(load, args);
+			call->setCallingConv(llvm_func->getCallingConv());
+			call->setTailCall(false);
 
-		// create unique name
-		BasicBlock* WrapperBlock = BasicBlock::Create(mModule->getContext(),"block_"+mockup_name,WrapperF);
-		WrapperBlock->getInstList().push_back(load);
-		WrapperBlock->getInstList().push_back(call);
-		WrapperBlock->getInstList().push_back(mBuilder.CreateRet(call));
-		//////////////////////////////////////////////////////
+			// create unique name
+			BasicBlock* WrapperBlock = BasicBlock::Create(mModule->getContext(),"block_"+mockup_name,WrapperF);
+			WrapperBlock->getInstList().push_back(load);
+			WrapperBlock->getInstList().push_back(call);
+			WrapperBlock->getInstList().push_back(mBuilder.CreateRet(call));
 
-		//////////////////////////////////////////////////////
-		// This is an important step: Replace all uses of the original function
-		// with our wrapper function which calls the function pointer
-		// @bug If a previous mockup function replaced its uses
-		// we need to retrieve the uses of the previous function used to replace
-		// the original function. This code works when we are replacing for a
-		// single function, but it has a bug for different mockup functions
-		static Function* last_func_replaced = llvm_func;
-		last_func_replaced->replaceAllUsesWith(WrapperF);
-		last_func_replaced = WrapperF;
-		// Make the function pointer point to the original function so we
-		// don't affect the tests that do not use a mockup
-		gvar_ptr_mockup_pf->setInitializer(llvm_func);
-		//////////////////////////////////////////////////////
+			//////////////////////////////////////////////////////
+			// This is an important step: Replace all uses of the original function
+			// with our wrapper function which calls the function pointer
+			llvm_func->replaceAllUsesWith(WrapperF);
+			// Make the function pointer point to the original function so we
+			// don't affect the tests that do not use a mockup
+			g_fp->setInitializer(llvm_func);
+		}
+		assert(g_fp && WrapperF && "Either function pointer or wrapper function have not been created");
 
 		//////////////////////////////////////////////////////
 		// Create two functions that change the function pointer with an LLVM
@@ -419,7 +418,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 				(mModule->getContext(),"change_to_"+mockup_name+"_block",
 														change_to_mockup);
 		StoreInst* store_2 =
-				mBuilder.CreateStore(mockup_function, gvar_ptr_mockup_pf);
+				mBuilder.CreateStore(mockup_function, g_fp);
 		ReturnInst* return_2 = mBuilder.CreateRetVoid();
 		B_2->getInstList().push_back(store_2);
 		B_2->getInstList().push_back(return_2);
@@ -436,7 +435,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		change_to_original->setLinkage(GlobalValue::ExternalLinkage);
 		change_to_original->setCallingConv(CallingConv::C);
 		BasicBlock* B_3 = BasicBlock::Create(mModule->getContext(),"from_"+mockup_name+"_to_"+func_name+"_block",change_to_original);
-		StoreInst* store_3 = mBuilder.CreateStore(llvm_func, gvar_ptr_mockup_pf);
+		StoreInst* store_3 = mBuilder.CreateStore(llvm_func, g_fp);
 		ReturnInst* return_3 = mBuilder.CreateRetVoid();
 		B_3->getInstList().push_back(store_3);
 		B_3->getInstList().push_back(return_3);
