@@ -264,3 +264,11 @@ mult(2,2) == 4;
 
 mockup { gint = 10; }
 get_gint() == 10;
+
+floating() == 3.5;
+
+mockup { floating() = 4.67; }
+floating() == 4.67;
+
+mockup { msg() = void; }
+msg();

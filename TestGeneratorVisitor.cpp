@@ -335,7 +335,12 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		assert(false && "TODO: Implement this!");
 	} else {
 		tp::Argument* expected = MF->getArgument();
-
+		if(llvm_func->getReturnType() == mBuilder.getVoidTy() &&
+			expected->getStringRepresentation() != "void") {
+			throw Exception("The function "+func_name+"() has void as return value. ",
+					"The only valid syntax for a void function is: "+func_name+"() = void;",
+					Exception::ERROR);
+		}
 		///////////////////////////////////////////////////////
 		// Create the mockup function which will return whatever the user
 		// defined in the test file (mockup {} statement)
@@ -346,8 +351,13 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		Function* mockup_function = cast<Function>(mModule->getOrInsertFunction(mockup_name, FT, llvm_func->getAttributes()));
 		BasicBlock* MB = BasicBlock::Create(mModule->getContext(),"mockup_block",mockup_function);
 		// The expected value has to match the return value type from the llvm_func
-		llvm::Value* val = createValue(llvm_func->getReturnType(), expected->getStringRepresentation());
-		ReturnInst* ret = mBuilder.CreateRet(val);
+		ReturnInst* ret = nullptr;
+		if(llvm_func->getReturnType() == mBuilder.getVoidTy()) {
+			ret = mBuilder.CreateRetVoid();
+		} else {
+			llvm::Value* val = createValue(llvm_func->getReturnType(), expected->getStringRepresentation());
+			ret = mBuilder.CreateRet(val);
+		}
 		MB->getInstList().push_back(ret);
 		///////////////////////////////////////////////////////
 

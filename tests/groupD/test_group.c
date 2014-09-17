@@ -1,3 +1,4 @@
+#include <stdio.h>
 
 int sum(int a, int b) { return 99; } // declaration
 
@@ -23,4 +24,12 @@ int gint;
 
 int get_gint() {
 	return gint;
+}
+
+float floating() {
+	return 3.5;
+}
+
+void msg() {
+	printf("hola mundillo\n");
 }
