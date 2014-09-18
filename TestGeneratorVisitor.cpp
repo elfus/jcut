@@ -355,8 +355,41 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		if(llvm_func->getReturnType() == mBuilder.getVoidTy()) {
 			ret = mBuilder.CreateRetVoid();
 		} else {
-			llvm::Value* val = createValue(llvm_func->getReturnType(), expected->getStringRepresentation());
-			ret = mBuilder.CreateRet(val);
+			llvm::Value* val = nullptr;
+			if(llvm_func->getReturnType()->getTypeID() == Type::PointerTyID) {
+				// Cast it to pointer type
+				const string& str =  expected->getStringRepresentation();
+				if(str.find('.') != string::npos)
+					throw Exception("Floating point values are not valid for returning as pointer type!");
+				unsigned bitwidth = llvm_func->getReturnType()->getPointerElementType()->getIntegerBitWidth();
+				APInt int_value =  getAPIntTruncating(bitwidth, str, 10);
+				ConstantInt* int_constant = ConstantInt::get
+						(mModule->getContext(), int_value);
+				AllocaInst* ptr_val = mBuilder.CreateAlloca(llvm_func->getReturnType()->getPointerElementType());
+				AllocaInst* ptr = mBuilder.CreateAlloca(llvm_func->getReturnType());
+
+				StoreInst* stor = mBuilder.CreateStore(int_constant, ptr_val);
+				LoadInst* load = mBuilder.CreateLoad(ptr_val, false);
+				SExtInst* sext = cast<SExtInst>(mBuilder.CreateSExt(load, mBuilder.getInt64Ty()));
+				CastInst* int_to_ptr =
+						cast<CastInst>(
+						mBuilder.CreateIntToPtr
+								(load, llvm_func->getReturnType()));
+				StoreInst* fin = mBuilder.CreateStore(int_to_ptr, ptr);
+				LoadInst* load_1 = mBuilder.CreateLoad(ptr);
+				MB->getInstList().push_back(ptr_val);
+				MB->getInstList().push_back(ptr);
+				MB->getInstList().push_back(stor);
+				MB->getInstList().push_back(load);
+				MB->getInstList().push_back(sext);
+				MB->getInstList().push_back(int_to_ptr);
+				MB->getInstList().push_back(fin);
+				MB->getInstList().push_back(load_1);
+				ret = mBuilder.CreateRet(load_1);
+			} else {
+				val = createValue(llvm_func->getReturnType(), expected->getStringRepresentation());
+				ret = mBuilder.CreateRet(val);
+			}
 		}
 		MB->getInstList().push_back(ret);
 		///////////////////////////////////////////////////////
@@ -655,20 +688,7 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		if (IntegerType * intType = dyn_cast<IntegerType>(type)) {
 			unsigned bitwidth = intType->getBitWidth();
 			int radix = 10;
-			APInt int_value;
-			// Watch for the radix, right now we use radix 10 only
-			unsigned bits_needed = APInt::getBitsNeeded(StringRef(value), radix);
-			if(bits_needed > bitwidth) {
-				APInt i(bits_needed, value, radix);
-				int_value = i.trunc(bitwidth);
-				stringstream ss;
-				ss <<"Truncating integer value "<<value<<"(decimal) from "
-				   <<bits_needed<<" bits to "<<bitwidth<<" bits";
-				mWarnings.push_back(Exception(ss.str(),"",Exception::WARNING));
-			} else {
-				int_value = APInt(bitwidth, value, radix);
-			}
-
+			APInt int_value = getAPIntTruncating(bitwidth, value, radix);
 			return cast<Value>(mBuilder.getInt(int_value));
 		}
 	}
@@ -689,16 +709,40 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	}
 		break;
 	case Type::TypeID::PointerTyID:
+		mWarnings.push_back(
+				Exception("Trying to create pointer from value "+real_value+
+				", I will return a pointer to NULL instead.",
+				"", Exception::WARNING));
 		if (PointerType * ptrType = dyn_cast<PointerType>(type)) {
 			return ConstantPointerNull::get(ptrType);
 		}
+		break;
 	case Type::TypeID::VoidTyID:
 		assert(false && "Cannot create a void value!");
+		break;
 	default:
 		cerr << "Could not create value for typeID: " << typeID << endl;
 		return nullptr;
 	}
 	return nullptr;
+}
+
+llvm::APInt TestGeneratorVisitor::getAPIntTruncating(unsigned bitwidth, const string& value, unsigned radix)
+{
+// Watch for the radix, right now we use radix 10 only
+	unsigned bits_needed = APInt::getBitsNeeded(StringRef(value), radix);
+	APInt int_value;
+	if(bits_needed > bitwidth) {
+		APInt i(bits_needed, value, radix);
+		int_value = i.trunc(bitwidth);
+		stringstream ss;
+		ss <<"Truncating integer value "<<value<<"(decimal) from "
+		   <<bits_needed<<" bits to "<<bitwidth<<" bits";
+		mWarnings.push_back(Exception(ss.str(),"",Exception::WARNING));
+	} else {
+		int_value = APInt(bitwidth, value, radix);
+	}
+	return int_value;
 }
 
 llvm::Function* TestGeneratorVisitor::generateFunction(

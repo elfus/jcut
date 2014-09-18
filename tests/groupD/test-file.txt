@@ -270,5 +270,36 @@ floating() == 3.5;
 mockup { floating() = 4.67; }
 floating() == 4.67;
 
-mockup { msg() = void; }
-msg();
+# test 1
+# Print the message 'hello world\n'
+hello();
+
+# test 2
+# It won't print anything because hello function does nothing.
+mockup { hello() = void; }
+hello();
+
+# test 3
+# Print the address the function get_ptr() returns, 25555 in this case
+mockup { get_ptr() = 25555; }
+print_ptr();
+
+# test 4
+# Print the address the function get_ptr() returns, a real address.
+print_ptr();
+
+# test 5
+# Print the following messages:
+# I am in function msg2
+# I am in function msg1
+# I am in function msg0
+msg2();
+
+# test 6
+# Print only 1 message
+# I am in function msg2
+mockup { msg1() = void; }
+msg2();
+
+mockup { get_ptr() = 10 }
+print_ptr();

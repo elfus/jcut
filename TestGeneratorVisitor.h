@@ -95,6 +95,13 @@ private:
                              const std::string& real_value);
 
     /**
+     * Helper function which returns an APInt of the given bitwidth. When the
+     * bitwidth needed by value is grteater than the bitwidth requested,
+     * the value will be truncated to the requested bitwidth.
+     */
+    llvm::APInt getAPIntTruncating(unsigned bitwidth, const string& value, unsigned radix);
+
+    /**
      * Takes existing instructions in vector instructions to generate a function
      * of the given name.
      *
