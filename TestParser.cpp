@@ -911,6 +911,7 @@ CSVDriver::CSVDriver(const string& filename) : TestDriver(), rows(0), columns(0)
 
 	while(getline(csv, line)) {
 		items = split(line, ',');
+		if(items.empty()) continue;
 		if(items.size() != columns)
 			throw Exception("Column mismatch in CSV file: "+filename);
 
