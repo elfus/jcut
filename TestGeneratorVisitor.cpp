@@ -133,11 +133,26 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			if(arg->isBufferAlloc())
 				throw Exception(arg->getLine(), arg->getColumn(),
 						"Invalid argument type [BufferAlloc] for function "+mCurrentFud);
+			string str_value;
+			// @todo Improve the way we detect when we have to get the memory address
+			// from a string. This is only a quick patch which I need right now :(
+			if(arg->getArgument()->getTokenType() == TOK_STRING) {
+				stringstream ss;
+				const string& the_string =  arg->getArgument()->getStringRepresentation();
+				char *c = const_cast<char*>(&(the_string.c_str())[0]);
+				ss << reinterpret_cast<void*>(c);
+				str_value = ss.str();
+				mWarnings.push_back(
+						Exception("Incompatible pointer conversion.",
+								"Passing pointer address "+str_value+" of string "+the_string+""
+								" to parameter of non-pointer type ", Exception::WARNING));
+			} else
+				str_value = arg->getStringRepresentation();
 			// Code for non-pointer types
 			llvm::AllocaInst *alloc = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "Allocation" + Twine(i));
 			alloc->setAlignment(4);
 
-			Value *v = createValue(llvm_arg.getType(), arg->getStringRepresentation());
+			Value *v = createValue(llvm_arg.getType(), str_value);
 			StoreInst * store = mBuilder.CreateStore(v, alloc);
 			LoadInst *load = mBuilder.CreateLoad(alloc, "value" + Twine(i));
 
@@ -688,6 +703,11 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		if (IntegerType * intType = dyn_cast<IntegerType>(type)) {
 			unsigned bitwidth = intType->getBitWidth();
 			int radix = 10;
+			size_t pos = value.find('x');
+			if(pos != string::npos) {
+				radix = 16;
+				value = value.substr(pos+1,value.size()-pos+1);
+			}
 			APInt int_value = getAPIntTruncating(bitwidth, value, radix);
 			return cast<Value>(mBuilder.getInt(int_value));
 		}
@@ -698,12 +718,20 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	// handles floating point values
 	case Type::TypeID::FloatTyID:
 	{
-		llvm::Constant* c = ConstantFP::get(type, real_value);
+		string value =  real_value;
+		size_t pos = value.find('x');
+		if(pos != string::npos)
+			value += "fp0";
+		llvm::Constant* c = ConstantFP::get(type, value);
 		return c;
 	}
 		break;
 	case Type::TypeID::DoubleTyID:
 	{
+		string value =  real_value;
+		size_t pos = value.find('x');
+		if(pos != string::npos)
+			value += "fp0";
 		llvm::Constant* c = ConstantFP::get(type, real_value);
 		return c;
 	}

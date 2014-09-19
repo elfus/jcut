@@ -48,8 +48,7 @@ t7('a',0) == 'a';
 t8(-1,-1) != 'b';# Negative testing
 t7('a',0) != "hola mundo";
 sum(2,4) != "HOLA";
+sum(2,"2") != 4;
+mult(2,"2") != 4;
+sum('0','1') != 1;
 
-# This test should fail, check what happens here
-# TODO Work on these ones
-#sum('0','1') == 1;
-#sum("hola", 2) == 2;
