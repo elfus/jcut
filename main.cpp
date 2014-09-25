@@ -98,6 +98,20 @@ static void removeJcutOptions(SmallVector<const char *, 16>& args, const char* o
 	}
 }
 
+static std::vector<std::string>
+copy_compiler_flags(const std::vector<std::string>& Sources,
+					const CompilationDatabase& CD) {
+	std::vector<std::string> out;
+	// @todo Remove duplicated command lines when several sources are provided
+	for(string s : Sources)
+		for(auto c : CD.getCompileCommands(s))
+			for(auto cl : c.CommandLine) {
+				if(cl != "clang-tool" && cl.find(".c") == string::npos)
+					out.push_back(cl);
+			}
+	return out;
+}
+
 int main(int argc, const char **argv, char * const *envp)
 {
 	
@@ -133,18 +147,27 @@ int main(int argc, const char **argv, char * const *envp)
 	IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
 	DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
 	driver::Driver TheDriver(Path, llvm::sys::getProcessTriple(), "a.out", Diags);
-	TheDriver.setTitle("jit-testing");
+	TheDriver.setTitle("jcut");
 
 	SmallVector<const char *, 16> Args(argv, argv + argc);
-
 	// If we leave jcut command line options the clang API will complain, so
 	// we better remove it. There should be a better way to avoid this problem.
 	removeJcutOptions(Args, "-t");
 	removeJcutOptions(Args, TestFileOpt.getValue().c_str());
 	removeJcutOptions(Args, "-dump");
 
-	Args.push_back("-I include");// This is for windows only.
+	// We do this because the CommonOptionsParser removed the actual compiler
+	// flags that are provided after --. This means that we need to pass
+	// the exact same compiler flags to the EmitLLVMOnlyAction.
+	// @TODO Fix this by implement a newFrontEndActionFactory for this special
+	// case in which we want to generate LLVM IR code.
+	vector<string> compiler_flags = copy_compiler_flags(Sources, OptionsParser.getCompilations());
+	for (auto c : compiler_flags)
+		Args.push_back(c.c_str());
+
+	Args.push_back("-Iinclude"); // Special case for windows
 	Args.push_back("-fsyntax-only"); // we don't want to link
+
 	OwningPtr<clang::driver::Compilation> C(TheDriver.BuildCompilation(Args));
 	if (!C)
 		return -1;
