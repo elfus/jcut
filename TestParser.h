@@ -358,7 +358,7 @@ public:
     int getValue() const {
         // @bug remove mNC->getInt()
         if(mNC) return mNC->getInt();
-        // @bug String not supported yet
+
         if(mCC) return (int) mCC->getChar();
         return 0;
     }

@@ -259,9 +259,6 @@ int main(int argc, const char **argv, char * const *envp)
 			TestLoggerVisitor results_logger;
 			OutputFixerVisitor fixer(results_logger);
 			results_logger.setLogFormat(TestLoggerVisitor::LOG_ALL);
-//				| TestLoggerVisitor::LOG_TEST_SETUP| TestLoggerVisitor::LOG_TEST_TEARDOWN
-//				| TestLoggerVisitor::LOG_TEST_CLEANUP | TestLoggerVisitor::LOG_GROUP_CLEANUP
-//				| TestLoggerVisitor::LOG_GROUP_SETUP | TestLoggerVisitor::LOG_GROUP_TEARDOWN );
 			// @note The following two calls have to happen in this exact
 			// same order:
 			//  1st OutputFixerVisitor so we can get the right widths of all the output

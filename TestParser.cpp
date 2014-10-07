@@ -478,7 +478,7 @@ TestFixture* TestDriver::ParseTestFixture()
 		if (mCurrentToken != ';') {
 			for(auto*& ptr : statements) delete ptr;
 			throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
-					"Expected a semi colon ';' at the end of the expression in test fixture",//@todo improve message
+					"Expected a semi colon ';' at the end of the expression in test fixture",
 					"Received "+mCurrentToken.mLexeme);
 		}
 
@@ -563,7 +563,7 @@ MockupFixture* TestDriver::ParseMockupFixture()
                     for(auto*& ptr : MockupFunctions) delete ptr;
                     for(auto*& ptr : MockupVariables) delete ptr;
 			throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
-					"Expected a semi colon ';' at the end of the test mockup",//@todo improve message
+					"Expected a semi colon ';' at the end of the test mockup",
 					"Received "+mCurrentToken.mLexeme);
                 }
 		mCurrentToken = mTokenizer.nextToken(); //eat up the ';'

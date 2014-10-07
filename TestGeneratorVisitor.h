@@ -70,7 +70,6 @@ private:
     std::vector<llvm::Value*> mArgs;
     /// Used to hold backup values of global variables and their original values
     /// for each of the tests
-    /// @todo Add support for structures
     std::vector<tuple<llvm::Value*,llvm::GlobalVariable*>> mBackup;
     /// Used to hold backup values of global variables and their original values
     /// for groups
