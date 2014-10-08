@@ -1140,7 +1140,6 @@ static int linenoiseEdit(struct current *current) {
         int dir = -1;
         int c = fd_read(current);
 
-#ifndef NO_COMPLETION
         /* Only autocomplete when the callback is set. It returns < 0 when
          * there was an error reading from fd. Otherwise it will return the
          * character that should be handled next. */
@@ -1151,7 +1150,6 @@ static int linenoiseEdit(struct current *current) {
             /* Read next character when 0 */
             if (c == 0) continue;
         }
-#endif
 
 process_char:
         if (c == -1) return current->len;

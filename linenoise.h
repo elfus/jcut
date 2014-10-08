@@ -41,7 +41,6 @@
 extern "C" {
 #endif
 
-#ifndef NO_COMPLETION
 typedef struct linenoiseCompletions {
   size_t len;
   char **cvec;
@@ -63,7 +62,6 @@ linenoiseCompletionCallback * linenoiseSetCompletionCallback(linenoiseCompletion
  * by the linenoiseCompletions object.
  */
 void linenoiseAddCompletion(linenoiseCompletions *, const char *);
-#endif
 
 /*
  * Prompts for input using the given string as the input
