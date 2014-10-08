@@ -1126,6 +1126,16 @@ void linenoiseAddCompletion(linenoiseCompletions *lc, const char *str) {
 
 #endif
 
+static int ctrl_j_pressed = 0;
+int linenoiseCtrlJPressed(void)
+{
+	return ctrl_j_pressed;
+}
+
+void linenoiseCtrlJClear(void) {
+	ctrl_j_pressed = 0;
+}
+
 static int linenoiseEdit(struct current *current) {
     int history_index = 0;
 
@@ -1159,6 +1169,11 @@ process_char:
         }
 #endif
         switch(c) {
+        /* This is only for our specific case in which we want to detect a new
+           line in our interpreter. Is justa workaround and there are better
+           solutions, but for the moment we will use it. */
+        case ctrl('J'):
+        	ctrl_j_pressed = 1;
         case '\r':    /* enter */
             history_len--;
             free(history[history_len]);

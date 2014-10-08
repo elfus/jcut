@@ -119,6 +119,9 @@ char **linenoiseHistory(int *len);
  */
 int linenoiseColumns(void);
 
+int linenoiseCtrlJPressed(void);
+void linenoiseCtrlJClear(void);
+
 #ifdef __cplusplus
 }
 #endif
