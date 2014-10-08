@@ -13,7 +13,7 @@ TOOLNAME = jcut
 
 
 SOURCES = main.cpp TestGeneratorVisitor.cpp TestParser.cpp TestLoggerVisitor.cpp \
-    JCUTScanner.cpp
+    JCUTScanner.cpp linenoise.c utf8.c
 
 # No plugins, optimize startup time.
 TOOL_NO_EXPORTS = 1
