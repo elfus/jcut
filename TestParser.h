@@ -1433,6 +1433,14 @@ public:
     	mTokenizer.tokenize(file);
     }
 
+    void tokenize(const string& file) {
+    	mTokenizer.tokenize(file);
+	}
+
+	void tokenize(const char* buffer) {
+		mTokenizer.tokenize(buffer);
+	}
+
     ~TestDriver() { }
 
     TestExpr* ParseTestExpr();

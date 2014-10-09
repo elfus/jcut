@@ -35,6 +35,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
 // Declares clang::SyntaxOnlyAction.
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -50,6 +51,7 @@
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
+#include "clang/Frontend/CompilerInstance.h"
 
 #include "TestParser.h"
 #include "TestGeneratorVisitor.h"
@@ -78,17 +80,54 @@ static cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Du
 static int TotalTestsFailed = 0;
 
 class JCUTAction : public clang::EmitLLVMOnlyAction {
+#undef DEBUG_TYPE
+#define DEBUG_TYPE "JCUTAction"
 public:
+	/* These two static variables are used as workaround to communicate with
+	 * the main execution flow. Keep in mind that a JCUTAction will be
+	 * created for each source file, thus its lifetime is less than that of
+	 * the interpreter itself. Another thing is that we cannot get a direct
+	 * handle to the JCUTAction object when it's created with the
+	 * newFrontendActionFactory<T>() method. That's why we use these two
+	 * static variables.
+	 */
+	static bool mUseInterpreterInput;
+	static string mInterpreterInput;
 	JCUTAction() { }
 
+	bool BeginInvocation(CompilerInstance& CI) {
+		DEBUG(errs() << "'JCUTAction' Beginning invocation\n");
+		return true;
+	}
+
+	bool BeginSourceFileAction(CompilerInstance &CI, StringRef Filename) {
+		DEBUG(errs() << "'JCUTAction' BeginSourceFileAction on "
+				     << Filename.str() << "\n");
+		/* This is an important step: The backend needs to know which C source
+		 * file to use, otherwise it fail saying that clang needs 1 positional
+		 * argument.
+		 */
+		CI.getCodeGenOpts().BackendOptions.push_back(Filename.str());
+		return true;
+	}
+
 	void EndSourceFileAction() {
+		DEBUG(errs() << "'JCUTAction' EndSourceFileAction\n");
+
 		EmitLLVMOnlyAction::EndSourceFileAction();
 		// The JIT Will take ownership of the Module!
 		llvm::Module* module = takeModule();
 
 		try {
-			Exception::mCurrentFile = TestFileOpt.getValue(); // quick workaround
-			TestDriver driver(TestFileOpt.getValue());
+			TestDriver driver;
+			if(mUseInterpreterInput) {
+				Exception::mCurrentFile = "jcut interpreter";
+				driver.tokenize(mInterpreterInput.c_str());
+			}
+			else {
+				Exception::mCurrentFile = TestFileOpt.getValue(); // quick workaround
+				driver.tokenize(TestFileOpt.getValue());
+			}
 			unique_ptr<TestExpr> tests (driver.ParseTestExpr()); // Parse file and generate object structure tree
 
 			DataPlaceholderVisitor dp;
@@ -97,8 +136,6 @@ public:
 			TestGeneratorVisitor visitor(module);
 			tests->accept(&visitor); // Generate LLVM IR code
 
-			// Initialize the JIT Engine only once
-			llvm::InitializeNativeTarget();
 			std::string Error;
 			TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(module, &Error),DumpOpt.getValue(),module);
 			if (runner.isValidExecutionEngine() == false) {
@@ -123,7 +160,11 @@ public:
 			errs() << e.what() << "\n";
 		}
 	}
+#undef DEBUG_TYPE
 };
+
+bool JCUTAction::mUseInterpreterInput = false;
+string JCUTAction::mInterpreterInput = "";
 
 int batchMode(CommonOptionsParser& OptionsParser) {
 	// Use OptionsParser.getCompilations() and OptionsParser.getSourcePathList()
@@ -147,10 +188,6 @@ int batchMode(CommonOptionsParser& OptionsParser) {
 		return -1;
 
 	FrontendActionFactory* jcut_action = newFrontendActionFactory<JCUTAction>();
-	// The ClangTool needs a new FrontendAction for each translation unit we run
-	// on.  Thus, it takes a FrontendActionFactory as parameter.  To create a
-	// FrontendActionFactory from a given FrontendAction type, we call
-	// newFrontendActionFactory<clang::SyntaxOnlyAction>().
 	failed = Tool.run(jcut_action);
 
 	return TotalTestsFailed;
@@ -190,6 +227,7 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 	string line;
 	string prompt = "jcut $> ";
 	linenoiseSetCompletionCallback(completionCallBack);
+	JCUTAction::mUseInterpreterInput = true;
 
 	while((c_line = linenoise(prompt.c_str())) != nullptr) {
 		line = string(c_line);
@@ -214,13 +252,14 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 			}
 		}
 
-		// Process al the input once the prompt is 'jcut $>'
+		// @todo Process al the input once the prompt is 'jcut $>'
+		JCUTAction::mInterpreterInput = line;
+		batchMode(OptionsParser);
 
 		/* Do something with the string. */
 
 		// Save it to the history
 		if(line.size()) {
-			cout << "echo: " << line << endl;
 			linenoiseHistoryAdd(line.c_str());
 			linenoiseHistorySave(history_name.c_str());
 		}
@@ -236,9 +275,12 @@ int main(int argc, const char **argv, char * const *envp)
 	TestFileOpt.setCategory(JcutOptions);
 	DumpOpt.setCategory(JcutOptions);
 
-    // CommonOptionsParser constructor will parse arguments and create a
+	// CommonOptionsParser constructor will parse arguments and create a
 	// CompilationDatabase.  In case of error it will terminate the program.
 	CommonOptionsParser OptionsParser(argc, argv);
+
+	// Initialize the JIT Engine only once
+	llvm::InitializeNativeTarget();
 
 	if(TestFileOpt.size())
 		return batchMode(OptionsParser);
