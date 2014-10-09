@@ -21,12 +21,18 @@ def main():
 
     JCUT = [sys.argv[1], "test_group.c", "-t", "test-file.txt", "--"]
     test_report = []
+    STDOUT_FILE = "stdout.txt"
+    STDERR_FILE = "stderr.txt"
     for group in sorted([dir for dir in os.listdir(os.getcwd()) if "group" in dir]):
         os.chdir(group)
-        with open("stdout.txt", 'w') as stdout:
-            with open("stderr.txt", 'w') as stderr:
+        with open(STDOUT_FILE, 'w') as stdout:
+            with open(STDERR_FILE, 'w') as stderr:
                 ret = subprocess.call(JCUT, stdout=stdout, stderr=stderr)
         test_report.append((ret, group))
+        if os.stat(STDOUT_FILE).st_size == 0:
+            os.remove(STDOUT_FILE)
+        if os.stat(STDERR_FILE).st_size == 0:
+            os.remove(STDERR_FILE)
         os.chdir("..")
 
     # Print test summary
@@ -40,6 +46,8 @@ def main():
         for ret, group in test_report:
             if 0 < ret < 255:
                 print("\tDirectory", group, "has", ret, "failed test(s)")
+            elif ret < 0 or ret >= 255:
+                print("\tJCUT is having problems! debug those issues!")
     else:
         print("SUCCESS!")
 
