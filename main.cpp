@@ -206,6 +206,16 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 			cout << "Unreconized command: "<< line << endl;;
 		}
 
+		if(linenoiseCtrlJPressed()) {
+			prompt = "jcut ?> ";
+			if(line.empty()) {
+				prompt = "jcut $> ";
+				linenoiseCtrlJClear();
+			}
+		}
+
+		// Process al the input once the prompt is 'jcut $>'
+
 		/* Do something with the string. */
 
 		// Save it to the history
