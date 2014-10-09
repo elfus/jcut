@@ -65,180 +65,29 @@ using namespace clang;
 using namespace clang::tooling;
 using namespace llvm;
 
+static cl::OptionCategory JcutOptions("JCUT Options");
 // CommonOptionsParser declares HelpMessage with a description of the common
 // command-line options related to the compilation database and input files.
 // It's nice to have this help message in all tools.
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
-// A help message for this specific tool can be added afterwards.
-static cl::extrahelp MoreHelp("\njit-testing OPTIONS:\n");
 static cl::opt<string> TestFileOpt("t", cl::Required, cl::desc("Input test file"), cl::value_desc("filename"));
 static cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
+static int TotalTestsFailed = 0;
 
-// This function isn't referenced outside its translation unit, but it
-// can't use the "static" keyword because its address is used for
-// GetMainExecutable (since some platforms don't support taking the
-// address of main, and some platforms can't implement GetMainExecutable
-// without being given the address of a function in the main executable).
-std::string GetExecutablePath(const char *Argv0)
-{
-	// This just needs to be some symbol in the binary; C++ doesn't
-	// allow taking the address of ::main however.
-	void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-	return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
-}
+class JCUTAction : public clang::EmitLLVMOnlyAction {
+public:
+	JCUTAction() { }
 
-static void removeJcutOptions(SmallVector<const char *, 16>& args, const char* opt) {
-	SmallVector<const char *, 16>::iterator it = nullptr;
-	for(it = args.begin(); it != args.end(); ++it) {
-		if(string(*it).find(opt) != string::npos) {
-			args.erase(it);
-			break;
-		}
-	}
-}
+	void EndSourceFileAction() {
+		EmitLLVMOnlyAction::EndSourceFileAction();
+		// The JIT Will take ownership of the Module!
+		llvm::Module* module = takeModule();
 
-static std::vector<std::string>
-copy_compiler_flags(const std::vector<std::string>& Sources,
-					const CompilationDatabase& CD) {
-	std::vector<std::string> out;
-	// @todo Remove duplicated command lines when several sources are provided
-	for(string s : Sources)
-		for(auto c : CD.getCompileCommands(s))
-			for(auto cl : c.CommandLine) {
-				if(cl != "clang-tool" && cl.find(".c") == string::npos)
-					out.push_back(cl);
-			}
-	return out;
-}
-
-int main(int argc, const char **argv, char * const *envp)
-{
-	
-    // CommonOptionsParser constructor will parse arguments and create a
-	// CompilationDatabase.  In case of error it will terminate the program.
-	CommonOptionsParser OptionsParser(argc, argv);
-	// Use OptionsParser.getCompilations() and OptionsParser.getSourcePathList()
-	// to retrieve CompilationDatabase and the list of input file paths.
-
-	CompilationDatabase& CD = OptionsParser.getCompilations();
-	// A clang tool can run over a number of sources in the same process...
-	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
-
-	// We hand the CompilationDatabase we created and the sources to run over into
-	// the tool constructor.
-	ClangTool Tool(CD, Sources);
-
-	FrontendActionFactory* action = newFrontendActionFactory<clang::SyntaxOnlyAction>();
-	// The ClangTool needs a new FrontendAction for each translation unit we run
-	// on.  Thus, it takes a FrontendActionFactory as parameter.  To create a
-	// FrontendActionFactory from a given FrontendAction type, we call
-	// newFrontendActionFactory<clang::SyntaxOnlyAction>().
-	int failed = Tool.run(action);
-	if(failed)
-		return failed;
-	
-	void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-	std::string Path = GetExecutablePath(argv[0]);
-	IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
-	TextDiagnosticPrinter *DiagClient =
-			new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
-
-	IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
-	DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
-	driver::Driver TheDriver(Path, llvm::sys::getProcessTriple(), "a.out", Diags);
-	TheDriver.setTitle("jcut");
-
-	SmallVector<const char *, 16> Args(argv, argv + argc);
-	// If we leave jcut command line options the clang API will complain, so
-	// we better remove it. There should be a better way to avoid this problem.
-	removeJcutOptions(Args, "-t");
-	removeJcutOptions(Args, TestFileOpt.getValue().c_str());
-	removeJcutOptions(Args, "-dump");
-
-	// We do this because the CommonOptionsParser removed the actual compiler
-	// flags that are provided after --. This means that we need to pass
-	// the exact same compiler flags to the EmitLLVMOnlyAction.
-	// @TODO Fix this by implement a newFrontEndActionFactory for this special
-	// case in which we want to generate LLVM IR code.
-	vector<string> compiler_flags = copy_compiler_flags(Sources, OptionsParser.getCompilations());
-	for (auto c : compiler_flags)
-		Args.push_back(c.c_str());
-
-	Args.push_back("-Iinclude"); // Special case for windows
-	Args.push_back("-fsyntax-only"); // we don't want to link
-
-	OwningPtr<clang::driver::Compilation> C(TheDriver.BuildCompilation(Args));
-	if (!C)
-		return -1;
-
-	const clang::driver::JobList& Jobs = C->getJobs();
-
-	if(Jobs.size() != Sources.size()) {
-		SmallString<256> Msg;
-		llvm::raw_svector_ostream OS(Msg);
-		Jobs.Print(OS, "; ", true);
-		Diags.Report(diag::err_fe_expected_compiler_job) << OS.str();
-		return -1;
-	}
-
-	//////////////////////////////////////////
-	// Generate LLVM IR Code for every job (source file)
-	//
-	vector<llvm::Module*> modules;
-	//////////////////////////
-	// These three vectors are used to keep the CompilerInvocation,
-	// CompilerInstance and CodeGenAction objects alive so we can manipulate
-	// all the llvm::Module later on.
-	vector<OwningPtr<CompilerInvocation>> invocations;
-	vector<OwningPtr<CompilerInstance>> compilers;
-	vector<OwningPtr<CodeGenAction>> actions;
-	//////////////////////////
-	for(driver::Job* job : Jobs ) {
-		// All the jobs (source files have the same command arguments)
-		const llvm::opt::ArgStringList& CCArgs = cast<driver::Command>
-												  (job)->getArguments();
-		OwningPtr<CompilerInvocation> CI(new CompilerInvocation);
-		CompilerInvocation::CreateFromArgs(*CI,
-				const_cast<const char **> (CCArgs.data()),
-				const_cast<const char **> (CCArgs.data()) +
-				CCArgs.size(),
-				Diags);
-
-		OwningPtr<CompilerInstance> Clang(new CompilerInstance());
-		Clang->setInvocation(CI.take());
-
-		Clang->createDiagnostics();
-		if(!Clang->hasDiagnostics())
-			return -1;
-
-		// Infer the builtin include path if unspecified.
-		if (Clang->getHeaderSearchOpts().UseBuiltinIncludes &&
-				Clang->getHeaderSearchOpts().ResourceDir.empty())
-			Clang->getHeaderSearchOpts().ResourceDir =
-				CompilerInvocation::GetResourcesPath(argv[0], MainAddr);
-
-		// Create and execute the frontend to generate an LLVM bitcode module.
-		OwningPtr<CodeGenAction> Act(new EmitLLVMOnlyAction());
-		if (!Clang->ExecuteAction(*Act))
-			return 1;
-
-		if(llvm::Module* m = Act->takeModule())
-			modules.push_back(m);
-
-		// We need the CompilerInvocation and CompilerInstance to live
-		// so the LLVM Modules are valid after exiting this for loop.
-		invocations.push_back(OwningPtr<CompilerInvocation>(CI.take()));
-		compilers.push_back(OwningPtr<CompilerInstance>(Clang.take()));
-		actions.push_back(OwningPtr<CodeGenAction>(Act.take()));
-	}
-
-	for(llvm::Module* module : modules) {
-		// add my code here
 		try {
 			Exception::mCurrentFile = TestFileOpt.getValue(); // quick workaround
 			TestDriver driver(TestFileOpt.getValue());
-			TestExpr *tests = driver.ParseTestExpr(); // Parse file and generate object structure tree
+			unique_ptr<TestExpr> tests (driver.ParseTestExpr()); // Parse file and generate object structure tree
 
 			DataPlaceholderVisitor dp;
 			tests->accept(&dp); // Generate functions using data place holders.
@@ -252,7 +101,7 @@ int main(int argc, const char **argv, char * const *envp)
 			TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(module, &Error),DumpOpt.getValue(),module);
 			if (runner.isValidExecutionEngine() == false) {
 				llvm::errs() << "unable to make execution engine: " << Error << "\n";
-				return 255;
+				return;
 			}
 			tests->accept(&runner);
 
@@ -267,13 +116,48 @@ int main(int argc, const char **argv, char * const *envp)
 			tests->accept(&results_logger);
 
 			// this application exits with the number of tests failed.
-			failed += results_logger.getTestsFailed();
-			delete tests;
+			TotalTestsFailed += results_logger.getTestsFailed();
 		} catch (const Exception& e) {
 			errs() << e.what() << "\n";
 		}
-		break; //@todo Implement multiple C files
 	}
+};
 
-	return failed;
+int main(int argc, const char **argv, char * const *envp)
+{
+	TestFileOpt.setCategory(JcutOptions);
+	DumpOpt.setCategory(JcutOptions);
+
+    // CommonOptionsParser constructor will parse arguments and create a
+	// CompilationDatabase.  In case of error it will terminate the program.
+	CommonOptionsParser OptionsParser(argc, argv);
+
+	// Use OptionsParser.getCompilations() and OptionsParser.getSourcePathList()
+	// to retrieve CompilationDatabase and the list of input file paths.
+
+	CompilationDatabase& CD = OptionsParser.getCompilations();
+	// A clang tool can run over a number of sources in the same process...
+	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
+
+	// We hand the CompilationDatabase we created and the sources to run over into
+	// the tool constructor.
+	ClangTool Tool(CD, Sources);
+
+	FrontendActionFactory* syntax_action = newFrontendActionFactory<clang::SyntaxOnlyAction>();
+	// The ClangTool needs a new FrontendAction for each translation unit we run
+	// on.  Thus, it takes a FrontendActionFactory as parameter.  To create a
+	// FrontendActionFactory from a given FrontendAction type, we call
+	// newFrontendActionFactory<clang::SyntaxOnlyAction>().
+	int failed = Tool.run(syntax_action);
+	if(failed)
+		return -1;
+
+	FrontendActionFactory* jcut_action = newFrontendActionFactory<JCUTAction>();
+	// The ClangTool needs a new FrontendAction for each translation unit we run
+	// on.  Thus, it takes a FrontendActionFactory as parameter.  To create a
+	// FrontendActionFactory from a given FrontendAction type, we call
+	// newFrontendActionFactory<clang::SyntaxOnlyAction>().
+	failed = Tool.run(jcut_action);
+
+	return TotalTestsFailed;
 }
