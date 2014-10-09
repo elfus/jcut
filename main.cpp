@@ -56,6 +56,8 @@
 #include "TestRunnerVisitor.h"
 #include "TestLoggerVisitor.h"
 
+#include "linenoise.h"
+
 #include <vector>
 #include <iostream>
 
@@ -71,7 +73,7 @@ static cl::OptionCategory JcutOptions("JCUT Options");
 // It's nice to have this help message in all tools.
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
-static cl::opt<string> TestFileOpt("t", cl::Required, cl::desc("Input test file"), cl::value_desc("filename"));
+static cl::opt<string> TestFileOpt("t", cl::Optional,  cl::ValueRequired, cl::desc("Input test file"), cl::value_desc("filename"));
 static cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
 static int TotalTestsFailed = 0;
 
@@ -123,15 +125,7 @@ public:
 	}
 };
 
-int main(int argc, const char **argv, char * const *envp)
-{
-	TestFileOpt.setCategory(JcutOptions);
-	DumpOpt.setCategory(JcutOptions);
-
-    // CommonOptionsParser constructor will parse arguments and create a
-	// CompilationDatabase.  In case of error it will terminate the program.
-	CommonOptionsParser OptionsParser(argc, argv);
-
+int batchMode(CommonOptionsParser& OptionsParser) {
 	// Use OptionsParser.getCompilations() and OptionsParser.getSourcePathList()
 	// to retrieve CompilationDatabase and the list of input file paths.
 
@@ -160,4 +154,84 @@ int main(int argc, const char **argv, char * const *envp)
 	failed = Tool.run(jcut_action);
 
 	return TotalTestsFailed;
+}
+//////////////////
+// Interpreter specific functions
+void completionCallBack(const char * line, linenoiseCompletions *lc) {
+
+	if (line[0] == 'b') {
+		linenoiseAddCompletion(lc,"before");
+		linenoiseAddCompletion(lc,"before_all");
+	}
+
+	if (line[0] == 'a') {
+		linenoiseAddCompletion(lc,"after");
+		linenoiseAddCompletion(lc,"after_all");
+	}
+
+	if (line[0] == 'm') {
+		linenoiseAddCompletion(lc,"mockup");
+		linenoiseAddCompletion(lc,"mockup_all");
+	}
+
+	if (line[0] == 'd')
+		linenoiseAddCompletion(lc,"data");
+
+	if (line[0] == 'g')
+		linenoiseAddCompletion(lc,"group");
+
+}
+
+int interpreterMode(CommonOptionsParser& OptionsParser) {
+	cout << "Interpreter mode!" << endl;
+	char *c_line = nullptr;
+	string history_name = "jcut-history.txt";
+	linenoiseHistoryLoad(history_name.c_str()); /* Load the history at startup */
+	string line;
+	string prompt = "jcut $> ";
+	linenoiseSetCompletionCallback(completionCallBack);
+
+	while((c_line = linenoise(prompt.c_str())) != nullptr) {
+		line = string(c_line);
+		// Process interpreter specific commands first
+		if(line == "exit") {
+			free(c_line);
+			break;
+		}
+		if (line == "/historylen") {
+			/* The "/historylen" command will change the history len. */
+			int len = atoi(c_line+11);
+			linenoiseHistorySetMaxLen(len);
+		} else if (line.size() && line[0] == '/') {
+			cout << "Unreconized command: "<< line << endl;;
+		}
+
+		/* Do something with the string. */
+
+		// Save it to the history
+		if(line.size()) {
+			cout << "echo: " << line << endl;
+			linenoiseHistoryAdd(line.c_str());
+			linenoiseHistorySave(history_name.c_str());
+		}
+
+		free(c_line);
+		// Repeat
+	}
+	return 0;
+}
+
+int main(int argc, const char **argv, char * const *envp)
+{
+	TestFileOpt.setCategory(JcutOptions);
+	DumpOpt.setCategory(JcutOptions);
+
+    // CommonOptionsParser constructor will parse arguments and create a
+	// CompilationDatabase.  In case of error it will terminate the program.
+	CommonOptionsParser OptionsParser(argc, argv);
+
+	if(TestFileOpt.size())
+		return batchMode(OptionsParser);
+	else
+		return interpreterMode(OptionsParser);
 }
