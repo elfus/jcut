@@ -46,9 +46,9 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 		throw Exception(__LINE__,0,"DataPlaceholders are not allowed inside a before or after statement");
 	}
 
-	llvm::Function *currentFunction = mModule->getFunction(mCurrentFud);
+	llvm::Function *currentFunction = mModule->getFunction(mCurrentFuncCall);
 	if( currentFunction == nullptr) {
-		cout << "Function not found!: " << mCurrentFud << endl;
+		cout << "Function not found!: " << mCurrentFuncCall << endl;
 	}
 	assert(currentFunction != nullptr && "Function not found!");
 	llvm::Function::arg_iterator arg_it = currentFunction->arg_begin();
@@ -132,7 +132,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			}
 			if(arg->isBufferAlloc())
 				throw Exception(arg->getLine(), arg->getColumn(),
-						"Invalid argument type [BufferAlloc] for function "+mCurrentFud);
+						"Invalid argument type [BufferAlloc] for function "+mCurrentFuncCall);
 			string str_value;
 			// @todo Improve the way we detect when we have to get the memory address
 			// from a string. This is only a quick patch which I need right now :(
@@ -167,6 +167,10 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 	}
 }
 
+void TestGeneratorVisitor::VisitFunctionCallFirst(FunctionCall *FC) {
+	mCurrentFuncCall = FC->getIdentifier()->getIdentifierStr();
+}
+
 void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 {
 	string func_name = FC->getIdentifier()->getIdentifierStr();
@@ -182,6 +186,7 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 		cout << "Function not found!: " << func_name << endl;
 	}
 	assert(funcToBeCalled != nullptr && "Function not found!");
+
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
 	if (funcToBeCalled->getReturnType()->getTypeID() == Type::TypeID::VoidTyID)
@@ -193,6 +198,7 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 	mTestFunctionCall = call;
 	mInstructions.push_back(call);
 	mArgs.clear();
+	mCurrentFuncCall.clear();
 }
 
 void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)

@@ -84,6 +84,7 @@ private:
     /// Store all the warnings for a single TestDefinition.
     std::vector<Exception> mWarnings;
     std::string mCurrentFud; // Current Function Under Test
+    std::string mCurrentFuncCall; // Name of the current FunctionCall we are visiting.
     llvm::ZExtInst* mTestResult;
     std::map<string,llvm::Function*> mFunctionsWrapped;
 
@@ -195,6 +196,7 @@ public:
 
     void VisitFunctionArgument(FunctionArgument *);
     void VisitFunctionCall(FunctionCall *);
+    void VisitFunctionCallFirst(FunctionCall *);
     // Used to compare the results from the function under test against an expected result.
     void VisitExpectedResult(ExpectedResult *);
     // Used to compare expressions in 'after or after_all' statements.

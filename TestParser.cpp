@@ -808,6 +808,7 @@ FunctionCall::~FunctionCall()
 
 void FunctionCall::accept(Visitor *v)
 {
+	v->VisitFunctionCallFirst(this);
 	for (FunctionArgument*& ptr : mFunctionArguments) {
 		ptr->accept(v);
 	}

@@ -106,6 +106,7 @@ public:
      * pre-order fashion, meaning that all the current node is visited first
      * and then all its children.
      */
+    virtual void VisitFunctionCallFirst(FunctionCall *) {};
     virtual void VisitTestFileFirst(TestFile *) {}
     virtual void VisitGlobalSetupFirst(GlobalSetup *) {}
     virtual void VisitGlobalTeardownFirst(GlobalTeardown *) {}
