@@ -38,6 +38,7 @@ public:
         ERROR = 0,
         WARNING
     };
+    // @todo Redesign the Exception class to take a Token in the constructor.
 
     Exception(const string& expected, const string& received)
         : mMsg(""), mExtraMsg(""), mLine(0), mColumn(0), mSeverity(ERROR) {
@@ -1285,12 +1286,13 @@ public:
 
 class TestGroup : public TestExpr, public LLVMFunctionHolder {
 private:
-    Identifier* mName;
+    unique_ptr<Identifier> mName;
     // Let's work with tests as we find them, do not alter their order.
+    // @todo Change this to vector<unique_ptr<TestExpr>>
     vector<TestExpr*> mTests;
-    GlobalMockup *mGlobalMockup;
-    GlobalSetup *mGlobalSetup;
-    GlobalTeardown *mGlobalTeardown;
+    unique_ptr<GlobalMockup> mGlobalMockup;
+    unique_ptr<GlobalSetup> mGlobalSetup;
+    unique_ptr<GlobalTeardown> mGlobalTeardown;
     static int group_count;
 public:
     TestGroup(Identifier* name,
@@ -1305,10 +1307,6 @@ public:
         if (mGlobalTeardown) mGlobalTeardown->setGroupName(mName->getIdentifierStr());
     }
     ~TestGroup() {
-        if (mName) delete mName;
-        if (mGlobalMockup) delete mGlobalMockup;
-        if (mGlobalSetup) delete mGlobalSetup;
-        if (mGlobalTeardown) delete mGlobalTeardown;
         for (auto*& ptr : mTests)
             delete ptr;
     }
@@ -1326,27 +1324,22 @@ public:
     }
 
     string getGroupName() const { return mName->getIdentifierStr(); }
-    GlobalSetup* getGlobalSetup() const { return mGlobalSetup; }
-    GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown; }
-    GlobalMockup* getGlobalMockup() const { return mGlobalMockup; }
-    void setGlobalTeardown(GlobalTeardown* gt) { mGlobalTeardown = gt; }
+    // @todo Revisit how these methods are used. Do we really need to expose
+    // the internal object state by returning pointers?
+    GlobalSetup* getGlobalSetup() const { return mGlobalSetup.get(); }
+    GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown.get(); }
+    GlobalMockup* getGlobalMockup() const { return mGlobalMockup.get(); }
+    void setGlobalTeardown(GlobalTeardown* gt) { mGlobalTeardown.reset(gt); }
     // Use it with wisdom, you can modify the internal object structure.
     vector<TestExpr*>& getTests() { return mTests; }
 };
 
 class TestFile : public TestExpr {
 private:
-    TestGroup* mTestGroups;
+    unique_ptr<TestGroup> mTestGroups;
 public:
-
-    TestFile(TestGroup *tg) :
-    mTestGroups(tg) {
-
-    }
-
-    ~TestFile() {
-        if (mTestGroups) delete mTestGroups;
-    }
+    TestFile(const TestFile&) = delete;
+    TestFile(TestGroup *tg) : mTestGroups(tg) { }
 
     void accept(Visitor *v) {
         v->VisitTestFileFirst(this);
