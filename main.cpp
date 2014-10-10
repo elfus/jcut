@@ -225,7 +225,9 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 	string history_name = "jcut-history.txt";
 	linenoiseHistoryLoad(history_name.c_str()); /* Load the history at startup */
 	string line;
-	string prompt = "jcut $> ";
+	const string prompt_input = "jcut $> ";
+	const string prompt_more = "jcut ?> ";
+	string prompt = prompt_input;
 	linenoiseSetCompletionCallback(completionCallBack);
 	JCUTAction::mUseInterpreterInput = true;
 
@@ -245,16 +247,18 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 		}
 
 		if(linenoiseCtrlJPressed()) {
-			prompt = "jcut ?> ";
+			prompt = prompt_more;
 			if(line.empty()) {
-				prompt = "jcut $> ";
+				prompt = prompt_input;
 				linenoiseCtrlJClear();
 			}
 		}
 
-		// @todo Process al the input once the prompt is 'jcut $>'
-		JCUTAction::mInterpreterInput = line;
-		batchMode(OptionsParser);
+		JCUTAction::mInterpreterInput += line;
+		if(prompt == prompt_input) {
+			batchMode(OptionsParser);
+			JCUTAction::mInterpreterInput.clear();
+		}
 
 		/* Do something with the string. */
 
