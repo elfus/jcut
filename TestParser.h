@@ -1482,9 +1482,9 @@ protected:
     TestDefinition* ParseTestDefinition();
     // @arg name The name of the group to be parsed
     TestGroup* ParseTestGroup(Identifier* name);
-    GlobalMockup* ParseGlobalMockup();
-    GlobalSetup* ParseGlobalSetup();
-    GlobalTeardown* ParseGlobalTeardown();
+    GlobalMockup* ParseGroupMockup();
+    GlobalSetup* ParseGroupSetup();
+    GlobalTeardown* ParseGroupTeardown();
     TestFile* ParseTestFile();
 };
 

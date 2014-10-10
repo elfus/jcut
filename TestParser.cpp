@@ -636,8 +636,8 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	Identifier* new_group_name = nullptr;
 
 	try {
-		gm = ParseGlobalMockup();
-		gs = ParseGlobalSetup();
+		gm = ParseGroupMockup();
+		gs = ParseGroupSetup();
 
 		if(mCurrentToken == TOK_AFTER_ALL) {
 			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
@@ -698,7 +698,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		////////////////////////////////////////
 		// Changed the syntax and parse the groups teardown at the very end of the
 		// group
-		gt = ParseGlobalTeardown();
+		gt = ParseGroupTeardown();
 	} catch(...) {
 		if(gm) delete gm;
 		if(gs) delete gs;
@@ -713,7 +713,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 	return new TestGroup(name, tests, gm, gs, gt);
 }
 
-GlobalMockup* TestDriver::ParseGlobalMockup()
+GlobalMockup* TestDriver::ParseGroupMockup()
 {
 	if (mCurrentToken == TOK_MOCKUP_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
@@ -728,7 +728,7 @@ GlobalMockup* TestDriver::ParseGlobalMockup()
 	return nullptr;
 }
 
-GlobalSetup* TestDriver::ParseGlobalSetup()
+GlobalSetup* TestDriver::ParseGroupSetup()
 {
 	if (mCurrentToken == TOK_BEFORE_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
@@ -743,7 +743,7 @@ GlobalSetup* TestDriver::ParseGlobalSetup()
 	return nullptr;
 }
 
-GlobalTeardown* TestDriver::ParseGlobalTeardown()
+GlobalTeardown* TestDriver::ParseGroupTeardown()
 {
 	if (mCurrentToken == TOK_AFTER_ALL) {
 		mCurrentToken = mTokenizer.nextToken(); // eat keyword 'mockup_all'
