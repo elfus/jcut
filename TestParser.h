@@ -387,13 +387,11 @@ public:
     Identifier(const Identifier& that)
     : TestExpr(that), mIdentifierString(that.mIdentifierString) {}
 
-    ~Identifier() {    }
-
     void accept(Visitor *v) {
         v->VisitIdentifier(this);
     }
 
-    string getIdentifierStr() const {return mIdentifierString;}
+    string toString() const {return mIdentifierString;}
 };
 
 class Operand : public TestExpr {
@@ -428,7 +426,7 @@ public:
     Constant* getConstant() const { return mC; }
     string toString() const {
     	if(isIdentifier())
-    		return mI->getIdentifierStr();
+    		return mI->toString();
 
     	if(isConstant())
     		return mC->getAsStr();
@@ -1068,8 +1066,8 @@ public:
 
 class TestFunction : public TestExpr {
 private:
-    FunctionCall* mFunctionCall;
-    ExpectedResult* mExpectedResult;
+    unique_ptr<FunctionCall> mFunctionCall;
+    unique_ptr<ExpectedResult> mExpectedResult;
 
 public:
     TestFunction(FunctionCall *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
@@ -1077,18 +1075,15 @@ public:
     TestFunction(const TestFunction& that)
     : TestExpr(that), mFunctionCall(nullptr), mExpectedResult(nullptr) {
     	if(that.mFunctionCall)
-    		mFunctionCall = new FunctionCall(*that.mFunctionCall);
+    		mFunctionCall = unique_ptr<FunctionCall>(
+    				new FunctionCall(*that.mFunctionCall));
     	if(that.mExpectedResult)
-    		mExpectedResult = new ExpectedResult(*that.mExpectedResult);
+    		mExpectedResult = unique_ptr<ExpectedResult>(
+    				new ExpectedResult(*that.mExpectedResult));
     }
 
-    ~TestFunction() {
-        if(mFunctionCall) delete mFunctionCall;
-        if(mExpectedResult) delete mExpectedResult;
-    }
-
-    FunctionCall* getFunctionCall() const {return mFunctionCall; }
-    ExpectedResult* getExpectedResult() const {return mExpectedResult; }
+    FunctionCall* getFunctionCall() const {return mFunctionCall.get(); }
+    ExpectedResult* getExpectedResult() const {return mExpectedResult.get(); }
 
     void accept(Visitor *v) {
         mFunctionCall->accept(v);
@@ -1150,11 +1145,11 @@ public:
 
 class TestDefinition : public TestExpr, public LLVMFunctionHolder {
 private:
-    TestData *mTestData;
-    TestFunction *FunctionCall;
-    TestSetup *mTestSetup;
-    TestTeardown *mTestTeardown;
-    TestMockup *mTestMockup;
+    unique_ptr<TestData> mTestData;
+    unique_ptr<TestFunction> mTestFunction;
+    unique_ptr<TestSetup> mTestSetup;
+    unique_ptr<TestTeardown> mTestTeardown;
+    unique_ptr<TestMockup> mTestMockup;
     // Do not delete these pointers! They belong to someone else!
 	// We only store ExpectedExpressions that are known to have failed.
 	std::vector<ExpectedExpression*> mFailedEE;
@@ -1166,44 +1161,40 @@ public:
             TestSetup *setup = nullptr,
             TestTeardown *teardown = nullptr,
             TestMockup *mockup = nullptr) :
-    mTestData(info), FunctionCall(function), mTestSetup(setup),
+    mTestData(info), mTestFunction(function), mTestSetup(setup),
     mTestTeardown(teardown), mTestMockup(mockup) { }
 
     TestDefinition(const TestDefinition& that)
-    : TestExpr(that), mTestData(nullptr), FunctionCall(nullptr), mTestSetup(nullptr),
+    : TestExpr(that), mTestData(nullptr), mTestFunction(nullptr), mTestSetup(nullptr),
       mTestTeardown(nullptr), mTestMockup(nullptr), mFailedEE(that.mFailedEE) {
     	if(that.mTestData)
-    		mTestData = new TestData(*that.mTestData);
-    	if(that.FunctionCall)
-    		FunctionCall = new TestFunction(*that.FunctionCall);
+    		mTestData = unique_ptr<TestData>(new TestData(*that.mTestData));
+    	if(that.mTestFunction)
+    		mTestFunction = unique_ptr<TestFunction>(
+    						new TestFunction(*that.mTestFunction));
     	if(that.mTestSetup)
-    		mTestSetup = new TestSetup(*that.mTestSetup);
+    		mTestSetup = unique_ptr<TestSetup>(
+    					 new TestSetup(*that.mTestSetup));
     	if(that.mTestTeardown)
-    		mTestTeardown = new TestTeardown(*that.mTestTeardown);
+    		mTestTeardown = unique_ptr<TestTeardown>(
+    						new TestTeardown(*that.mTestTeardown));
     	if(that.mTestMockup)
-    		mTestMockup = new TestMockup(*that.mTestMockup);
+    		mTestMockup = unique_ptr<TestMockup>(
+    					  new TestMockup(*that.mTestMockup));
     }
 
-    TestData* getTestData() const { return mTestData; }
-    TestFunction * getTestFunction() const {return FunctionCall;}
-    TestMockup* getTestMockup() const { return mTestMockup; }
+    TestData* getTestData() const { return mTestData.get(); }
+    TestFunction * getTestFunction() const {return mTestFunction.get();}
+    TestMockup* getTestMockup() const { return mTestMockup.get(); }
 
     bool hasTestMockup() const { return mTestMockup != nullptr; }
-
-    virtual ~TestDefinition() {
-        if (mTestData) delete mTestData;
-        if (FunctionCall) delete FunctionCall;
-        if (mTestSetup) delete mTestSetup;
-        if (mTestTeardown) delete mTestTeardown;
-        if (mTestMockup) delete mTestMockup;
-    }
 
     void accept(Visitor *v) {
         v->VisitTestDefinitionFirst(this);
         if(mTestData) mTestData->accept(v);
         if(mTestMockup) mTestMockup->accept(v);
         if(mTestSetup) mTestSetup->accept(v);
-        FunctionCall->accept(v);
+        mTestFunction->accept(v);
         if(mTestTeardown) mTestTeardown->accept(v);
         v->VisitTestDefinition(this);
     }
@@ -1225,62 +1216,44 @@ public:
 
 class GlobalMockup : public TestExpr {
 private:
-    MockupFixture *mMockupFixture;
+    unique_ptr<MockupFixture> mMockupFixture;
 public:
-
+    GlobalMockup(const MockupFixture&) = delete;
     GlobalMockup(MockupFixture *fixt) : mMockupFixture(fixt) {    }
-
-    ~GlobalMockup() {
-        if (mMockupFixture) delete mMockupFixture;
-    }
 
     void accept(Visitor *v) {
         mMockupFixture->accept(v);
-        v->VisitGlobalMockup(this);
+        v->VisitGroupMockup(this);
     }
 
-    MockupFixture* getMockupFixture() const { return mMockupFixture; }
+    MockupFixture* getMockupFixture() const { return mMockupFixture.get(); }
 };
 
 class GlobalSetup : public TestExpr, public LLVMFunctionHolder {
 private:
-    TestFixture *mTestFixture;
+    unique_ptr<TestFixture> mTestFixture;
 public:
-
+    GlobalSetup(const GlobalSetup&) = delete;
     GlobalSetup(TestFixture *fixt) : mTestFixture(fixt) {    }
 
-    ~GlobalSetup() {
-        if (mTestFixture) delete mTestFixture;
-    }
-
     void accept(Visitor *v) {
-        v->VisitGlobalSetupFirst(this);
+        v->VisitGroupSetupFirst(this);
         mTestFixture->accept(v);
-        v->VisitGlobalSetup(this);
+        v->VisitGroupSetup(this);
     }
 };
 
 class GlobalTeardown : public TestExpr, public LLVMFunctionHolder {
 private:
-    TestFixture *mTestFixture;
+	unique_ptr<TestFixture> mTestFixture;
 public:
-
-    GlobalTeardown() : mTestFixture(nullptr) {
-    }
-
-    GlobalTeardown(TestFixture *fixt) : mTestFixture(fixt) {
-    }
-
-    ~GlobalTeardown() {
-        if (mTestFixture) delete mTestFixture;
-    }
+	GlobalTeardown(const TestFixture&) = delete;
+    GlobalTeardown(TestFixture *fixt) : mTestFixture(fixt) { }
 
     void accept(Visitor *v) {
-        v->VisitGlobalTeardownFirst(this);
-        // This a workaround because we can build a GlobalTeardown with or without
-        // a TestFixture
+        v->VisitGroupTeardownFirst(this);
         if (mTestFixture) mTestFixture->accept(v);
-        v->VisitGlobalTeardown(this);
+        v->VisitGroupTeardown(this);
     }
 };
 
@@ -1303,8 +1276,8 @@ public:
     mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt) {
         /// @todo Enable GlobalMockup
         // if (GlobalMockup) GlobalMockup->setGroupName(mName->getIdentifierStr());
-        if (mGlobalSetup) mGlobalSetup->setGroupName(mName->getIdentifierStr());
-        if (mGlobalTeardown) mGlobalTeardown->setGroupName(mName->getIdentifierStr());
+        if (mGlobalSetup) mGlobalSetup->setGroupName(mName->toString());
+        if (mGlobalTeardown) mGlobalTeardown->setGroupName(mName->toString());
     }
     ~TestGroup() {
         for (auto*& ptr : mTests)
@@ -1323,7 +1296,7 @@ public:
         v->VisitTestGroup(this);
     }
 
-    string getGroupName() const { return mName->getIdentifierStr(); }
+    string getGroupName() const { return mName->toString(); }
     // @todo Revisit how these methods are used. Do we really need to expose
     // the internal object state by returning pointers?
     GlobalSetup* getGlobalSetup() const { return mGlobalSetup.get(); }

@@ -95,9 +95,9 @@ public:
     virtual void VisitTestMockup(TestMockup *) {}
     virtual void VisitTestDefinition(TestDefinition *) {}
     virtual void VisitTestGroup(TestGroup *) {}
-    virtual void VisitGlobalMockup(GlobalMockup *) {}
-    virtual void VisitGlobalSetup(GlobalSetup *) {}
-    virtual void VisitGlobalTeardown(GlobalTeardown *) {}
+    virtual void VisitGroupMockup(GlobalMockup *) {}
+    virtual void VisitGroupSetup(GlobalSetup *) {}
+    virtual void VisitGroupTeardown(GlobalTeardown *) {}
     virtual void VisitTestFile(TestFile *) {}
     virtual ~Visitor() {}
 
@@ -108,8 +108,8 @@ public:
      */
     virtual void VisitFunctionCallFirst(FunctionCall *) {};
     virtual void VisitTestFileFirst(TestFile *) {}
-    virtual void VisitGlobalSetupFirst(GlobalSetup *) {}
-    virtual void VisitGlobalTeardownFirst(GlobalTeardown *) {}
+    virtual void VisitGroupSetupFirst(GlobalSetup *) {}
+    virtual void VisitGroupTeardownFirst(GlobalTeardown *) {}
     virtual void VisitTestDefinitionFirst(TestDefinition *) {}
     virtual void VisitTestGroupFirst(TestGroup *) {}
 };

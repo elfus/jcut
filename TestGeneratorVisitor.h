@@ -214,9 +214,9 @@ public:
     void VisitTestDefinition(TestDefinition *);
     void VisitTestDefinitionFirst(TestDefinition *);
     /// Generates an LLVM Function that maps to before_all
-    void VisitGlobalSetup(GlobalSetup *);
+    void VisitGroupSetup(GlobalSetup *);
     /// Generates an LLVM Function that maps to after_all
-    void VisitGlobalTeardown(GlobalTeardown *);
+    void VisitGroupTeardown(GlobalTeardown *);
     /// Generates an LLVM Function that restores whatever was done in before_all
     /// and after_all
     void VisitTestGroup(TestGroup *);

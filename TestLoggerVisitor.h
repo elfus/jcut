@@ -128,7 +128,7 @@ public:
         cout << "Tests FAILED: " << mTestsFailed << endl;
     }
 
-    void VisitGlobalSetup(GlobalSetup *GS) {
+    void VisitGroupSetup(GlobalSetup *GS) {
         if(mFmt & (LOG_GROUP_SETUP)) {
             cout << setw(WIDTH) << setfill('<') << '<' << setfill(' ') << endl;
             logFunction(GS, GS->getLLVMFunction()->getName());
@@ -172,7 +172,7 @@ public:
         cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
-    void VisitGlobalTeardown(GlobalTeardown *GT) {
+    void VisitGroupTeardown(GlobalTeardown *GT) {
         if(mFmt & LOG_GROUP_TEARDOWN) {
             cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
             logFunction(GT, GT->getLLVMFunction()->getName());

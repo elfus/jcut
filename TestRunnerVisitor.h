@@ -87,7 +87,7 @@ public:
 
     bool isValidExecutionEngine() const { return mEE != nullptr; }
 
-    void VisitGlobalMockup(GlobalMockup *GM) {
+    void VisitGroupMockup(GlobalMockup *GM) {
     	vector<MockupFunction*> mockups =
     			GM->getMockupFixture()->getMockupFunctions();
     	mMockupRevert.push(nullptr);
@@ -99,11 +99,11 @@ public:
     	}
     }
 
-    void VisitGlobalSetup(GlobalSetup *GS) {
+    void VisitGroupSetup(GlobalSetup *GS) {
         runFunction(GS);
     }
 
-    void VisitGlobalTeardown(GlobalTeardown *GT) {
+    void VisitGroupTeardown(GlobalTeardown *GT) {
         runFunction(GT);
     }
 

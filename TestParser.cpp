@@ -302,7 +302,7 @@ FunctionCall* TestDriver::ParseFunctionCall()
 	Identifier* functionName = ParseFunctionName();
 
 	if (mCurrentToken != '(') {
-            string extra = functionName->getIdentifierStr()+mCurrentToken.mLexeme;
+            string extra = functionName->toString()+mCurrentToken.mLexeme;
             delete functionName;
             throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
                             "Expected a left parenthesis in function call but received " + mCurrentToken.mLexeme,
@@ -670,7 +670,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				}
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
-				Identifier* ngn = new Identifier(name->getIdentifierStr()+":"+new_group_name->getIdentifierStr());
+				Identifier* ngn = new Identifier(name->toString()+":"+new_group_name->toString());
 				delete new_group_name;
 				TestGroup* group = ParseTestGroup(ngn);
 				if (group)
@@ -687,7 +687,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 			} else {
 				TestDefinition *testDefinition = ParseTestDefinition();
 				if(name)
-					testDefinition->setGroupName(name->getIdentifierStr());
+					testDefinition->setGroupName(name->toString());
 				else
 					testDefinition->setGroupName("default");
 
@@ -828,7 +828,7 @@ void InitializerValue::accept(Visitor *v) {
 
 
 string FunctionCall::getFunctionCalledString() {
-	string called = mFunctionName->getIdentifierStr() +"(";
+	string called = mFunctionName->toString() +"(";
 	// @todo @bug We have to improve the way we detect and store the arguments.
 	// For instance when calling a function that receives a char, we need to
 	// print a character and not a number, and when calling a function that

@@ -168,12 +168,12 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 }
 
 void TestGeneratorVisitor::VisitFunctionCallFirst(FunctionCall *FC) {
-	mCurrentFuncCall = FC->getIdentifier()->getIdentifierStr();
+	mCurrentFuncCall = FC->getIdentifier()->toString();
 }
 
 void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 {
-	string func_name = FC->getIdentifier()->getIdentifierStr();
+	string func_name = FC->getIdentifier()->toString();
 	Function *funcToBeCalled = nullptr;
 
 	auto it = mFunctionsWrapped.find(func_name);
@@ -271,14 +271,14 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	Value* R = nullptr;
 
 	if (LHS->isIdentifier()) {
-		llvm::GlobalVariable* g = mModule->getGlobalVariable(LHS->getIdentifier()->getIdentifierStr());
+		llvm::GlobalVariable* g = mModule->getGlobalVariable(LHS->getIdentifier()->toString());
 		assert(g && "LHS Operator not found!");
 		L = mBuilder.CreateLoad(g);
 		mInstructions.push_back((llvm::Instruction*)L);
 	}
 
 	if (RHS->isIdentifier()) {
-		llvm::GlobalVariable* g = mModule->getGlobalVariable(RHS->getIdentifier()->getIdentifierStr());
+		llvm::GlobalVariable* g = mModule->getGlobalVariable(RHS->getIdentifier()->toString());
 		assert(g && "RHS Operator not found!");
 		R = mBuilder.CreateLoad(g);
 		mInstructions.push_back((llvm::Instruction*)R);
@@ -339,7 +339,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 {
 	FunctionCall* FC = MF->getFunctionCall();
-	string func_name = FC->getIdentifier()->getIdentifierStr();
+	string func_name = FC->getIdentifier()->toString();
 	string mockup_name = func_name+ "_mockup_0";
 
 	while(mModule->getFunction(mockup_name)) {
@@ -525,7 +525,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
  */
 void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 {
-	string variable_name = VA->getIdentifier()->getIdentifierStr();
+	string variable_name = VA->getIdentifier()->toString();
 	GlobalVariable* global_variable = mModule->getGlobalVariable(variable_name);
 	assert(global_variable && "Variable not found!");
 	TokenType tokenType = VA->getTokenType();
@@ -589,7 +589,7 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 
 void TestGeneratorVisitor::VisitTestDefinitionFirst(TestDefinition *TD)
 {
-    mCurrentFud = TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+    mCurrentFud = TD->getTestFunction()->getFunctionCall()->getIdentifier()->toString();
 }
 
 void TestGeneratorVisitor::VisitTestSetup(TestSetup *TS)
@@ -639,7 +639,7 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
     if(mBackupTest.size() )
         restoreGlobalVariables(mBackupTest);
 
-    string func_name = "test_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->getIdentifierStr();
+    string func_name = "test_"+TD->getTestFunction()->getFunctionCall()->getIdentifier()->toString();
     Function *testFunction = generateFunction(func_name, true, mInstructions);
 	TD->setLLVMFunction(testFunction);
     // The warnings may include test-setup, test-function, or test-teardown
@@ -648,7 +648,7 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
     mWarnings.clear();
 }
 
-void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
+void TestGeneratorVisitor::VisitGroupSetup(GlobalSetup *GS)
 {
     string func_name = "group_setup_"+GS->getGroupName();
     Function *testFunction = generateFunction(func_name, false, mInstructions);
@@ -662,7 +662,7 @@ void TestGeneratorVisitor::VisitGlobalSetup(GlobalSetup *GS)
     while(mBackupTemp.size()) mBackupTemp.pop_back();
 }
 
-void TestGeneratorVisitor::VisitGlobalTeardown(GlobalTeardown *GT)
+void TestGeneratorVisitor::VisitGroupTeardown(GlobalTeardown *GT)
 {
     string func_name = "group_teardown_"+GT->getGroupName();
     Function *testFunction = generateFunction(func_name, false, mInstructions);
