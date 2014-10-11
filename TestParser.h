@@ -381,7 +381,6 @@ public:
 
     Type getType() const { return mType; }
 
-    // @todo Rename getAsStr method to something else
     string toString() const { return mStr; }
     void setString(const string& str) { mStr = str; }
 
@@ -1281,11 +1280,10 @@ public:
     }
 
     string getGroupName() const { return mName->toString(); }
-    // @todo Revisit how these methods are used. Do we really need to expose
-    // the internal object state by returning pointers?
-    GlobalSetup* getGlobalSetup() const { return mGlobalSetup.get(); }
-    GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown.get(); }
-    GlobalMockup* getGlobalMockup() const { return mGlobalMockup.get(); }
+
+    const GlobalSetup* getGlobalSetup() const { return mGlobalSetup.get(); }
+    const GlobalTeardown* getGlobalTeardown() const { return mGlobalTeardown.get(); }
+    const GlobalMockup* getGlobalMockup() const { return mGlobalMockup.get(); }
     void setGlobalTeardown(GlobalTeardown* gt) { mGlobalTeardown.reset(gt); }
     // Use it with wisdom, you can modify the internal object structure.
     vector<TestExpr*>& getTests() { return mTests; }

@@ -526,8 +526,6 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 /**
  * Creates LLVM IR code for a single global variable assignment.
  *
- * @todo Support the rest of assignment types
- * @param VA
  */
 void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 {

@@ -110,7 +110,7 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 			"Expected an integer constant stating the buffer size.",
 			"Received "+mCurrentToken.mLexeme+" instead.");
-	// @todo Create an integer class and stop using Argument
+
 	NumericConstant* buff_size = ParseNumericConstant();// Buffer Size
 
 	BufferAlloc *ba = nullptr;
@@ -521,8 +521,6 @@ Operand* TestDriver::ParseOperand()
 		Identifier* I = ParseIdentifier();
 		return new Operand(I);
 	} else {
-		/// @bug Possible bug here, this else indicates in our grammar, a
-		/// CONSTANT(INT), FLOAT, CHAR_CONST or STRING.
 		Constant* C = ParseConstant();
 		return new Operand(C);
 	}
@@ -611,8 +609,6 @@ TestData* TestDriver::ParseTestData()
 	mCurrentToken = mTokenizer.nextToken(); // eat up the {
 
 	unique_ptr<StringConstant> name = unique_ptr<StringConstant>(ParseStringConstant());
-	// @todo This should happen inside ParseStringConstant
-	mCurrentToken = mTokenizer.nextToken(); // eat up the StringConstant
 
 	if (mCurrentToken != ';')
 				throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,

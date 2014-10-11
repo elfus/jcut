@@ -110,7 +110,7 @@ public:
     // The cleanup
     void VisitTestGroup(TestGroup *TG) {
         runFunction(TG);
-        GlobalMockup *GM = TG->getGlobalMockup();
+        const GlobalMockup *GM = TG->getGlobalMockup();
         if(GM) {
         	while(mMockupRevert.top() != nullptr)
 				mMockupRevert.pop(); // Ignore current group
