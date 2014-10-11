@@ -74,12 +74,12 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 					mInstructions.push_back(load);
 					mArgs.push_back(load);
 				} else {
-					const tp::Argument* my_string = arg->getArgument();
+					const tp::Constant* my_string = arg->getArgument();
 					const TokenType type = my_string->getTokenType();
 					Type * ptrElementType = llvm_arg.getType()->getPointerElementType();
 					// We can only use strings when pointing to a char (8 bits)
 					if(type == TOK_STRING and ptrElementType == mBuilder.getInt8Ty() ) {
-						const string& quoted = my_string->getStringRepresentation();
+						const string& quoted = my_string->toString();
 						// Remove the quotes "
 						const string my_str = quoted.substr(1,quoted.size()-2);
 						ArrayType* ArrayTy_0 = ArrayType::get(IntegerType::get(mModule->getContext(), 8), my_str.size()+1); // + null
@@ -104,7 +104,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 					}
 
 					if(type == TOK_STRING and ptrElementType != mBuilder.getInt8Ty() ) {
-						const string& quoted = my_string->getStringRepresentation();
+						const string& quoted = my_string->toString();
 						/// @todo Get the info on which line and column this token is located at
 						throw Exception(0,0,"Cannot initialize pointer with string constant "+quoted,
 							"'char *' or 'unsigned char *' can only be initialized with string constants.");
@@ -112,7 +112,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 
 					if(type == TOK_INT || type == TOK_FLOAT)
 					{
-						const string& my_str = my_string->getStringRepresentation();
+						const string& my_str = my_string->toString();
 						// We will only allow initializing to 0 (nullptr) for the cases
 						// in which the users want to test the flow for handling nullptrs,
 						// however we may remove this 'feature' if it causes too much
@@ -138,7 +138,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			// from a string. This is only a quick patch which I need right now :(
 			if(arg->getArgument()->getTokenType() == TOK_STRING) {
 				stringstream ss;
-				const string& the_string =  arg->getArgument()->getStringRepresentation();
+				const string& the_string =  arg->getArgument()->toString();
 				char *c = const_cast<char*>(&(the_string.c_str())[0]);
 				ss << reinterpret_cast<void*>(c);
 				str_value = ss.str();
@@ -146,12 +146,18 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 						Exception("Incompatible pointer conversion.",
 								"Passing pointer address "+str_value+" of string "+the_string+""
 								" to parameter of non-pointer type ", Exception::WARNING));
+			} else if(arg->getArgument()->getTokenType() == TOK_CHAR) {
+				stringstream ss;
+				ss << static_cast<int>(arg->getArgument()->getCharConstant()->getChar());
+				str_value = ss.str();
 			} else
 				str_value = arg->getStringRepresentation();
 			// Code for non-pointer types
 			llvm::AllocaInst *alloc = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "Allocation" + Twine(i));
 			alloc->setAlignment(4);
-
+			// The type is an IntegerType so we have to make sure that
+			// whatever data is hold in str_value it, string or char, must be
+			// its equivalent to an integer value.
 			Value *v = createValue(llvm_arg.getType(), str_value);
 			StoreInst * store = mBuilder.CreateStore(v, alloc);
 			LoadInst *load = mBuilder.CreateLoad(alloc, "value" + Twine(i));
@@ -227,7 +233,7 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 
 	if(C->isNumericConstant()) {
-		ss << EC->getConstant()->getAsStr();
+		ss << EC->getConstant()->toString();
 		assert(ss.str().size() && "Invalid numeric string!");
 	}
 
@@ -287,7 +293,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	if (LHS->isConstant()) {
 		if (R != nullptr) {
 			stringstream ss;
-			ss <<  LHS->getConstant()->getAsStr();
+			ss <<  LHS->getConstant()->toString();
 			L = createValue(R->getType(),ss.str());
 		}
 	}
@@ -295,7 +301,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 	if (RHS->isConstant()) {
 		if (L != nullptr) {
 			stringstream ss;
-			ss <<  RHS->getConstant()->getAsStr();
+			ss <<  RHS->getConstant()->toString();
 			R = createValue(L->getType(),ss.str());
 		}
 	}

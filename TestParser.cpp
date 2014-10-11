@@ -165,7 +165,7 @@ FunctionArgument* TestDriver::ParseFunctionArgument()
 		return new FunctionArgument(move(pl));
 	}
 	else
-		return new FunctionArgument(ParseArgument());
+		return new FunctionArgument(ParseConstant());
 	throw Exception("Expected a valid Argument but received: " + mCurrentToken.mLexeme);
 }
 
@@ -399,7 +399,7 @@ Constant* TestDriver::ParseConstant()
 	// This is a workaround for float and double values. Let LLVM do the work
 	// on what type of precision to choose, we will just pass a string representing
 	// the floating point value.
-	C->setAsStr(mCurrentToken.mLexeme);
+	C->setString(mCurrentToken.mLexeme);
 	mCurrentToken = mTokenizer.nextToken(); // Consume the constant
 	return C;
 }

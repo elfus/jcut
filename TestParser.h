@@ -374,8 +374,22 @@ public:
     Type getType() const { return mType; }
 
     // @todo Rename getAsStr method to something else
-    string getAsStr() const { return mStr; }
-    void setAsStr(const string& str) { mStr = str; }
+    string toString() const { return mStr; }
+    void setString(const string& str) { mStr = str; }
+
+    TokenType getTokenType() const {
+    	if(isCharConstant())
+    		return TOK_CHAR;
+    	if(isStringConstant())
+    		return TOK_STRING;
+    	if(isNumericConstant()) {
+    		if(mNC->isInt())
+    			return TOK_INT;
+    		if(mNC->isFloat())
+    			return TOK_FLOAT;
+    	}
+    	return TOK_ERR;
+    }
 };
 
 class Identifier : public TestExpr {
@@ -429,7 +443,7 @@ public:
     		return mI->toString();
 
     	if(isConstant())
-    		return mC->getAsStr();
+    		return mC->toString();
 
     	return "";
     }
@@ -1323,21 +1337,21 @@ public:
 
 class FunctionArgument : public TestExpr{
 protected:
-    Argument *argArgument;
+    Constant *mConstant;
     BufferAlloc *argBuffAlloc;
     unique_ptr<DataPlaceholder> mDP;
     unsigned    ArgIndx;
 public:
-    explicit FunctionArgument(Argument *arg) :
-        argArgument(arg), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(0) { }
+    explicit FunctionArgument(Constant *arg) :
+        mConstant(arg), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(0) { }
     explicit FunctionArgument(BufferAlloc *arg) :
-        argArgument(nullptr), argBuffAlloc(arg), mDP(nullptr),ArgIndx(0) { }
+        mConstant(nullptr), argBuffAlloc(arg), mDP(nullptr),ArgIndx(0) { }
     explicit FunctionArgument(unique_ptr<DataPlaceholder> dp) :
-            argArgument(nullptr), argBuffAlloc(nullptr), mDP(move(dp)), ArgIndx(0) { }
+            mConstant(nullptr), argBuffAlloc(nullptr), mDP(move(dp)), ArgIndx(0) { }
     FunctionArgument(const FunctionArgument& that): TestExpr(that),
-    	argArgument(nullptr), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(that.ArgIndx) {
-    	if(that.argArgument)
-    		argArgument = new Argument(*that.argArgument);
+    	mConstant(nullptr), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(that.ArgIndx) {
+    	if(that.mConstant)
+    		mConstant = new Constant(*that.mConstant);
     	if(that.argBuffAlloc)
     		argBuffAlloc = new BufferAlloc(*that.argBuffAlloc);
     	if(that.mDP.get())
@@ -1346,8 +1360,8 @@ public:
     	// @bug what about the pointer to the parent? Check when we should set it.
     }
     ~FunctionArgument() {
-        if(argArgument)
-            delete argArgument;
+        if(mConstant)
+            delete mConstant;
         if(argBuffAlloc)
             delete argBuffAlloc;
     }
@@ -1355,36 +1369,36 @@ public:
     bool isBufferAlloc() const { return argBuffAlloc != nullptr; }
     bool isDataPlaceholder() const { return mDP.get() != nullptr; }
     TokenType getTokenType() const {
-        if(argArgument) return argArgument->getTokenType();
+        if(mConstant) return mConstant->getTokenType();
         return TOK_BUFF_ALLOC;
     }
 
     string toString() {
-        if(argArgument)
-            return argArgument->getStringRepresentation();
+        if(mConstant)
+            return mConstant->toString();
         if(mDP.get())
         	return "@";
         return "BufferAlloc";
     }
     unsigned getIndex() const { return ArgIndx; }
     void setIndex(unsigned ndx) {ArgIndx = ndx; }
-    const string& getStringRepresentation() const {
-        return argArgument->getStringRepresentation();
+    string getStringRepresentation() const {
+        return mConstant->toString();
     }
 
     BufferAlloc* getBufferAlloc() const { return argBuffAlloc; }
 
     void accept(Visitor *v) {
-        if(argArgument)
-            argArgument->accept(v);
+        if(mConstant)
+            mConstant->accept(v);
         if(argBuffAlloc)
             argBuffAlloc->accept(v);
 
         v->VisitFunctionArgument(this);// TODO IMplement
     }
 
-        const Argument* getArgument() const {
-            return argArgument;
+        const Constant* getArgument() const {
+            return mConstant;
         }
 
 };
