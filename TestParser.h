@@ -266,6 +266,15 @@ public:
     float getFloat() const { return mFC; }
     bool isInt() const { return mIsInt; }
     bool isFloat() const { return !mIsInt; }
+
+    const string toString() const {
+    	stringstream ss;
+    	if(isInt())
+    		ss << mIC;
+    	else if(isFloat())
+    		ss << mFC;
+    	return ss.str();
+    }
 };
 
 class StringConstant : public TestExpr{
@@ -315,7 +324,6 @@ private:
 public:
     Constant(NumericConstant *C) : mNC(C), mSC(nullptr), mCC(nullptr), mType(NUMERIC) {
     	stringstream ss;
-
     	if(C->isInt())
     		ss << C->getInt();
     	if(C->isFloat())
@@ -519,23 +527,23 @@ class StructInitializer;
 
 class InitializerValue : public TestExpr {
 private:
-    Argument* mArgValue;
+    NumericConstant* mNC;
     StructInitializer* mStructValue;
 public:
-    explicit InitializerValue(Argument* val) : mArgValue(val), mStructValue(nullptr) {}
-    explicit InitializerValue(StructInitializer* val) : mArgValue(nullptr),
+    explicit InitializerValue(NumericConstant* val) : mNC(val), mStructValue(nullptr) {}
+    explicit InitializerValue(StructInitializer* val) : mNC(nullptr),
         mStructValue(val) {}
     InitializerValue(const InitializerValue& that);
     ~InitializerValue();
 
     void accept(Visitor *v);
 
-    bool isArgument() const { return (mArgValue) ? true : false; }
+    bool isArgument() const { return (mNC) ? true : false; }
     bool isStructInitializer() const { return (mStructValue) ? true : false; }
 
     // @warning Make sure you call these only when the pointer is not nullptr!
     // use the isArgument() method before.
-    const Argument& getArgument() const { return *mArgValue; }
+    const NumericConstant& getArgument() const { return *mNC; }
     const StructInitializer& getStructInitializer() const { return *mStructValue;}
 };
 
@@ -750,18 +758,18 @@ public:
 class BufferAlloc : public TestExpr {
 private:
     // @todo Create and Integer class.
-    Argument* mIntBuffSize;
-    Argument* mIntDefaultValue;
+	NumericConstant* mIntBuffSize;
+	NumericConstant* mIntDefaultValue;
     StructInitializer* mStructInit;
 public:
-    BufferAlloc(Argument* size, Argument* default_value = nullptr) :
+    BufferAlloc(NumericConstant* size, NumericConstant* default_value = nullptr) :
             mIntBuffSize(size), mIntDefaultValue(default_value),
             mStructInit(nullptr) {
                 if (default_value == nullptr)
-                    mIntDefaultValue = new Argument("0", TOK_INT);
+                    mIntDefaultValue = new NumericConstant(0);
     }
 
-    BufferAlloc(Argument* size, StructInitializer* init):
+    BufferAlloc(NumericConstant* size, StructInitializer* init):
             mIntBuffSize(size), mIntDefaultValue(nullptr),  mStructInit(init)  {
 
     }
@@ -770,9 +778,9 @@ public:
     : TestExpr(that), mIntBuffSize(nullptr), mIntDefaultValue(nullptr),
       mStructInit(nullptr) {
     	if (that.mIntBuffSize)
-    		mIntBuffSize = new Argument(*that.mIntBuffSize);
+    		mIntBuffSize = new NumericConstant(*that.mIntBuffSize);
     	if (that.mIntDefaultValue)
-    		mIntDefaultValue = new Argument(*that.mIntDefaultValue);
+    		mIntDefaultValue = new NumericConstant(*that.mIntDefaultValue);
     	if (that.mStructInit)
     		mStructInit = new StructInitializer(*that.mStructInit);
     }
@@ -795,30 +803,26 @@ public:
     }
 
     unsigned getBufferSize() const {
-        stringstream ss;
-        ss << mIntBuffSize->getStringRepresentation();
-        unsigned tmp;
-        ss >> tmp;
-        return tmp;
+        return mIntBuffSize->getInt();
     }
     string getBufferSizeAsString() const {
-        return mIntBuffSize->getStringRepresentation();
+        return mIntBuffSize->toString();
     }
 
     string getDefaultValueAsString() const {
-        return mIntDefaultValue->getStringRepresentation();
+        return mIntDefaultValue->toString();
     }
 };
 
 class VariableAssignment : public TestExpr {
 private:
     Identifier *mIdentifier;
-    Argument *mArgument;
+    Constant *mArgument;
     StructInitializer *mStructInitializer;
     BufferAlloc *mBufferAlloc;
 public:
 
-    explicit VariableAssignment(Identifier *id, Argument *arg) :
+    explicit VariableAssignment(Identifier *id, Constant *arg) :
     mIdentifier(id), mArgument(arg), mStructInitializer(nullptr), mBufferAlloc(nullptr) {
     	type = TestExpr::VAR_ASSIGN;
     }
@@ -837,7 +841,7 @@ public:
     TestExpr(that), mIdentifier(nullptr), mArgument(nullptr),
     mStructInitializer(nullptr), mBufferAlloc(nullptr) {
     	if(that.mIdentifier) mIdentifier = new Identifier(*that.mIdentifier);
-    	if(that.mArgument) mArgument = new Argument(*that.mArgument);
+    	if(that.mArgument) mArgument = new Constant(*that.mArgument);
     	if(that.mStructInitializer)
     		mStructInitializer = new StructInitializer(*that.mStructInitializer);
     	if(that.mBufferAlloc)
@@ -852,7 +856,7 @@ public:
     }
 
     Identifier* getIdentifier() const { return mIdentifier; }
-    Argument* getArgument() const { return mArgument; }
+    Constant* getConstant() const { return mArgument; }
     StructInitializer* getStructInitializer() const { return mStructInitializer; }
     BufferAlloc* getBufferAlloc() const { return mBufferAlloc; }
 
@@ -904,33 +908,33 @@ public:
 class MockupFunction : public TestExpr {
 private:
     FunctionCall *mFunctionCall;
-    Argument *mArgument;
+    Constant *mConstant;
     llvm::Function *mOriginalFunction;
     llvm::Function *mMockupFunction;
 public:
 
-    MockupFunction(FunctionCall *call, Argument *arg) :
-    mFunctionCall(nullptr), mArgument(nullptr),
+    MockupFunction(FunctionCall *call, Constant *arg) :
+    mFunctionCall(nullptr), mConstant(nullptr),
     mOriginalFunction(nullptr), mMockupFunction(nullptr) {
         /// @todo remove dynamic_cast
         mFunctionCall = dynamic_cast<FunctionCall*> (call);
         if (mFunctionCall == nullptr)
             throw Exception("Invalid FunctionCallExpr type");
         /// @todo remove dynamic_cast
-        mArgument = dynamic_cast<Argument*> (arg);
-        if (mArgument == nullptr)
+        mConstant = dynamic_cast<Constant*> (arg);
+        if (mConstant == nullptr)
             throw Exception("Invalid Argument type");
     }
 
     FunctionCall* getFunctionCall() const { return mFunctionCall; }
-    Argument* getArgument() const { return mArgument; }
+    Constant* getArgument() const { return mConstant; }
 
     ~MockupFunction() {
         if (mFunctionCall)
             delete mFunctionCall;
 
-        if (mArgument)
-            delete mArgument;
+        if (mConstant)
+            delete mConstant;
     }
 
     void accept(Visitor *v) {
@@ -1440,6 +1444,8 @@ protected:
     Operand* ParseOperand();
     StringConstant* ParseStringConstant();
     Constant* ParseConstant();
+    NumericConstant* ParseNumericConstant();
+    CharConstant* ParseCharConstant();
     TestTeardown* ParseTestTearDown();
     TestFunction* ParseTestFunction();
     TestSetup* ParseTestSetup();

@@ -112,7 +112,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 
 					if(type == TOK_INT || type == TOK_FLOAT)
 					{
-						const string& my_str = my_string->toString();
+						const string& my_str = my_string->getNumericConstant()->toString();
 						// We will only allow initializing to 0 (nullptr) for the cases
 						// in which the users want to test the flow for handling nullptrs,
 						// however we may remove this 'feature' if it causes too much
@@ -361,9 +361,9 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		// If no declaration is found we need to figure out the return type somehow
 		assert(false && "TODO: Implement this!");
 	} else {
-		tp::Argument* expected = MF->getArgument();
+		tp::Constant* expected = MF->getArgument();
 		if(llvm_func->getReturnType() == mBuilder.getVoidTy() &&
-			expected->getStringRepresentation() != "void") {
+			expected->toString() != "void") {
 			throw Exception("The function "+func_name+"() has void as return value. ",
 					"The only valid syntax for a void function is: "+func_name+"() = void;",
 					Exception::ERROR);
@@ -385,7 +385,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 			llvm::Value* val = nullptr;
 			if(llvm_func->getReturnType()->getTypeID() == Type::PointerTyID) {
 				// Cast it to pointer type
-				const string& str =  expected->getStringRepresentation();
+				const string& str =  expected->toString();
 				if(str.find('.') != string::npos)
 					throw Exception("Floating point values are not valid for returning as pointer type!");
 				unsigned bitwidth = llvm_func->getReturnType()->getPointerElementType()->getIntegerBitWidth();
@@ -414,7 +414,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 				MB->getInstList().push_back(load_1);
 				ret = mBuilder.CreateRet(load_1);
 			} else {
-				val = createValue(llvm_func->getReturnType(), expected->getStringRepresentation());
+				val = createValue(llvm_func->getReturnType(), expected->toString());
 				ret = mBuilder.CreateRet(val);
 			}
 		}
@@ -537,8 +537,8 @@ void TestGeneratorVisitor::VisitVariableAssignment(VariableAssignment *VA)
 	TokenType tokenType = VA->getTokenType();
 	string real_value;
 
-	if(VA->getArgument()) {
-		real_value = VA->getArgument()->getStringRepresentation();
+	if(VA->getConstant()) {
+		real_value = VA->getConstant()->toString();
 	}
 
 	LoadInst* load_value = mBuilder.CreateLoad(global_variable);
@@ -895,7 +895,7 @@ void TestGeneratorVisitor::extractInitializerValues(Value* global_struct,
 
 			string str_value;
 			if (arg->isArgument()) {
-				str_value = arg->getArgument().getStringRepresentation();
+				str_value = arg->getArgument().toString();
 				Value* v = createValue(gep->getType()->getPointerElementType(), str_value);
 				StoreInst* store = mBuilder.CreateStore(v,gep);
 				instructions.push_back(store);

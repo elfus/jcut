@@ -118,7 +118,7 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 			"Expected an integer constant stating the buffer size.",
 			"Received "+mCurrentToken.mLexeme+" instead.");
 	// @todo Create an integer class and stop using Argument
-	Argument* buff_size = ParseArgument();// Buffer Size
+	NumericConstant* buff_size = ParseNumericConstant();// Buffer Size
 
 	BufferAlloc *ba = nullptr;
 	if (mCurrentToken == ':') {
@@ -126,12 +126,8 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 		if (mCurrentToken == '{') { // indicates a StructInitializer
 			StructInitializer* struct_init = ParseStructInitializer();
 			ba = new BufferAlloc(buff_size, struct_init);
-		} else if(mCurrentToken == TOK_INT or mCurrentToken == TOK_FLOAT or
-				mCurrentToken == TOK_STRING or mCurrentToken == TOK_CHAR) {
-			// @todo Improve this if and they way we SHOULD handle each of those
-			// tokens.
-			// @todo Create an integer class and stop using Argument
-			Argument* default_val = ParseArgument();
+		} else if(mCurrentToken == TOK_INT) {
+			NumericConstant* default_val = ParseNumericConstant();
 			ba = new BufferAlloc(buff_size, default_val);
 		} else
 			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
@@ -176,7 +172,7 @@ InitializerValue* TestDriver::ParseInitializerValue()
 		return new InitializerValue(val);
 	}
 	else {
-		Argument* arg = ParseArgument();
+		NumericConstant* arg = ParseNumericConstant();
 		return new InitializerValue(arg);
 	}
 }
@@ -284,8 +280,8 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 		return new VariableAssignment(identifier, ba);
 	}
 
-	Argument *arg = ParseArgument();
-	return new VariableAssignment(identifier, arg);
+	Constant *constant = ParseConstant();
+	return new VariableAssignment(identifier, constant);
 }
 
 Identifier* TestDriver::ParseFunctionName()
@@ -366,32 +362,54 @@ ExpectedConstant* TestDriver::ParseExpectedConstant()
 StringConstant* TestDriver::ParseStringConstant()
 {
 	if(mCurrentToken == TOK_STRING) {
-		/// @todo @bug Consume the token here! @see ParseConstant()
-		return new StringConstant(mCurrentToken.mLexeme);
+		StringConstant* sc = new StringConstant(mCurrentToken.mLexeme);
+		mCurrentToken = mTokenizer.nextToken(); // Consume the constant
+		return sc;
 	}
 	throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 			"Expected a StringConstant.",
 			"Received "+ mCurrentToken.mLexeme+" instead.");
 }
 
+CharConstant* TestDriver::ParseCharConstant()
+{
+	CharConstant* cc = nullptr;
+	// Watch for the index 1, the flex parser stores the char constant with
+	// single quotes.
+	// @bug What happens when we receive an escaped character?
+	cc = new CharConstant(mCurrentToken.mLexeme[1]);
+	mCurrentToken = mTokenizer.nextToken(); // Consume the constant
+	return cc;
+}
+
+NumericConstant* TestDriver::ParseNumericConstant()
+{
+	if(mCurrentToken != TOK_INT && mCurrentToken != TOK_FLOAT)
+		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
+				"Expected a numeric constant, an integer or float.",
+				"Received "+mCurrentToken.mLexeme+" instead.");
+	NumericConstant* nc = nullptr;
+	if (mCurrentToken == TOK_INT)
+		nc = new NumericConstant(atoi(mCurrentToken.mLexeme.c_str()));
+	else
+	if(mCurrentToken == TOK_FLOAT)
+		nc = new NumericConstant((float)atof(mCurrentToken.mLexeme.c_str()));
+	mCurrentToken = mTokenizer.nextToken(); // Consume the constant
+	return nc;
+}
+
 Constant* TestDriver::ParseConstant()
 {
 	Constant* C = nullptr;
-
-	if (mCurrentToken == TOK_INT)
-		C = new Constant(new NumericConstant(atoi(mCurrentToken.mLexeme.c_str())));
-	else
-    if(mCurrentToken == TOK_FLOAT)
-		C = new Constant(new NumericConstant((float)atof(mCurrentToken.mLexeme.c_str())));
+	Token token = mCurrentToken;
+	if (mCurrentToken == TOK_INT || mCurrentToken == TOK_FLOAT)
+		C = new Constant(ParseNumericConstant());
 	else
     if(mCurrentToken == TOK_STRING)
 		C = new Constant(ParseStringConstant());
 	else
     if(mCurrentToken == TOK_CHAR)
-		// Watch for the index 1, the flex parser stores the char constant with
-		// single quotes.
-		// @bug What happens when we receive an escaped character?
-		C = new Constant(new CharConstant(mCurrentToken.mLexeme[1]));
+		C = new Constant(ParseCharConstant());
 	else
 		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
 				"Expected a Constant (int, float, string or char).",
@@ -399,8 +417,8 @@ Constant* TestDriver::ParseConstant()
 	// This is a workaround for float and double values. Let LLVM do the work
 	// on what type of precision to choose, we will just pass a string representing
 	// the floating point value.
-	C->setString(mCurrentToken.mLexeme);
-	mCurrentToken = mTokenizer.nextToken(); // Consume the constant
+	C->setString(token.mLexeme);
+
 	return C;
 }
 
@@ -534,9 +552,9 @@ MockupFunction* TestDriver::ParseMockupFunction()
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat the '='
 
-	Argument *argument = ParseArgument();
+	Constant *expected_const = ParseConstant();
 
-	return new MockupFunction(func, argument);
+	return new MockupFunction(func, expected_const);
 }
 
 MockupFixture* TestDriver::ParseMockupFixture()
@@ -816,12 +834,12 @@ void FunctionCall::accept(Visitor *v)
 }
 
 InitializerValue::~InitializerValue() {
-	if (mArgValue) delete mArgValue;
+	if (mNC) delete mNC;
 	if (mStructValue) delete mStructValue;
 }
 
 void InitializerValue::accept(Visitor *v) {
-	if (mArgValue) mArgValue->accept(v);
+	if (mNC) mNC->accept(v);
 	if (mStructValue) mStructValue->accept(v);
 	v->VisitInitializerValue(this);
 }
@@ -890,9 +908,9 @@ bool FunctionCall::replaceDataPlaceholder(unsigned pos, FunctionArgument* new_ar
 }
 
 InitializerValue::InitializerValue(const InitializerValue& that)
-: TestExpr(that), mArgValue(nullptr), mStructValue(nullptr) {
-	if (that.mArgValue)
-		mArgValue = new Argument(*that.mArgValue);
+: TestExpr(that), mNC(nullptr), mStructValue(nullptr) {
+	if (that.mNC)
+		mNC = new NumericConstant(*that.mNC);
 	if (that.mStructValue)
 		mStructValue = new StructInitializer(*that.mStructValue);
 }
