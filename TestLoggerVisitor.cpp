@@ -85,12 +85,12 @@ string TestLoggerVisitor::getExpectedResultString(TestDefinition *TD)
 	ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
 	if (ER) {
 		stringstream ss;
-		Constant* C = ER->getExpectedConstant()->getConstant();
+		const Constant* C = ER->getExpectedConstant()->getConstant();
 		ss << ER->getComparisonOperator()->toString() << " ";
 		switch(C->getType()){
 			case Constant::Type::NUMERIC:
 			{
-				NumericConstant* nc = C->getNumericConstant();
+				const NumericConstant* nc = C->getNumericConstant();
 				if(nc->isFloat())
 					ss << nc->getFloat();
 				if(nc->isInt())

@@ -224,12 +224,12 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	}
 
 	stringstream ss;
-	ExpectedConstant* EC = ER->getExpectedConstant();
+	const ExpectedConstant* EC = ER->getExpectedConstant();
 	assert(EC->isDataPlaceholder() == false && "Cannot generate ExpectedResult code from a DataPlaceholder.");
 
-	tp::Constant* C = EC->getConstant();
+	const tp::Constant* C = EC->getConstant();
 	if(C->isCharConstant()) {
-		ss << C->getValue();
+		ss << static_cast<int>(C->getCharConstant()->getChar());
 	}
 
 	if(C->isNumericConstant()) {
@@ -270,9 +270,9 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 
 void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 {
-	Operand* LHS = EE->getLHSOperand();
-	Operand* RHS = EE->getRHSOperand();
-	ComparisonOperator* CO = EE->getComparisonOperator();
+	const Operand* LHS = EE->getLHSOperand();
+	const Operand* RHS = EE->getRHSOperand();
+	const ComparisonOperator* CO = EE->getComparisonOperator();
 	Value* L = nullptr;
 	Value* R = nullptr;
 
@@ -344,7 +344,7 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 
 void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 {
-	FunctionCall* FC = MF->getFunctionCall();
+	const FunctionCall* FC = MF->getFunctionCall();
 	string func_name = FC->getIdentifier()->toString();
 	string mockup_name = func_name+ "_mockup_0";
 
@@ -361,7 +361,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		// If no declaration is found we need to figure out the return type somehow
 		assert(false && "TODO: Implement this!");
 	} else {
-		tp::Constant* expected = MF->getArgument();
+		const tp::Constant* expected = MF->getArgument();
 		if(llvm_func->getReturnType() == mBuilder.getVoidTy() &&
 			expected->toString() != "void") {
 			throw Exception("The function "+func_name+"() has void as return value. ",
@@ -873,7 +873,7 @@ void TestGeneratorVisitor::extractInitializerValues(Value* global_struct,
                 std::vector<llvm::Instruction*>& instructions)
 {
 	if (init->getInitializerList()) {
-		InitializerList* init_list = init->getInitializerList();
+		const InitializerList* init_list = init->getInitializerList();
 		const vector<tp::InitializerValue*>& args = init_list->getArguments();
 		int i = 0;
 		for(tp::InitializerValue* arg : args) {

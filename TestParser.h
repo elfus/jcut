@@ -316,9 +316,9 @@ public:
         INVALID,
     };
 private:
-    NumericConstant* mNC;
-    StringConstant* mSC;
-    CharConstant* mCC;
+    unique_ptr<NumericConstant> mNC;
+    unique_ptr<StringConstant> mSC;
+    unique_ptr<CharConstant> mCC;
     Type    mType;
     string mStr; // String representation of this constant regardless its type
 public:
@@ -338,7 +338,7 @@ public:
     Constant(const Constant& that)
     : TestExpr(that), mNC(nullptr), mSC(nullptr), mCC(nullptr), mType(INVALID) {
     	if(that.mNC) {
-    		mNC = new NumericConstant(*that.mNC);
+    		mNC = unique_ptr<NumericConstant>(new NumericConstant(*that.mNC));
     		stringstream ss;
     		if(mNC->isInt())
 				ss << mNC->getInt();
@@ -346,14 +346,9 @@ public:
 				ss << mNC->getFloat();
 			mStr = ss.str();
     	}
-    	if(that.mSC) mSC = new StringConstant(*that.mSC);
-    	if(that.mCC) mCC = new CharConstant(*that.mCC);
+    	if(that.mSC) mSC = unique_ptr<StringConstant>(new StringConstant(*that.mSC));
+    	if(that.mCC) mCC = unique_ptr<CharConstant>(new CharConstant(*that.mCC));
     	mType = that.mType;
-    }
-    ~Constant() {
-        if(mNC) delete mNC;
-        if(mSC) delete mSC;
-        if(mCC) delete mCC;
     }
 
     void accept(Visitor* v) {
@@ -363,21 +358,12 @@ public:
         v->VisitConstant(this);
     }
 
-    // @deprecated do not use
-    int getValue() const {
-        // @bug remove mNC->getInt()
-        if(mNC) return mNC->getInt();
-
-        if(mCC) return (int) mCC->getChar();
-        return 0;
-    }
-
     bool isCharConstant() const { return (mCC) ? true : false; }
     bool isStringConstant() const { return (mSC) ? true: false; }
     bool isNumericConstant() const { return (mNC) ? true: false; }
-    CharConstant* getCharConstant() const { return mCC; }
-    NumericConstant* getNumericConstant() const { return mNC; }
-    StringConstant* getStringConstant() const { return mSC; }
+    const CharConstant* getCharConstant() const { return mCC.get(); }
+    const NumericConstant* getNumericConstant() const { return mNC.get(); }
+    const StringConstant* getStringConstant() const { return mSC.get(); }
 
     Type getType() const { return mType; }
 
@@ -417,20 +403,14 @@ public:
 
 class Operand : public TestExpr {
 private:
-    Constant* mC;
-    Identifier* mI;
+    unique_ptr<Constant> mC;
+    unique_ptr<Identifier> mI;
 public:
     explicit Operand(Constant* C) : mC(C), mI(nullptr) {}
     explicit Operand(Identifier* I) : mC(nullptr), mI(I) {}
     Operand(const Operand& that) : TestExpr(that), mC(nullptr), mI(nullptr) {
-    	if(that.mC) mC = new Constant(*that.mC);
-    	if(that.mI) mI = new Identifier(*that.mI);
-    }
-    ~Operand() {
-        if (mC)
-            delete mC;
-        if(mI)
-            delete mI;
+    	if(that.mC) mC = unique_ptr<Constant>(new Constant(*that.mC));
+    	if(that.mI) mI = unique_ptr<Identifier>(new Identifier(*that.mI));
     }
 
     void accept(Visitor* v) {
@@ -443,33 +423,30 @@ public:
 
     bool isConstant() const { return (mC) ? true : false; }
     bool isIdentifier() const { return (mI) ? true : false; }
-    Identifier* getIdentifier() const { return mI;}
-    Constant* getConstant() const { return mC; }
+    const Identifier* getIdentifier() const { return mI.get();}
+    const Constant* getConstant() const { return mC.get(); }
     string toString() const {
     	if(isIdentifier())
     		return mI->toString();
-
     	if(isConstant())
     		return mC->toString();
-
     	return "";
     }
 };
 
 class ExpectedConstant : public TestExpr {
 private:
-    Constant* mC;
+	unique_ptr<Constant> mC;
     unique_ptr<DataPlaceholder> mDP;
 public:
     ExpectedConstant() = delete;
     explicit ExpectedConstant(Constant *C) : mC(C), mDP(nullptr) {}
     explicit ExpectedConstant(unique_ptr<DataPlaceholder> dp) : mC(nullptr), mDP(move(dp)) {}
     ExpectedConstant(const ExpectedConstant& that) : TestExpr(that), mC(nullptr), mDP(nullptr) {
-    	if(that.mC) mC = new Constant(*that.mC);
+    	if(that.mC) mC = unique_ptr<Constant>(new Constant(*that.mC));
     	if(that.mDP.get())
     		mDP =  unique_ptr<DataPlaceholder>(new DataPlaceholder(*that.mDP.get()));
     }
-    ~ExpectedConstant() { delete mC;}
 
     void accept(Visitor* v) {
     	if (mC)
@@ -479,27 +456,22 @@ public:
         v->VisitExpectedConstant(this);
     }
 
-    int getValue() const {
-        return mC->getValue();
-    }
-
     bool isDataPlaceholder() const { return mDP.get() != nullptr; }
 
-    Constant* getConstant() const { return mC; }
+    const Constant* getConstant() const { return mC.get(); }
 };
 
 class StructInitializer;
 
 class InitializerValue : public TestExpr {
 private:
-    NumericConstant* mNC;
-    StructInitializer* mStructValue;
+    unique_ptr<NumericConstant> mNC;
+    unique_ptr<StructInitializer> mStructValue;
 public:
     explicit InitializerValue(NumericConstant* val) : mNC(val), mStructValue(nullptr) {}
     explicit InitializerValue(StructInitializer* val) : mNC(nullptr),
         mStructValue(val) {}
     InitializerValue(const InitializerValue& that);
-    ~InitializerValue();
 
     void accept(Visitor *v);
 
@@ -573,8 +545,8 @@ public:
 
 class StructInitializer : public TestExpr{
 private:
-    InitializerList *mInitializerList;
-    DesignatedInitializer *mDesignatedInitializer;
+    unique_ptr<InitializerList> mInitializerList;
+    unique_ptr<DesignatedInitializer> mDesignatedInitializer;
 
 public:
     StructInitializer(InitializerList *init)
@@ -587,15 +559,11 @@ public:
     : TestExpr(that),
       mInitializerList(nullptr), mDesignatedInitializer(nullptr) {
     	if (that.mInitializerList)
-    		mInitializerList = new InitializerList(*that.mInitializerList);
+    		mInitializerList = unique_ptr<InitializerList>(
+    				new InitializerList(*that.mInitializerList));
     	if (that.mDesignatedInitializer)
-    		mDesignatedInitializer = new DesignatedInitializer
-    								 (*that.mDesignatedInitializer);
-    }
-
-    ~StructInitializer() {
-        if (mInitializerList) delete mInitializerList;
-        if (mDesignatedInitializer) delete mDesignatedInitializer;
+    		mDesignatedInitializer = unique_ptr<DesignatedInitializer>(
+    				new DesignatedInitializer(*that.mDesignatedInitializer));
     }
 
     void accept(Visitor *v) {
@@ -604,21 +572,21 @@ public:
         v->VisitStructInitializer(this);
     }
 
-    InitializerList* getInitializerList() const { return mInitializerList; }
-    DesignatedInitializer* getDesignatedInitializer() const { return mDesignatedInitializer; }
+    const InitializerList* getInitializerList() const { return mInitializerList.get(); }
+    const DesignatedInitializer* getDesignatedInitializer() const { return mDesignatedInitializer.get(); }
 };
 
 class FunctionArgument;
 
 class FunctionCall : public TestExpr {
 private:
-    Identifier *mFunctionName;
+    unique_ptr<Identifier> mFunctionName;
     vector<FunctionArgument*> mFunctionArguments;
     // owned by llvm, do not delete
     llvm::Type *mReturnType;
 public:
 
-    Identifier *getIdentifier() const {return mFunctionName;}
+    const Identifier *getIdentifier() const {return mFunctionName.get();}
 
     FunctionCall(Identifier* name, const vector<FunctionArgument*>& arg);
     FunctionCall(const FunctionCall& that);
@@ -639,21 +607,17 @@ public:
 
 class ExpectedResult : public TestExpr {
 private:
-    ComparisonOperator* mCompOp;
-    ExpectedConstant* mEC;
+    unique_ptr<ComparisonOperator> mCompOp;
+    unique_ptr<ExpectedConstant> mEC;
 public:
     ExpectedResult(ComparisonOperator* cmp, ExpectedConstant* Arg) :
     mCompOp(cmp), mEC(Arg) {}
     ExpectedResult(const ExpectedResult& that) :
     	TestExpr(that), mCompOp(nullptr), mEC(nullptr){
     	if(that.mCompOp)
-    		mCompOp = new ComparisonOperator(*that.mCompOp);
+    		mCompOp = unique_ptr<ComparisonOperator>(new ComparisonOperator(*that.mCompOp));
     	if(that.mEC)
-    		mEC = new ExpectedConstant(*that.mEC);
-    }
-    ~ExpectedResult() {
-        delete mEC;
-        delete mCompOp;
+    		mEC = unique_ptr<ExpectedConstant>(new ExpectedConstant(*that.mEC));
     }
 
     void accept(Visitor *v) {
@@ -662,8 +626,8 @@ public:
         v->VisitExpectedResult(this);
     }
 
-    ComparisonOperator* getComparisonOperator() const { return mCompOp; }
-    ExpectedConstant* getExpectedConstant() const { return mEC; }
+    const ComparisonOperator* getComparisonOperator() const { return mCompOp.get(); }
+    const ExpectedConstant* getExpectedConstant() const { return mEC.get(); }
 
     bool isDataPlaceholder() const {
     	return mEC->isDataPlaceholder();
@@ -672,17 +636,16 @@ public:
     bool replaceDataPlaceholder(ExpectedConstant* ER) {
     	if(mEC->isDataPlaceholder() == false)
     		return false;
-    	delete mEC;
-    	mEC = ER;
+    	mEC.reset(ER);
     	return true;
     }
 };
 
 class ExpectedExpression : public TestExpr, public LLVMFunctionHolder {
 private:
-    Operand* mLHS;
-    ComparisonOperator* mCO;
-    Operand* mRHS;
+    unique_ptr<Operand> mLHS;
+    unique_ptr<ComparisonOperator> mCO;
+    unique_ptr<Operand> mRHS;
 public:
     ExpectedExpression(Operand* LHS, ComparisonOperator* CO, Operand* RHS,
     		int l=0, int c=0) :
@@ -693,14 +656,9 @@ public:
     }
     ExpectedExpression(const ExpectedExpression& that)
     : TestExpr(that), mLHS(nullptr), mCO(nullptr), mRHS(nullptr) {
-    	mLHS = new Operand(*that.mLHS);
-    	mCO = new ComparisonOperator(*that.mCO);
-    	mRHS = new Operand(*that.mRHS);
-    }
-    ~ExpectedExpression() {
-        delete mLHS;
-        delete mCO;
-        delete mRHS;
+    	mLHS = unique_ptr<Operand>(new Operand(*that.mLHS));
+    	mCO = unique_ptr<ComparisonOperator>(new ComparisonOperator(*that.mCO));
+    	mRHS = unique_ptr<Operand>(new Operand(*that.mRHS));
     }
 
     void accept(Visitor* v) {
@@ -710,9 +668,9 @@ public:
         v->VisitExpectedExpression(this);
     }
 
-    Operand* getLHSOperand() const { return mLHS; }
-    Operand* getRHSOperand() const { return mRHS; }
-    ComparisonOperator* getComparisonOperator() const { return mCO; }
+    const Operand* getLHSOperand() const { return mLHS.get(); }
+    const Operand* getRHSOperand() const { return mRHS.get(); }
+    const ComparisonOperator* getComparisonOperator() const { return mCO.get(); }
     string toString() const {
     	string str;
     	str = mLHS->toString() + " " + mCO->toString() + " " + mRHS->toString();
@@ -723,15 +681,16 @@ public:
 class BufferAlloc : public TestExpr {
 private:
     // @todo Create and Integer class.
-	NumericConstant* mIntBuffSize;
-	NumericConstant* mIntDefaultValue;
-    StructInitializer* mStructInit;
+	unique_ptr<NumericConstant> mIntBuffSize;
+	unique_ptr<NumericConstant> mIntDefaultValue;
+    unique_ptr<StructInitializer> mStructInit;
 public:
     BufferAlloc(NumericConstant* size, NumericConstant* default_value = nullptr) :
             mIntBuffSize(size), mIntDefaultValue(default_value),
             mStructInit(nullptr) {
                 if (default_value == nullptr)
-                    mIntDefaultValue = new NumericConstant(0);
+                    mIntDefaultValue = unique_ptr<NumericConstant>(
+                    		new NumericConstant(0));
     }
 
     BufferAlloc(NumericConstant* size, StructInitializer* init):
@@ -743,22 +702,19 @@ public:
     : TestExpr(that), mIntBuffSize(nullptr), mIntDefaultValue(nullptr),
       mStructInit(nullptr) {
     	if (that.mIntBuffSize)
-    		mIntBuffSize = new NumericConstant(*that.mIntBuffSize);
+    		mIntBuffSize = unique_ptr<NumericConstant>(
+    				new NumericConstant(*that.mIntBuffSize));
     	if (that.mIntDefaultValue)
-    		mIntDefaultValue = new NumericConstant(*that.mIntDefaultValue);
+    		mIntDefaultValue = unique_ptr<NumericConstant>(
+    				new NumericConstant(*that.mIntDefaultValue));
     	if (that.mStructInit)
-    		mStructInit = new StructInitializer(*that.mStructInit);
-    }
-
-    ~BufferAlloc() {
-        if (mIntBuffSize) delete mIntBuffSize;
-        if (mIntDefaultValue) delete mIntDefaultValue;
-        if (mStructInit) delete mStructInit;
+    		mStructInit = unique_ptr<StructInitializer>(
+    				new StructInitializer(*that.mStructInit));
     }
 
     bool isAllocatingStruct() const { return (mStructInit) ? true : false; }
 
-    const StructInitializer* getStructInitializer() const { return mStructInit; }
+    const StructInitializer* getStructInitializer() const { return mStructInit.get(); }
 
     void accept(Visitor *v) {
         mIntBuffSize->accept(v);
@@ -849,19 +805,18 @@ public:
 
 class MockupVariable : public TestExpr {
 private:
-    VariableAssignment *mVariableAssignment;
+    unique_ptr<VariableAssignment> mVariableAssignment;
 public:
 
-    MockupVariable(VariableAssignment *var) : mVariableAssignment(nullptr) {
-        /// @todo remove dynamic_cast
-        mVariableAssignment = dynamic_cast<VariableAssignment*> (var);
+    MockupVariable(VariableAssignment *var) : mVariableAssignment(var) {
         if (mVariableAssignment == nullptr)
             throw Exception("Invalid Variable Assignment Expression type");
     }
 
-    ~MockupVariable() {
-        if (mVariableAssignment)
-            delete mVariableAssignment;
+    MockupVariable(const MockupVariable& that)
+    : TestExpr(that), mVariableAssignment(nullptr) {
+    	mVariableAssignment = unique_ptr<VariableAssignment>(
+    			new VariableAssignment(*that.mVariableAssignment));
     }
 
     void accept(Visitor *v) {
@@ -872,45 +827,29 @@ public:
 
 class MockupFunction : public TestExpr {
 private:
-    FunctionCall *mFunctionCall;
-    Constant *mConstant;
+    unique_ptr<FunctionCall> mFunctionCall;
+    unique_ptr<Constant> mConstant;
+    // owned by llvm, do not delete!
     llvm::Function *mOriginalFunction;
     llvm::Function *mMockupFunction;
 public:
-
     MockupFunction(FunctionCall *call, Constant *arg) :
-    mFunctionCall(nullptr), mConstant(nullptr),
-    mOriginalFunction(nullptr), mMockupFunction(nullptr) {
-        /// @todo remove dynamic_cast
-        mFunctionCall = dynamic_cast<FunctionCall*> (call);
-        if (mFunctionCall == nullptr)
-            throw Exception("Invalid FunctionCallExpr type");
-        /// @todo remove dynamic_cast
-        mConstant = dynamic_cast<Constant*> (arg);
-        if (mConstant == nullptr)
-            throw Exception("Invalid Argument type");
+    mFunctionCall(call), mConstant(arg),
+    mOriginalFunction(nullptr), mMockupFunction(nullptr) { }
+
+    MockupFunction(const MockupFunction& that)
+    : TestExpr(that),  mFunctionCall(nullptr), mConstant(nullptr),
+     mOriginalFunction(nullptr), mMockupFunction(nullptr) {
+    	mFunctionCall = unique_ptr<FunctionCall>(
+    			new FunctionCall(*that.mFunctionCall));
+    	mConstant = unique_ptr<Constant>(
+    	    			new Constant(*that.mConstant));
     }
 
-    FunctionCall* getFunctionCall() const { return mFunctionCall; }
-    Constant* getArgument() const { return mConstant; }
-
-    ~MockupFunction() {
-        if (mFunctionCall)
-            delete mFunctionCall;
-
-        if (mConstant)
-            delete mConstant;
-    }
+    const FunctionCall* getFunctionCall() const { return mFunctionCall.get(); }
+    const Constant* getArgument() const { return mConstant.get(); }
 
     void accept(Visitor *v) {
-        // @note This is a workaround. When processing a mockup function we have
-        // two options: 1. generate a function body for a declaration or 2. change
-        // the return value of a function which already has a function body.
-        // Thus we don't want to generate code for a function call from a
-        // MockupFunction. This workaround might need to be changed if there
-        // is a Visitor which needs to visit a FunctionCall before or after a
-        // MockupFunction
-        // mFunctionCall->accept(v);
         v->VisitMockupFunction(this);
     }
 
@@ -936,9 +875,20 @@ private:
     vector<MockupFunction*> mMockupFunctions;
     vector<MockupVariable*> mMockupVariables;
 public:
+    // @todo @warning @bug Copy this object when using a DataPlaceHolder!
+
     MockupFixture(const vector<MockupFunction*>& func,
             const vector<MockupVariable*>& var) :
     mMockupFunctions(func), mMockupVariables(var) {
+    }
+    MockupFixture(const MockupFixture& that) :
+    	TestExpr(that),	mMockupFunctions(), mMockupVariables()
+    {
+    	for (MockupFunction* ptr : that.mMockupFunctions)
+			mMockupFunctions.push_back(new MockupFunction(*ptr));
+
+		for (MockupVariable* ptr : that.mMockupVariables)
+			mMockupVariables.push_back(new MockupVariable(*ptr));
     }
 
     ~MockupFixture() {
@@ -964,14 +914,13 @@ public:
 
 class TestMockup : public TestExpr {
 private:
-    MockupFixture *mMockupFixture;
+    unique_ptr<MockupFixture> mMockupFixture;
 public:
-
-    TestMockup(MockupFixture *fixt) : mMockupFixture(fixt) {
-    }
-
-    ~TestMockup() {
-        if (mMockupFixture) delete mMockupFixture;
+    // @todo @warning @bug Copy this object when using a DataPlaceHolder!
+    TestMockup(MockupFixture *fixt) : mMockupFixture(fixt) { }
+    TestMockup(const TestMockup& that) : TestExpr(that), mMockupFixture(nullptr) {
+    	mMockupFixture = unique_ptr<MockupFixture>(
+    			new MockupFixture(*that.mMockupFixture));
     }
 
     void accept(Visitor *v) {
@@ -979,7 +928,7 @@ public:
         v->VisitTestMockup(this);
     }
 
-    MockupFixture* getMockupFixture() const { return mMockupFixture; }
+    const MockupFixture* getMockupFixture() const { return mMockupFixture.get(); }
 };
 
 class TestFixture : public TestExpr {
@@ -1026,19 +975,14 @@ public:
 
 class TestSetup : public TestExpr {
 private:
-    TestFixture* mTestFixtureExpr;
+    unique_ptr<TestFixture> mTestFixtureExpr;
 public:
-
-    TestSetup(TestFixture* fixture) : mTestFixtureExpr(fixture) {
-    }
+    TestSetup(TestFixture* fixture) : mTestFixtureExpr(fixture) {}
     TestSetup(const TestSetup& that) :
     	TestExpr(that), mTestFixtureExpr(nullptr) {
     	if (that.mTestFixtureExpr)
-    		mTestFixtureExpr = new TestFixture(*that.mTestFixtureExpr);
-    }
-
-    ~TestSetup() {
-        if (mTestFixtureExpr) delete mTestFixtureExpr;
+    		mTestFixtureExpr = unique_ptr<TestFixture>(
+    				new TestFixture(*that.mTestFixtureExpr));
     }
 
     void accept(Visitor *v) {
@@ -1051,7 +995,6 @@ class TestFunction : public TestExpr {
 private:
     unique_ptr<FunctionCall> mFunctionCall;
     unique_ptr<ExpectedResult> mExpectedResult;
-
 public:
     TestFunction(FunctionCall *F, ExpectedResult* E=nullptr) : mFunctionCall(F),
             mExpectedResult(E) {}
@@ -1084,19 +1027,14 @@ public:
 
 class TestTeardown : public TestExpr {
 private:
-    TestFixture* mTestFixture;
+    unique_ptr<TestFixture> mTestFixture;
 public:
-
-    TestTeardown(TestFixture* fixture) : mTestFixture(fixture) {
-    }
+    TestTeardown(TestFixture* fixture) : mTestFixture(fixture) {}
     TestTeardown(const TestTeardown& that)
     : TestExpr(that), mTestFixture(nullptr){
     	if(that.mTestFixture)
-    		mTestFixture = new TestFixture(*that.mTestFixture);
-    }
-
-    ~TestTeardown() {
-        if (mTestFixture) delete mTestFixture;
+    		mTestFixture = unique_ptr<TestFixture>(
+    				new TestFixture(*that.mTestFixture));
     }
 
     void accept(Visitor *v) {

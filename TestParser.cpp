@@ -806,7 +806,6 @@ mFunctionName(name), mFunctionArguments(arg), mReturnType(nullptr)
 
 FunctionCall::~FunctionCall()
 {
-	delete mFunctionName;
 	for (FunctionArgument*& ptr : mFunctionArguments) {
 		delete ptr;
 		ptr = nullptr;
@@ -820,11 +819,6 @@ void FunctionCall::accept(Visitor *v)
 		ptr->accept(v);
 	}
 	v->VisitFunctionCall(this);
-}
-
-InitializerValue::~InitializerValue() {
-	if (mNC) delete mNC;
-	if (mStructValue) delete mStructValue;
 }
 
 void InitializerValue::accept(Visitor *v) {
@@ -874,7 +868,8 @@ FunctionCall::FunctionCall(const FunctionCall& that)
 : TestExpr(that), mFunctionName(nullptr), mFunctionArguments(),
   mReturnType(nullptr) {
 	if (that.mFunctionName)
-		mFunctionName = new Identifier(*that.mFunctionName);
+		mFunctionName = unique_ptr<Identifier>(
+				new Identifier(*that.mFunctionName));
 	for(FunctionArgument* fa : that.mFunctionArguments) {
 		FunctionArgument* copy = new FunctionArgument(*fa);
 		mFunctionArguments.push_back(copy);
@@ -899,9 +894,10 @@ bool FunctionCall::replaceDataPlaceholder(unsigned pos, FunctionArgument* new_ar
 InitializerValue::InitializerValue(const InitializerValue& that)
 : TestExpr(that), mNC(nullptr), mStructValue(nullptr) {
 	if (that.mNC)
-		mNC = new NumericConstant(*that.mNC);
+		mNC = unique_ptr<NumericConstant>(new NumericConstant(*that.mNC));
 	if (that.mStructValue)
-		mStructValue = new StructInitializer(*that.mStructValue);
+		mStructValue = unique_ptr<StructInitializer>(
+				new StructInitializer(*that.mStructValue));
 }
 
 ///////
