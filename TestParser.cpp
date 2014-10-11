@@ -87,13 +87,6 @@ Token Tokenizer::nextToken()
 int TestExpr::leaks = 0;
 unsigned LLVMFunctionHolder::warning_count = 0;
 
-Argument* TestDriver::ParseArgument()
-{
-	Argument *Number = new Argument(mCurrentToken.mLexeme, mCurrentToken.mType);
-	mCurrentToken = mTokenizer.nextToken(); // eat current argument, move to next
-	return Number;
-}
-
 unique_ptr<DataPlaceholder> TestDriver::ParseDataPlaceholder()
 {
 	if (mCurrentToken != '@')

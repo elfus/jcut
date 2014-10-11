@@ -489,40 +489,6 @@ public:
     Constant* getConstant() const { return mC; }
 };
 
-class Argument : public TestExpr {
-protected:
-    string StringRepresentation;
-    TokenType mTokenType;
-public:
-
-    Argument(const string& str, TokenType token) :
-    StringRepresentation(str), mTokenType(token) {
-        if (mTokenType == TOK_CHAR) {
-            // Convert the char to its integer value
-            // then store that integer value as string
-            // the flex parser takes the single quotes too
-            // @bug what happens when we pass \n or any escaped character?
-            unsigned char c = StringRepresentation[1];
-            unsigned int tmp = static_cast<unsigned int>(c);
-            stringstream ss;
-            ss << tmp;
-            StringRepresentation = ss.str();
-        }
-    }
-    Argument(const Argument& that)
-    : TestExpr(that), StringRepresentation(that.StringRepresentation),
-      mTokenType(that.mTokenType) {}
-
-    ~Argument() {}
-
-    const string& getStringRepresentation() const { return StringRepresentation; }
-    TokenType getTokenType() const { return mTokenType; }
-
-    void accept(Visitor *v) {
-       v->VisitArgument(this); // Argument doesn't have any children
-    }
-};
-
 class StructInitializer;
 
 class InitializerValue : public TestExpr {
@@ -1427,7 +1393,6 @@ protected:
     Identifier* groupNameFactory();
     unique_ptr<DataPlaceholder> ParseDataPlaceholder();
     Identifier* ParseIdentifier();
-    Argument* ParseArgument();
     InitializerValue* ParseInitializerValue();
     DesignatedInitializer* ParseDesignatedInitializer();
     InitializerList* ParseInitializerList();

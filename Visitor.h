@@ -19,7 +19,6 @@ namespace tp { // tp stands for test parser
 
 // Forward declarations
 class FunctionCall;
-class Argument;
 class InitializerValue;
 class InitializerList;
 class VariableAssignment;
@@ -65,7 +64,6 @@ public:
      * post-order fashion, meaning that all the children of a given node are
      * visited first and then we visit the current node.
      */
-    virtual void VisitArgument(Argument *) {}
     virtual void VisitInitializerList(InitializerList *) {}
     virtual void VisitVariableAssignment(VariableAssignment *) {}
     virtual void VisitBufferAlloc(BufferAlloc *) {}
