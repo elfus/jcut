@@ -1337,8 +1337,8 @@ public:
 
 class FunctionArgument : public TestExpr{
 protected:
-    Constant *mConstant;
-    BufferAlloc *argBuffAlloc;
+	unique_ptr<Constant> mConstant;
+	unique_ptr<BufferAlloc> argBuffAlloc;
     unique_ptr<DataPlaceholder> mDP;
     unsigned    ArgIndx;
 public:
@@ -1351,19 +1351,12 @@ public:
     FunctionArgument(const FunctionArgument& that): TestExpr(that),
     	mConstant(nullptr), argBuffAlloc(nullptr), mDP(nullptr), ArgIndx(that.ArgIndx) {
     	if(that.mConstant)
-    		mConstant = new Constant(*that.mConstant);
+    		mConstant = unique_ptr<Constant>(new Constant(*that.mConstant));
     	if(that.argBuffAlloc)
-    		argBuffAlloc = new BufferAlloc(*that.argBuffAlloc);
+    		argBuffAlloc = unique_ptr<BufferAlloc>(new BufferAlloc(*that.argBuffAlloc));
     	if(that.mDP.get())
     		mDP = unique_ptr<DataPlaceholder>(new DataPlaceholder(*that.mDP.get()));
     	ArgIndx = that.ArgIndx;
-    	// @bug what about the pointer to the parent? Check when we should set it.
-    }
-    ~FunctionArgument() {
-        if(mConstant)
-            delete mConstant;
-        if(argBuffAlloc)
-            delete argBuffAlloc;
     }
 
     bool isBufferAlloc() const { return argBuffAlloc != nullptr; }
@@ -1382,11 +1375,8 @@ public:
     }
     unsigned getIndex() const { return ArgIndx; }
     void setIndex(unsigned ndx) {ArgIndx = ndx; }
-    string getStringRepresentation() const {
-        return mConstant->toString();
-    }
 
-    BufferAlloc* getBufferAlloc() const { return argBuffAlloc; }
+    const BufferAlloc* getBufferAlloc() const { return argBuffAlloc.get(); }
 
     void accept(Visitor *v) {
         if(mConstant)
@@ -1397,9 +1387,9 @@ public:
         v->VisitFunctionArgument(this);// TODO IMplement
     }
 
-        const Constant* getArgument() const {
-            return mConstant;
-        }
+	const Constant* getArgument() const {
+		return mConstant.get();
+	}
 
 };
 

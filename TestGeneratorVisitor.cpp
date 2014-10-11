@@ -60,7 +60,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 			llvm::Argument& llvm_arg = *arg_it;
 			if (llvm_arg.getType()->getTypeID() == Type::TypeID::PointerTyID) {
 				// this is a buffer allocation
-				if(BufferAlloc *ba = arg->getBufferAlloc()) {
+				if(const BufferAlloc *ba = arg->getBufferAlloc()) {
 					assert(ba != nullptr && "Invalid BufferAlloc pointer");
 					AllocaInst *alloc1 = bufferAllocInitialization(llvm_arg.getType(),ba, mInstructions);
 
@@ -151,7 +151,7 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 				ss << static_cast<int>(arg->getArgument()->getCharConstant()->getChar());
 				str_value = ss.str();
 			} else
-				str_value = arg->getStringRepresentation();
+				str_value = arg->toString();
 			// Code for non-pointer types
 			llvm::AllocaInst *alloc = mBuilder.CreateAlloca(llvm_arg.getType(), 0, "Allocation" + Twine(i));
 			alloc->setAlignment(4);
@@ -969,7 +969,7 @@ Value* TestGeneratorVisitor::createFloatComparison(ComparisonOperator::Type type
 	return nullptr;
 }
 
-llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba,
+llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* ptrType, const tp::BufferAlloc *ba,
 	std::vector<llvm::Instruction*>& instructions)
 {
 	assert(ptrType && "Invalid ptrType");

@@ -185,7 +185,7 @@ private:
      * @param[out] instructions A vector of instructions to store the code we generate.
      * @return
      */
-    llvm::AllocaInst* bufferAllocInitialization(llvm::Type* ptrType, tp::BufferAlloc *ba,
+    llvm::AllocaInst* bufferAllocInitialization(llvm::Type* ptrType, const tp::BufferAlloc *ba,
                                                 std::vector<llvm::Instruction*>& instructions);
 
     string getUniqueTestName(const string& name);
