@@ -875,8 +875,6 @@ private:
     vector<MockupFunction*> mMockupFunctions;
     vector<MockupVariable*> mMockupVariables;
 public:
-    // @todo @warning @bug Copy this object when using a DataPlaceHolder!
-
     MockupFixture(const vector<MockupFunction*>& func,
             const vector<MockupVariable*>& var) :
     mMockupFunctions(func), mMockupVariables(var) {
@@ -916,7 +914,6 @@ class TestMockup : public TestExpr {
 private:
     unique_ptr<MockupFixture> mMockupFixture;
 public:
-    // @todo @warning @bug Copy this object when using a DataPlaceHolder!
     TestMockup(MockupFixture *fixt) : mMockupFixture(fixt) { }
     TestMockup(const TestMockup& that) : TestExpr(that), mMockupFixture(nullptr) {
     	mMockupFixture = unique_ptr<MockupFixture>(
@@ -1195,8 +1192,6 @@ public:
             GlobalSetup *gs = nullptr, GlobalTeardown *gt = nullptr) :
     mName(name), mTests(tests),
     mGlobalMockup(gm), mGlobalSetup(gs), mGlobalTeardown(gt) {
-        /// @todo Enable GlobalMockup
-        // if (GlobalMockup) GlobalMockup->setGroupName(mName->getIdentifierStr());
         if (mGlobalSetup) mGlobalSetup->setGroupName(mName->toString());
         if (mGlobalTeardown) mGlobalTeardown->setGroupName(mName->toString());
     }
