@@ -68,9 +68,21 @@ public:
 	bool execute();
 };
 
+class Load : public Command{
+public:
+	Load() : Command("/load", "Loads all the specified source files separated by a space.") {}
+	bool execute() { return false;}
+};
+
+class Unload : public Command{
+public:
+	Unload() : Command("/unload", "Removes the specified C source files from jcut memory.") {}
+	bool execute() { return false;}
+};
+
 class Ls : public Command{
 public:
-	Ls() : Command("/ls", "Lists all the functions for all the C source files.") {}
+	Ls() : Command("/ls", "Lists all the functions for all the loaded C source files.") {}
 	bool execute();
 };
 
@@ -83,6 +95,8 @@ private:
 		registered_cmds["/exit"] = unique_ptr<Command>(new Exit);
 		registered_cmds["/pwd"] = unique_ptr<Command>(new Pwd);
 		registered_cmds["/ls"] = unique_ptr<Command>(new Ls);
+		registered_cmds["/load"] = unique_ptr<Command>(new Load);
+		registered_cmds["/unload"] = unique_ptr<Command>(new Unload);
 	}
 
 	std::map<std::string,unique_ptr<Command>> registered_cmds;
