@@ -23,14 +23,6 @@
 
 using namespace tp;
 
-// actually define vars.
-int StdCapture::m_pipe[2];
-int StdCapture::m_oldStdOut;
-int StdCapture::m_oldStdErr;
-bool StdCapture::m_capturing;
-std::mutex StdCapture::m_mutex;
-std::string StdCapture::m_captured;
-
 class TestRunnerVisitor : public Visitor {
 private:
     llvm::ExecutionEngine* mEE;
@@ -154,9 +146,10 @@ public:
 
         runFunction(TD); // do the cleanup
 
-        llvm::GlobalVariable* g = TD->getGlobalVariable();
+        const llvm::GlobalVariable* g = TD->getGlobalVariable();
 		if(g) {
-			unsigned char* pass = static_cast<unsigned char*>(mEE->getPointerToGlobal(g));
+			unsigned char* pass = static_cast<unsigned char*>(
+					mEE->getPointerToGlobal((const llvm::GlobalValue *)g));
 			if(pass) {
 				TD->setPassingValue(static_cast<bool>(*pass));
 			} else
@@ -168,7 +161,8 @@ public:
 		for(ExpectedExpression* ptr : mExpExpr) {
 			llvm::GlobalVariable* v = ptr->getGlobalVariable();
 			if(v) {
-				unsigned char* pass = static_cast<unsigned char*>(mEE->getPointerToGlobal(v));
+				unsigned char* pass = static_cast<unsigned char*>(
+						mEE->getPointerToGlobal((const llvm::GlobalValue *)v));
 				if(pass) {
 					bool passed = static_cast<bool>(*pass);
 					TD->setPassingValue(passed);

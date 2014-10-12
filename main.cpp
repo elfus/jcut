@@ -12,30 +12,9 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "clang/CodeGen/CodeGenAction.h"
-#include "clang/Basic/DiagnosticOptions.h"
-#include "clang/Driver/Compilation.h"
-#include "clang/Driver/Driver.h"
-#include "clang/Driver/Tool.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/CompilerInvocation.h"
-#include "clang/Frontend/FrontendDiagnostic.h"
-#include "clang/Frontend/TextDiagnosticPrinter.h"
-#include "llvm/ADT/OwningPtr.h"
-#include "llvm/ADT/SmallString.h"
-#include "llvm/ExecutionEngine/ExecutionEngine.h"
-#include "llvm/ExecutionEngine/GenericValue.h"
-#include "llvm/ExecutionEngine/JIT.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Host.h"
-#include "llvm/Support/ManagedStatic.h"
-#include "llvm/Support/Path.h"
+// For llvm::InitializeNativeTarget();
 #include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/Debug.h"
+
 // Declares clang::SyntaxOnlyAction.
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -43,21 +22,8 @@
 
 // Declares llvm::cl::extrahelp.
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Host.h"
-#include "llvm/Transforms/Utils/Cloning.h"
 
-#include "clang/Driver/Compilation.h"
-#include "clang/Driver/Job.h"
-#include "clang/Driver/Driver.h"
-#include "clang/Driver/Tool.h"
-#include "clang/Frontend/TextDiagnosticPrinter.h"
-#include "clang/Frontend/CompilerInstance.h"
-
-#include "TestParser.h"
-#include "TestGeneratorVisitor.h"
-#include "TestRunnerVisitor.h"
-#include "TestLoggerVisitor.h"
-
+#include "JCUTAction.h"
 #include "linenoise.h"
 
 #include <vector>
@@ -75,99 +41,8 @@ static cl::OptionCategory JcutOptions("JCUT Options");
 // It's nice to have this help message in all tools.
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
-static cl::opt<string> TestFileOpt("t", cl::Optional,  cl::ValueRequired, cl::desc("Input test file"), cl::value_desc("filename"));
-static cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
-static int TotalTestsFailed = 0;
-
-class JCUTAction : public clang::EmitLLVMOnlyAction {
-#undef DEBUG_TYPE
-#define DEBUG_TYPE "JCUTAction"
-public:
-	/* These two static variables are used as workaround to communicate with
-	 * the main execution flow. Keep in mind that a JCUTAction will be
-	 * created for each source file, thus its lifetime is less than that of
-	 * the interpreter itself. Another thing is that we cannot get a direct
-	 * handle to the JCUTAction object when it's created with the
-	 * newFrontendActionFactory<T>() method. That's why we use these two
-	 * static variables.
-	 */
-	static bool mUseInterpreterInput;
-	static string mInterpreterInput;
-	JCUTAction() { }
-
-	bool BeginInvocation(CompilerInstance& CI) {
-		DEBUG(errs() << "'JCUTAction' Beginning invocation\n");
-		return true;
-	}
-
-	bool BeginSourceFileAction(CompilerInstance &CI, StringRef Filename) {
-		DEBUG(errs() << "'JCUTAction' BeginSourceFileAction on "
-				     << Filename.str() << "\n");
-		/* This is an important step: The backend needs to know which C source
-		 * file to use, otherwise it fail saying that clang needs 1 positional
-		 * argument.
-		 */
-		CI.getCodeGenOpts().BackendOptions.push_back(Filename.str());
-		return true;
-	}
-
-	void EndSourceFileAction() {
-		DEBUG(errs() << "'JCUTAction' EndSourceFileAction\n");
-
-		EmitLLVMOnlyAction::EndSourceFileAction();
-		// The JIT Will take ownership of the Module!
-		llvm::Module* module = takeModule();
-
-		try {
-			TestDriver driver;
-			if(mUseInterpreterInput) {
-				JCUTException::mExceptionSource = "jcut interpreter";
-				driver.tokenize(mInterpreterInput.c_str());
-			}
-			else {
-				JCUTException::mExceptionSource = TestFileOpt.getValue(); // quick workaround
-				driver.tokenize(TestFileOpt.getValue());
-			}
-			unique_ptr<TestExpr> tests (driver.ParseTestExpr()); // Parse file and generate object structure tree
-
-			DataPlaceholderVisitor dp;
-			tests->accept(&dp); // Generate functions using data place holders.
-
-			TestGeneratorVisitor visitor(module);
-			tests->accept(&visitor); // Generate LLVM IR code
-
-			std::string Error;
-			TestRunnerVisitor runner(llvm::ExecutionEngine::createJIT(module, &Error),DumpOpt.getValue(),module);
-			if (runner.isValidExecutionEngine() == false) {
-				llvm::errs() << "unable to make execution engine: " << Error << "\n";
-				return;
-			}
-			tests->accept(&runner);
-
-			TestLoggerVisitor results_logger;
-			OutputFixerVisitor fixer(results_logger);
-			results_logger.setLogFormat(TestLoggerVisitor::LOG_ALL);
-			// @note The following two calls have to happen in this exact
-			// same order:
-			//  1st OutputFixerVisitor so we can get the right widths of all the output
-			//  2nd TestLoggerVisitor so we can print the test information
-			tests->accept(&fixer);
-			tests->accept(&results_logger);
-
-			// this application exits with the number of tests failed.
-			TotalTestsFailed += results_logger.getTestsFailed();
-		} catch(const UnexpectedToken& e){
-			errs() << e.what() << "\n";
-		}
-		catch (const JCUTException& e) {
-			errs() << e.what() << "\n";
-		}
-	}
-#undef DEBUG_TYPE
-};
-
-bool JCUTAction::mUseInterpreterInput = false;
-string JCUTAction::mInterpreterInput = "";
+cl::opt<string> TestFileOpt("t", cl::Optional,  cl::ValueRequired, cl::desc("Input test file"), cl::value_desc("filename"));
+cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
 
 static int batchMode(CommonOptionsParser& OptionsParser);
 //////////////////
@@ -215,10 +90,10 @@ static int batchMode(CommonOptionsParser& OptionsParser) {
 	if(failed)
 		return -1;
 
-	FrontendActionFactory* jcut_action = newFrontendActionFactory<JCUTAction>();
+	FrontendActionFactory* jcut_action = newFrontendActionFactory<jcut::JCUTAction>();
 	failed = Tool.run(jcut_action);
 
-	return TotalTestsFailed;
+	return jcut::TotalTestsFailed;
 }
 
 static void completionCallBack(const char * line, linenoiseCompletions *lc)
@@ -256,7 +131,7 @@ static int interpreterMode(CommonOptionsParser& OptionsParser) {
 	const string prompt_more = "jcut ?> ";
 	string prompt = prompt_input;
 	linenoiseSetCompletionCallback(completionCallBack);
-	JCUTAction::mUseInterpreterInput = true;
+	jcut::JCUTAction::mUseInterpreterInput = true;
 
 	while((c_line = linenoise(prompt.c_str())) != nullptr) {
 		line = string(c_line);
@@ -275,10 +150,10 @@ static int interpreterMode(CommonOptionsParser& OptionsParser) {
 			}
 		}
 
-		JCUTAction::mInterpreterInput += line;
+		jcut::JCUTAction::mInterpreterInput += line;
 		if(prompt == prompt_input) {
 			batchMode(OptionsParser);
-			JCUTAction::mInterpreterInput.clear();
+			jcut::JCUTAction::mInterpreterInput.clear();
 		}
 
 		// Save it to the history
