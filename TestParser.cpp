@@ -20,10 +20,26 @@ using namespace std;
 using namespace tp;
 
 int TestGroup::group_count = 0;
-string Exception::mCurrentFile;
+string JCUTException::mExceptionSource;
 
 extern unsigned column;
 extern "C" int yylex();
+
+
+UnexpectedToken::UnexpectedToken(tp::Token token, string expected)
+: mToken(token), mExpected(expected) { }
+
+const char* UnexpectedToken::what() const throw () {
+	stringstream ss;
+	if(!mExceptionSource.empty())
+		ss << mExceptionSource <<": ";
+	ss << mToken.mLine << ":" << mToken.mColumn <<": UnexpectedToken: ";
+	ss << mToken.mLexeme << ". ";
+	if(!mExpected.empty())
+		ss << "Expecting a valid " << mExpected << ".";
+	return ss.str().c_str();
+}
+
 
 ostream& tp::operator << (ostream& os, Token& token)
 {
@@ -37,7 +53,7 @@ void Tokenizer::tokenize(const string& filename)
 
 	yyin = fopen( filename.c_str(), "r" );
 	if(yyin == nullptr)
-		throw Exception("Could not open file "+filename);
+		throw JCUTException("Could not open file "+filename);
 	int type = TokenType::TOK_ERR;
 
 	while((type = yylex()) != TOK_EOF) {
@@ -90,9 +106,8 @@ unsigned LLVMFunctionHolder::warning_count = 0;
 unique_ptr<DataPlaceholder> TestDriver::ParseDataPlaceholder()
 {
 	if (mCurrentToken != '@')
-		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-				"Expected @ (DataPlaceholder",
-				"Received "+mCurrentToken.mLexeme+" instead");
+		throw UnexpectedToken(mCurrentToken, "DataPlaceHolder '@'");
+
 	unique_ptr<DataPlaceholder> pl(new DataPlaceholder);
 	mCurrentToken = mTokenizer.nextToken();
 	return pl;
@@ -101,15 +116,12 @@ unique_ptr<DataPlaceholder> TestDriver::ParseDataPlaceholder()
 BufferAlloc* TestDriver::ParseBufferAlloc()
 {
 	if (mCurrentToken != '[')
-		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-			"Expected a '['BufferAlloc",
-			"Received "+mCurrentToken.mLexeme+" instead.");
+		throw UnexpectedToken(mCurrentToken, "left sqared bracket '[' for BufferAllocation");
+
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '['
 
 	if (mCurrentToken != TOK_INT)
-		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-			"Expected an integer constant stating the buffer size.",
-			"Received "+mCurrentToken.mLexeme+" instead.");
+		throw UnexpectedToken(mCurrentToken, "int constant for buffer size");
 
 	NumericConstant* buff_size = ParseNumericConstant();// Buffer Size
 
@@ -123,8 +135,7 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 			NumericConstant* default_val = ParseNumericConstant();
 			ba = new BufferAlloc(buff_size, default_val);
 		} else
-			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-				"Unexpected token: "+mCurrentToken.mLexeme);
+			throw UnexpectedToken(mCurrentToken);
 
 		mCurrentToken = mTokenizer.nextToken(); // eat up the ']'
 		return ba;
@@ -137,7 +148,7 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 Identifier* TestDriver::ParseIdentifier()
 {
 	if (mCurrentToken != TOK_IDENTIFIER)
-		throw Exception("Expected an identifier but received " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken, "identifier");
 	Identifier * id = new Identifier(mCurrentToken.mLexeme);
 	mCurrentToken = mTokenizer.nextToken(); // eat current identifier
 	return id;
@@ -155,7 +166,7 @@ FunctionArgument* TestDriver::ParseFunctionArgument()
 	}
 	else
 		return new FunctionArgument(ParseConstant());
-	throw Exception("Expected a valid Argument but received: " + mCurrentToken.mLexeme);
+	throw UnexpectedToken(mCurrentToken,"function argument");
 }
 
 InitializerValue* TestDriver::ParseInitializerValue()
@@ -186,7 +197,7 @@ DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
 				delete id;
 				delete arg;
 			}
-			throw Exception("Unexpected token: "+mCurrentToken.mLexeme);
+			throw UnexpectedToken(mCurrentToken);
 		}
 
 		mCurrentToken = mTokenizer.nextToken(); // eat up the '.'
@@ -199,7 +210,7 @@ DesignatedInitializer* TestDriver::ParseDesignatedInitializer()
                             delete arg;
                     }
 			delete id;
-			throw Exception("Invalid designated initializer");
+			throw UnexpectedToken(mCurrentToken);
 		}
 		mCurrentToken = mTokenizer.nextToken(); // eat up the '='
 
@@ -230,7 +241,7 @@ InitializerList* TestDriver::ParseInitializerList()
 StructInitializer* TestDriver::ParseStructInitializer()
 {
 	if (mCurrentToken != '{')
-		throw Exception("Expected struct initializer '{' but received "+mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken,"struct initializer");
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '{'
 
 	StructInitializer* si = nullptr;
@@ -246,7 +257,7 @@ StructInitializer* TestDriver::ParseStructInitializer()
 	if(mCurrentToken != '}') {
 		if(si) delete si;
                 if(il) delete il;
-		throw Exception("Malformed designated initializer");
+		throw UnexpectedToken(mCurrentToken, "right curly bracket '}'");
 	}
 
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '}'
@@ -259,7 +270,7 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 
 	if (mCurrentToken != '=') {
 		delete identifier;
-		throw Exception("Expected = but received " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken, "assignment operator '='");
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat up the '='
 
@@ -280,9 +291,7 @@ VariableAssignment* TestDriver::ParseVariableAssignment()
 Identifier* TestDriver::ParseFunctionName()
 {
 	if (mCurrentToken != TOK_IDENTIFIER)
-		throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
-				"Expected a valid function name.",
-				"Received "+ mCurrentToken.mLexeme+" instead.");
+		throw UnexpectedToken(mCurrentToken, "function name");
 	return ParseIdentifier(); // Missing a 'FunctionName' class that wraps an Identifier
 }
 
@@ -293,9 +302,7 @@ FunctionCall* TestDriver::ParseFunctionCall()
 	if (mCurrentToken != '(') {
             string extra = functionName->toString()+mCurrentToken.mLexeme;
             delete functionName;
-            throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
-                            "Expected a left parenthesis in function call but received " + mCurrentToken.mLexeme,
-                            extra);
+            throw UnexpectedToken(mCurrentToken, "left parenthesis '(' for function call");
         }
 
 	mCurrentToken = mTokenizer.nextToken(); // eat the (
@@ -311,9 +318,7 @@ FunctionCall* TestDriver::ParseFunctionCall()
 			for (auto*& ptr : Args)
 				delete ptr;
                         delete functionName;
-			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-					"Expected a comma or right parenthesis in function call but received "
-					+ mCurrentToken.mLexeme);
+			throw UnexpectedToken(mCurrentToken,"comma or right parenthesis inside function parameters");
 		}
 
 		mCurrentToken = mTokenizer.nextToken(); // eat the ','
@@ -338,9 +343,7 @@ ComparisonOperator* TestDriver::ParseComparisonOperator()
 		mCurrentToken = mTokenizer.nextToken(); // consume TOK_COMPARISON_OP
 		return cmp;
 	}
-	throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-			"Expected 'ComparisonOperator' but received " + mCurrentToken.mLexeme,
-			"ComparisonOperators are: ==, !=, >=, <=, <, or >");
+	throw UnexpectedToken(mCurrentToken, "ComparisonOperator: ==, !=, >=, <=, <, or >");
 }
 
 ExpectedConstant* TestDriver::ParseExpectedConstant()
@@ -359,9 +362,7 @@ StringConstant* TestDriver::ParseStringConstant()
 		mCurrentToken = mTokenizer.nextToken(); // Consume the constant
 		return sc;
 	}
-	throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-			"Expected a StringConstant.",
-			"Received "+ mCurrentToken.mLexeme+" instead.");
+	throw UnexpectedToken(mCurrentToken, "string constant: \"example\"");
 }
 
 CharConstant* TestDriver::ParseCharConstant()
@@ -378,9 +379,7 @@ CharConstant* TestDriver::ParseCharConstant()
 NumericConstant* TestDriver::ParseNumericConstant()
 {
 	if(mCurrentToken != TOK_INT && mCurrentToken != TOK_FLOAT)
-		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-				"Expected a numeric constant, an integer or float.",
-				"Received "+mCurrentToken.mLexeme+" instead.");
+		throw UnexpectedToken(mCurrentToken,"numeric constant (int or float)");
 	NumericConstant* nc = nullptr;
 	if (mCurrentToken == TOK_INT)
 		nc = new NumericConstant(atoi(mCurrentToken.mLexeme.c_str()));
@@ -404,9 +403,7 @@ Constant* TestDriver::ParseConstant()
     if(mCurrentToken == TOK_CHAR)
 		C = new Constant(ParseCharConstant());
 	else
-		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-				"Expected a Constant (int, float, string or char).",
-				"Received "+ mCurrentToken.mLexeme+" instead.");
+		throw UnexpectedToken(mCurrentToken,"constant (string, char, int or float)");
 	// This is a workaround for float and double values. Let LLVM do the work
 	// on what type of precision to choose, we will just pass a string representing
 	// the floating point value.
@@ -428,7 +425,7 @@ TestTeardown* TestDriver::ParseTestTearDown()
 		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'
 		return new TestTeardown(testFixture);
 	}
-	throw Exception("Expected { but received " + mCurrentToken.mLexeme + " after keyword 'after'");
+	throw UnexpectedToken(mCurrentToken,"left curly bracket '{' after keyword 'after'");
 }
 
 TestFunction* TestDriver::ParseTestFunction()
@@ -440,9 +437,7 @@ TestFunction* TestDriver::ParseTestFunction()
 	if (mCurrentToken != ';') {
             delete FunctionCall;
             if(ER) delete ER;
-            throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-                            "Expected a semi colon ';' at the end of the test expression",
-                            "Received "+mCurrentToken.mLexeme);
+            throw UnexpectedToken(mCurrentToken,"semicolon ';' after test expression");
         }
 	mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	return new TestFunction(FunctionCall, ER);
@@ -461,7 +456,7 @@ TestSetup* TestDriver::ParseTestSetup()
 		mCurrentToken = mTokenizer.nextToken(); //eat the  '}'
 		return new TestSetup(testFixture);
 	}
-	throw Exception("Expected { but received " + mCurrentToken.mLexeme + " after keyword 'before'");
+	throw UnexpectedToken(mCurrentToken,"left curly bracket '{' after keyword 'before'");
 }
 
 TestFixture* TestDriver::ParseTestFixture()
@@ -488,9 +483,7 @@ TestFixture* TestDriver::ParseTestFixture()
 
 		if (mCurrentToken != ';') {
 			for(auto*& ptr : statements) delete ptr;
-			throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
-					"Expected a semi colon ';' at the end of the expression in test fixture",
-					"Received "+mCurrentToken.mLexeme);
+			throw UnexpectedToken(mCurrentToken,"semicolon ';' inside test fixture");
 		}
 
 		if (mCurrentToken == ';')
@@ -524,7 +517,7 @@ Operand* TestDriver::ParseOperand()
 		Constant* C = ParseConstant();
 		return new Operand(C);
 	}
-	throw Exception("Expected a CONSTANT or an IDENTIFIER");
+	throw UnexpectedToken(mCurrentToken,"identifier or constant(string, char, int or float)");
 }
 
 MockupVariable* TestDriver::ParseMockupVariable()
@@ -539,7 +532,7 @@ MockupFunction* TestDriver::ParseMockupFunction()
 
 	if (mCurrentToken != '=') {
 		delete func;
-		throw Exception("A mockup function needs an assignment operator, received " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken,"assignment operator '=' for mockup function");
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat the '='
 
@@ -569,12 +562,10 @@ MockupFixture* TestDriver::ParseMockupFixture()
 			break;
 
 		if (mCurrentToken != ';') {
-                    for(auto*& ptr : MockupFunctions) delete ptr;
-                    for(auto*& ptr : MockupVariables) delete ptr;
-			throw Exception(mCurrentToken.mLine,mCurrentToken.mColumn,
-					"Expected a semi colon ';' at the end of the test mockup",
-					"Received "+mCurrentToken.mLexeme);
-                }
+			for(auto*& ptr : MockupFunctions) delete ptr;
+			for(auto*& ptr : MockupVariables) delete ptr;
+            throw UnexpectedToken(mCurrentToken,"semicolon ';' after mockup function");
+		}
 		mCurrentToken = mTokenizer.nextToken(); //eat up the ';'
 	}
 	return new MockupFixture(MockupFunctions, MockupVariables);
@@ -593,7 +584,7 @@ TestMockup* TestDriver::ParseTestMockup()
 		mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 		return new TestMockup(mf);
 	}
-	throw Exception("Excpected { but received " + mCurrentToken.mLexeme);
+	throw UnexpectedToken(mCurrentToken,"left curly bracket '{'");
 }
 
 TestData* TestDriver::ParseTestData()
@@ -604,20 +595,20 @@ TestData* TestDriver::ParseTestData()
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat the keyword data
 	if (mCurrentToken != '{')
-		throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-				"Expected { but received " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken, "left curly bracket '{'");
+
 	mCurrentToken = mTokenizer.nextToken(); // eat up the {
 
 	unique_ptr<StringConstant> name = unique_ptr<StringConstant>(ParseStringConstant());
 
 	if (mCurrentToken != ';')
-				throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-						"Expected ; but received " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken,"semicolon ';'");
+
 	mCurrentToken = mTokenizer.nextToken(); // eat up the }
 
 	if (mCurrentToken != '}')
-			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-					"Expected } but received " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken,"right curly bracket '}'");
+
 	mCurrentToken = mTokenizer.nextToken(); // eat up the }
 
 	return new TestData(move(name));
@@ -646,11 +637,9 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 		gm = ParseGroupMockup();
 		gs = ParseGroupSetup();
 
-		if(mCurrentToken == TOK_AFTER_ALL) {
-			throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-					"The 'after_all' statement needs to be defined at the end"
-					" of the group.");
-		}
+		if(mCurrentToken == TOK_AFTER_ALL)
+			throw UnexpectedToken(mCurrentToken,"test definition");
+
 		///////////////////////////////////////
 		// Parse all the tests
 		//
@@ -671,9 +660,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 
 				if (mCurrentToken != '{') {
 					delete new_group_name;
-					throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-							"Invalid group definition. Expected a left curly bracket '{' for the given group",
-							"Received: "+mCurrentToken.mLexeme+" instead.");
+					throw UnexpectedToken(mCurrentToken,"left curly bracket '{' for this group");
 				}
 
 				mCurrentToken = mTokenizer.nextToken();// eat up the '{'
@@ -686,9 +673,7 @@ TestGroup* TestDriver::ParseTestGroup(Identifier* name)
 				if(mCurrentToken != '}') {
 					delete ngn;
 					delete group;
-					throw Exception(mCurrentToken.mLine, mCurrentToken.mColumn,
-									"Invalid group definition. Expected a right curly bracket '}'",
-									"Received "+mCurrentToken.mLexeme+" instead.");
+					throw UnexpectedToken(mCurrentToken,"right curly bracket '}' for this group");
 				}
 				mCurrentToken = mTokenizer.nextToken(); // eat up the character '}'
 			} else {
@@ -730,7 +715,7 @@ GlobalMockup* TestDriver::ParseGroupMockup()
 			mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 			return new GlobalMockup(mf);
 		}
-		throw Exception("Expected { after mockup_all but received: " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken,"left curly bracket '{' after mockup_all");
 	}
 	return nullptr;
 }
@@ -745,7 +730,7 @@ GlobalSetup* TestDriver::ParseGroupSetup()
 			mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 			return new GlobalSetup(mf);
 		}
-		throw Exception("Expected { after before_all but received: " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken,"left curly bracket '{' after before_all");
 	}
 	return nullptr;
 }
@@ -760,7 +745,7 @@ GlobalTeardown* TestDriver::ParseGroupTeardown()
 			mCurrentToken = mTokenizer.nextToken(); // eat the '}'
 			return new GlobalTeardown(mf);
 		}
-		throw Exception("Expected { after after_all but received: " + mCurrentToken.mLexeme);
+		throw UnexpectedToken(mCurrentToken,"left curly bracket '{' after after_all");
 	}
 	return nullptr;
 }
@@ -772,7 +757,7 @@ TestFile* TestDriver::ParseTestFile()
 		return new TestFile(group);
 	else {
             delete group;
-            throw Exception("Invalid test file");
+            throw JCUTException("Invalid test file");
         }
 }
 
@@ -906,7 +891,7 @@ CSVDriver::CSVDriver(const string& filename) : TestDriver(), rows(0), columns(0)
 {
 	ifstream csv(filename);
 	if(!csv)
-		throw Exception("CSV File: "+filename+" not found!");
+		throw JCUTException("CSV File: "+filename+" not found!");
 	string line;
 	getline(csv, line);
 	vector<string> items = split(line,',');
@@ -917,7 +902,7 @@ CSVDriver::CSVDriver(const string& filename) : TestDriver(), rows(0), columns(0)
 		items = split(line, ',');
 		if(items.empty()) continue;
 		if(items.size() != columns)
-			throw Exception("Column mismatch in CSV file: "+filename);
+			throw JCUTException("Column mismatch in CSV file: "+filename);
 
 		mMatrix.push_back(items);
 	}

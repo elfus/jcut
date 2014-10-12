@@ -123,7 +123,7 @@ string TestLoggerVisitor::getExpectedResultString(TestDefinition *TD)
 
 string TestLoggerVisitor::getWarningString(TestDefinition *TD)
 {
-	const vector<Exception>& warnings = TD->getWarnings();
+	const vector<Warning>& warnings = TD->getWarnings();
 	if(warnings.size()) {
 		stringstream ss;
 		ss << "[" << warnings.size() << "] ";
@@ -136,7 +136,7 @@ string TestLoggerVisitor::getWarningString(TestDefinition *TD)
 
 void TestLoggerVisitor::logFunction(LLVMFunctionHolder *FH, const string& name)
 {
-	const vector<Exception>& warnings = FH->getWarnings();
+	const vector<Warning>& warnings = FH->getWarnings();
 	if(warnings.size()) {
 		for(auto w : warnings)
 			cout << w.what() << endl;

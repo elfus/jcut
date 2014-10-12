@@ -42,8 +42,8 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 		string file = __FILE__;
 		unsigned pos = file.find_last_of('/') + 1;
 		file = file.substr(pos, file.size() - pos);
-		Exception::mCurrentFile = file;
-		throw Exception(__LINE__,0,"DataPlaceholders are not allowed inside a before or after statement");
+		JCUTException::mExceptionSource = file;
+		throw JCUTException("DataPlaceholders are not allowed inside a before or after statement");
 	}
 
 	llvm::Function *currentFunction = mModule->getFunction(mCurrentFuncCall);
@@ -105,9 +105,8 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 
 					if(type == TOK_STRING and ptrElementType != mBuilder.getInt8Ty() ) {
 						const string& quoted = my_string->toString();
-						/// @todo Get the info on which line and column this token is located at
-						throw Exception(0,0,"Cannot initialize pointer with string constant "+quoted,
-							"'char *' or 'unsigned char *' can only be initialized with string constants.");
+						throw JCUTException("Cannot initialize pointer with string constant "+quoted+
+							".\n\t'char *' or 'unsigned char *' can only be initialized with string constants.");
 					}
 
 					if(type == TOK_INT || type == TOK_FLOAT)
@@ -124,15 +123,14 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 						}
 						// Any other integer or float constant cannot be used to initialize
 						// a pointer.
-						throw Exception("Cannot initialize pointer with arbitrary address "+my_str+
+						throw JCUTException("Cannot initialize pointer with arbitrary address "+my_str+
 							"\nUse the syntax [n:x] so I can allocate the memory for you.");
 					}
 				}
 				break;
 			}
 			if(arg->isBufferAlloc())
-				throw Exception(arg->getLine(), arg->getColumn(),
-						"Invalid argument type [BufferAlloc] for function "+mCurrentFuncCall);
+				throw JCUTException("Invalid argument type [BufferAlloc] for function "+mCurrentFuncCall);
 			string str_value;
 			// @todo Improve the way we detect when we have to get the memory address
 			// from a string. This is only a quick patch which I need right now :(
@@ -143,9 +141,9 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 				ss << reinterpret_cast<void*>(c);
 				str_value = ss.str();
 				mWarnings.push_back(
-						Exception("Incompatible pointer conversion.",
-								"Passing pointer address "+str_value+" of string "+the_string+""
-								" to parameter of non-pointer type ", Exception::WARNING));
+						Warning("Incompatible pointer conversion.\n"
+								"\tPassing pointer address "+str_value+" of string "+the_string+""
+								" to parameter of non-pointer type "));
 			} else if(arg->getArgument()->getTokenType() == TOK_CHAR) {
 				stringstream ss;
 				ss << static_cast<int>(arg->getArgument()->getCharConstant()->getChar());
@@ -213,13 +211,13 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 	// pushed by this same method VisitExpectedResult
     CallInst *call = dyn_cast<CallInst>(mInstructions.back());
     if(call == nullptr)
-        throw Exception("Invalid CallInst!");
+        throw JCUTException("Invalid CallInst!");
 
 	Type* returnedType = call->getCalledFunction()->getReturnType();
 	if(returnedType->getTypeID() == Type::TypeID::VoidTyID) {
 		stringstream ss;
 		ss<<"Trying compare a value against a function with no return value (void)"<<endl;
-		mWarnings.push_back(Exception(ss.str(), "", Exception::WARNING));
+		mWarnings.push_back(Warning(ss.str()));
 		return;
 	}
 
@@ -364,9 +362,8 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		const tp::Constant* expected = MF->getArgument();
 		if(llvm_func->getReturnType() == mBuilder.getVoidTy() &&
 			expected->toString() != "void") {
-			throw Exception("The function "+func_name+"() has void as return value. ",
-					"The only valid syntax for a void function is: "+func_name+"() = void;",
-					Exception::ERROR);
+			throw JCUTException("The function "+func_name+"() has void as return value.\n"
+					"\tThe only valid syntax for a void function is: "+func_name+"() = void;");
 		}
 		///////////////////////////////////////////////////////
 		// Create the mockup function which will return whatever the user
@@ -387,7 +384,7 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 				// Cast it to pointer type
 				const string& str =  expected->toString();
 				if(str.find('.') != string::npos)
-					throw Exception("Floating point values are not valid for returning as pointer type!");
+					throw JCUTException("Floating point values are not valid for returning as pointer type!");
 				unsigned bitwidth = llvm_func->getReturnType()->getPointerElementType()->getIntegerBitWidth();
 				APInt int_value =  getAPIntTruncating(bitwidth, str, 10);
 				ConstantInt* int_constant = ConstantInt::get
@@ -707,7 +704,7 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 			value = real_value.substr(0, real_value.find('.'));
 			stringstream ss;
 			ss << "Casting floating point value "<<real_value<<" to "<<value;
-			mWarnings.push_back(Exception(ss.str(), "", Exception::WARNING));
+			mWarnings.push_back(Warning(ss.str()));
 		}
 
 		if (IntegerType * intType = dyn_cast<IntegerType>(type)) {
@@ -748,9 +745,8 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 		break;
 	case Type::TypeID::PointerTyID:
 		mWarnings.push_back(
-				Exception("Trying to create pointer from value "+real_value+
-				", I will return a pointer to NULL instead.",
-				"", Exception::WARNING));
+				Warning("Trying to create pointer from value "+real_value+
+				", I will return a pointer to NULL instead."));
 		if (PointerType * ptrType = dyn_cast<PointerType>(type)) {
 			return ConstantPointerNull::get(ptrType);
 		}
@@ -776,7 +772,7 @@ llvm::APInt TestGeneratorVisitor::getAPIntTruncating(unsigned bitwidth, const st
 		stringstream ss;
 		ss <<"Truncating integer value "<<value<<"(decimal) from "
 		   <<bits_needed<<" bits to "<<bitwidth<<" bits";
-		mWarnings.push_back(Exception(ss.str(),"",Exception::WARNING));
+		mWarnings.push_back(Warning(ss.str()));
 	} else {
 		int_value = APInt(bitwidth, value, radix);
 	}
@@ -1063,7 +1059,7 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 		ExpectedResult* R = TF->getExpectedResult();
 		if(R && R->isDataPlaceholder())
 			func += " " + R->getComparisonOperator()->toString() + " @";
-		throw Exception("Missing CSV file for this test: "+func+";\n"
+		throw JCUTException("Missing CSV file for this test: "+func+";\n"
 				"\tAdd it with the statement: 'data { \"path-to-file.csv\"; }'");
 	}
 
@@ -1083,7 +1079,7 @@ void DataPlaceholderVisitor::VisitTestDefinition(TestDefinition* TD)
 			string func = TF->getFunctionCall()->getFunctionCalledString();
 			if(R && R->isDataPlaceholder())
 				func += " " + R->getComparisonOperator()->toString() + " @";
-			throw Exception("Not enough data in CVS file "+path+" for function "+func);
+			throw JCUTException("Not enough data in CVS file "+path+" for function "+func);
 		}
 
 		vector<TestDefinition*> to_be_added;

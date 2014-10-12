@@ -32,57 +32,37 @@
 
 using namespace std;
 
-class Exception : public std::exception {
+
+class JCUTException : public std::exception {
 public:
-    enum Severity {
-        ERROR = 0,
-        WARNING
-    };
-    // @todo Redesign the Exception class to take a Token in the constructor.
+    JCUTException() {}
 
-    Exception(const string& expected, const string& received)
-        : mMsg(""), mExtraMsg(""), mLine(0), mColumn(0), mSeverity(ERROR) {
-        mMsg = "Expected "+expected+" but received: "+received;
+    /// Used for general purpose messages
+    JCUTException(const string& msg) : mMsg(msg){ }
+
+    virtual const char* what() const throw () {
+    	stringstream ss;
+    	if(!mExceptionSource.empty())
+    		ss << mExceptionSource << ": ";
+    	ss << mMsg;
+        return ss.str().c_str();
     }
 
-    /// Used for warnings
-    Exception(const string& msg,
-               const string& extra = "", Severity s=Severity::ERROR)
-        : mMsg(msg), mExtraMsg(extra), mLine(0), mColumn(0), mSeverity(s) {
-        init();
-    }
-
-    /// Used for errors
-    Exception(unsigned line, unsigned column, const string& msg,
-               const string& extra = "", Severity s=Severity::ERROR)
-        : mMsg(msg), mExtraMsg(extra), mLine(line), mColumn(column),mSeverity(s) {
-        init();
-    }
-
-    const char* what() const throw () {
-        return mMsg.c_str();
-    }
-
-    static string mCurrentFile;
-private:
+    static string mExceptionSource;
+protected:
     string mMsg;
-    string mExtraMsg;
-    unsigned mLine;
-    unsigned mColumn;
-    Severity mSeverity;
 
-    void init() {
-        stringstream ss;
-        if(mSeverity == Severity::ERROR)
-            ss << mCurrentFile <<":"<<mLine<<":"<<mColumn<<": error: " << mMsg;
-        else if(mSeverity == Severity::WARNING)
-            ss << "warning" << ": " << mMsg;
-        if (mExtraMsg.size()) {
-            ss << endl << "\t" << mExtraMsg;
-        }
-        mMsg = ss.str();
-    }
 };
+
+class Warning : JCUTException {
+public:
+	Warning(const Warning& that) : JCUTException(that.mMsg) {}
+	Warning(const string& msg) : JCUTException(msg) {}
+	virtual const char* what() const throw () {
+		return JCUTException::what();
+	}
+};
+
 
 class LLVMFunctionHolder {
 private:
@@ -94,7 +74,7 @@ private:
     // The output when running this function.
     string  mOutput;
     // Any warning we want to inform while generating this LLVM Function
-    vector<Exception> mWarnings;
+    vector<Warning> mWarnings;
     bool mPassingValue;
     llvm::GlobalVariable* mResultVariable;
 public:
@@ -110,11 +90,11 @@ public:
     void setGroupName(const string& name) { mGroupName = name; }
     void setOutput(string&& output) { mOutput = output; }
     const string& getOutput() const { return mOutput; }
-    void setWarnings(const vector<Exception>& warnings) {
+    void setWarnings(const vector<Warning>& warnings) {
         mWarnings = warnings;
         warning_count += mWarnings.size();
     }
-    const vector<Exception>& getWarnings() const { return mWarnings; }
+    const vector<Warning>& getWarnings() const { return mWarnings; }
     void setPassingValue(bool passed) { mPassingValue = passed; }
     bool getPassingValue() const { return mPassingValue; }
     void setGlobalVariable(llvm::GlobalVariable* g) { mResultVariable = g; }
@@ -810,7 +790,7 @@ public:
 
     MockupVariable(VariableAssignment *var) : mVariableAssignment(var) {
         if (mVariableAssignment == nullptr)
-            throw Exception("Invalid Variable Assignment Expression type");
+            throw JCUTException("Invalid Variable Assignment Expression type");
     }
 
     MockupVariable(const MockupVariable& that)
@@ -1376,4 +1356,13 @@ private:
 };
 
 } // namespace tp
+
+class UnexpectedToken : JCUTException {
+	tp::Token mToken;
+	string mExpected;
+public:
+	UnexpectedToken(tp::Token token, string expected = "");
+	const char* what() const throw ();
+};
+
 #endif	/* TESTPARSER_H */

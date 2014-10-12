@@ -121,11 +121,11 @@ public:
 		try {
 			TestDriver driver;
 			if(mUseInterpreterInput) {
-				Exception::mCurrentFile = "jcut interpreter";
+				JCUTException::mExceptionSource = "jcut interpreter";
 				driver.tokenize(mInterpreterInput.c_str());
 			}
 			else {
-				Exception::mCurrentFile = TestFileOpt.getValue(); // quick workaround
+				JCUTException::mExceptionSource = TestFileOpt.getValue(); // quick workaround
 				driver.tokenize(TestFileOpt.getValue());
 			}
 			unique_ptr<TestExpr> tests (driver.ParseTestExpr()); // Parse file and generate object structure tree
@@ -156,7 +156,10 @@ public:
 
 			// this application exits with the number of tests failed.
 			TotalTestsFailed += results_logger.getTestsFailed();
-		} catch (const Exception& e) {
+		} catch(const UnexpectedToken& e){
+			errs() << e.what() << "\n";
+		}
+		catch (const JCUTException& e) {
 			errs() << e.what() << "\n";
 		}
 	}

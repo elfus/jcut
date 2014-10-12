@@ -82,7 +82,7 @@ private:
     llvm::Value *mFUDReturnValue;
     std::map<string,bool> mMockupNames;//used to create unique mockup names
     /// Store all the warnings for a single TestDefinition.
-    std::vector<Exception> mWarnings;
+    std::vector<Warning> mWarnings;
     std::string mCurrentFud; // Current Function Under Test
     std::string mCurrentFuncCall; // Name of the current FunctionCall we are visiting.
     llvm::ZExtInst* mTestResult;

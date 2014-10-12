@@ -163,7 +163,7 @@ public:
         	ee = TD->getFailedExpectedExpressions();
         	for(ExpectedExpression* e : ee) {
         		stringstream ss;
-        		ss << Exception::mCurrentFile << ":" << e->getLine()
+        		ss << JCUTException::mExceptionSource << ":" << e->getLine()
         			<< ":" << e->getColumn() << ": ";
         		cout << ss.str() << "Expected expression ["
         			 << e->toString() << "] is false" << endl;
