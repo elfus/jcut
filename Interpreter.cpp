@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include "llvm/Support/FileSystem.h"
+
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
@@ -73,7 +75,8 @@ void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc
 }
 
 int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
-	cout << "Interpreter mode!" << endl;
+	cout << "jcut interpreter!" << endl;
+	cout << "For a complete list of available commands type /help" << endl << endl;
 	char * c_line = nullptr;
 	string history_name = "jcut-history.txt";
 	linenoiseHistoryLoad(history_name.c_str()); /* Load the history at startup */
@@ -87,9 +90,15 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 	jcut::JCUTAction::mUseInterpreterInput = true;
 	string executed = "";
 
-	while((c_line = linenoise(prompt.c_str())) != nullptr && executed!="/exit") {
+	while(executed!="/exit" && (c_line = linenoise(prompt.c_str())) != nullptr) {
 		unique_ptr<char> guard(c_line);// free memory a la C++ :)
 		line = string(c_line);
+
+		// Save it to the history
+		if(line.size()) {
+			linenoiseHistoryAdd(line.c_str());
+			linenoiseHistorySave(history_name.c_str());
+		}
 
 		executed = executeCommand(line,OptionsParser);
 		if(!executed.empty())
@@ -108,13 +117,6 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 			batchMode(OptionsParser);
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
-
-		// Save it to the history
-		if(line.size()) {
-			linenoiseHistoryAdd(line.c_str());
-			linenoiseHistorySave(history_name.c_str());
-		}
-		// Repeat
 	}
 	return 0;
 }
@@ -123,8 +125,7 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 string Interpreter::executeCommand(const string& cmd_str, CommonOptionsParser& OptionsParser)
 {
 	if (cmd_str[0] == '/' && cmd_str.size()) {
-		string str = cmd_str.substr(1, cmd_str.size()-1);
-		unique_ptr<Command> cmd = unique_ptr<Command>(CommandFactory::create(str));
+		Command* cmd = CommandFactory::instance().create(cmd_str);
 		if(!cmd) {
 			cerr << "Unrecognized command: " << cmd_str
 			<<". Try typing /help for a list of available commands." << endl;
@@ -135,16 +136,43 @@ string Interpreter::executeCommand(const string& cmd_str, CommonOptionsParser& O
 	return "";
 }
 
+bool Help::execute() {
+	cout << "jcut interpreter available commands:" << endl << endl;
 
-Interpreter::Interpreter() {
-
+	CommandFactory& f = CommandFactory::instance();
+	for(auto it = f.registered_cmds.begin(); it != f.registered_cmds.end(); ++it) {
+		const unique_ptr<Command>& p = (*it).second;
+		cout << "\t" << p->name << " - " << p->desc << endl;
+	}
+	cout << endl;
+	return true;
 }
 
+bool Pwd::execute() {
+	SmallVector<char,64> pwd;
+	llvm::sys::fs::current_path(pwd);
+	for(auto c : pwd)
+		cout << c;
+	cout << endl;
+	return true;
+}
 
-Interpreter::Command*
-Interpreter::CommandFactory::create(const string& cmd){
-	if(cmd == "help")
-		return new Help;
+bool Ls::execute() {
+	return false;
+}
+
+CommandFactory CommandFactory::factory;
+
+CommandFactory& CommandFactory::instance()
+{
+	return factory;
+}
+
+Command* CommandFactory::create(const string& cmd)
+{
+	auto it = registered_cmds.find(cmd);
+	if(it != registered_cmds.end())
+		return registered_cmds[cmd].get();
 	return nullptr;
 }
 

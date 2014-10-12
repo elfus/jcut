@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <string>
+#include <map>
 #include "linenoise.h"
 
 namespace clang{
@@ -28,36 +29,67 @@ private:
 	string executeCommand(const std::string& cmd, CommonOptionsParser& OptionsParser);
 	static void completionCallBack(const char * line, linenoiseCompletions *lc);
 
-	class Command {
-	private:
-		std::string name;
-	public:
-		Command(const Command&) = delete;
-		Command(const std::string& n) : name(n) {}
-		virtual ~Command(){}
-
-		virtual bool execute() = 0;
-		std::string str() const { return name;}
-	};
-
-	class Help : public Command{
-	public:
-		Help() : Command("help") {}
-		bool execute() {
-			cout << "jcut interpreter avilable commands:" << endl;
-			return true;
-		}
-	};
-
-	class CommandFactory {
-	public:
-		static Command* create(const string& cmd);
-	};
 public:
-	Interpreter();
+	Interpreter() {}
 
 	int batchMode(CommonOptionsParser& OptionsParser);
 	int mainLoop(CommonOptionsParser& OptionsParser);
+};
+
+class Command {
+	friend class Help;
+private:
+	std::string name;
+	std::string desc;
+public:
+	Command(const Command&) = delete;
+	Command(const std::string& n, const std::string& d) : name(n), desc(d) {}
+	virtual ~Command(){}
+
+	virtual bool execute() {return true;}
+	std::string str() const { return name;}
+};
+
+class Help : public Command{
+public:
+	Help() : Command("/help",
+			"Lists all the available options for the jcut interpreter.") {}
+	bool execute();
+};
+
+class Exit : public Command{
+public:
+	Exit() : Command("/exit", "Exits the jcut interpreter.") {}
+};
+
+class Pwd : public Command{
+public:
+	Pwd() : Command("/pwd", "Prints the working directory where jcut is being run.") {}
+	bool execute();
+};
+
+class Ls : public Command{
+public:
+	Ls() : Command("/ls", "Lists all the functions for all the C source files.") {}
+	bool execute();
+};
+
+class CommandFactory {
+	friend class Help;
+private:
+	CommandFactory() {
+		// Every time a new command is added make sure you add an entry here.
+		registered_cmds["/help"] = unique_ptr<Command>(new Help);
+		registered_cmds["/exit"] = unique_ptr<Command>(new Exit);
+		registered_cmds["/pwd"] = unique_ptr<Command>(new Pwd);
+		registered_cmds["/ls"] = unique_ptr<Command>(new Ls);
+	}
+
+	std::map<std::string,unique_ptr<Command>> registered_cmds;
+	static CommandFactory factory;
+public:
+	static CommandFactory& instance();
+	Command* create(const string& cmd);
 };
 
 } /* namespace jcut */

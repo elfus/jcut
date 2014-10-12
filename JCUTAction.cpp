@@ -45,11 +45,6 @@ std::string JCUTAction::mInterpreterInput;
 // @todo remove this global variable.
 int TotalTestsFailed = 0;
 
-JCUTAction::JCUTAction() {
-	// TODO Auto-generated constructor stub
-
-}
-
 bool JCUTAction::BeginInvocation(CompilerInstance& CI) {
 	DEBUG(errs() << "'JCUTAction' Beginning invocation\n");
 	return true;

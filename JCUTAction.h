@@ -42,7 +42,7 @@ public:
 	 */
 	static bool mUseInterpreterInput;
 	static std::string mInterpreterInput;
-	JCUTAction();
+	JCUTAction() {}
 
 	bool BeginInvocation(CompilerInstance& CI);
 	bool BeginSourceFileAction(CompilerInstance &CI, StringRef Filename);
