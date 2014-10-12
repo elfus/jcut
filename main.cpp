@@ -169,7 +169,32 @@ public:
 bool JCUTAction::mUseInterpreterInput = false;
 string JCUTAction::mInterpreterInput = "";
 
-int batchMode(CommonOptionsParser& OptionsParser) {
+static int batchMode(CommonOptionsParser& OptionsParser);
+//////////////////
+// Interpreter specific functions
+static void processCommand(const string& cmd, CommonOptionsParser& OptionsParser);
+static int interpreterMode(CommonOptionsParser& OptionsParser);
+static void completionCallBack(const char * line, linenoiseCompletions *lc);
+
+int main(int argc, const char **argv, char * const *envp)
+{
+	TestFileOpt.setCategory(JcutOptions);
+	DumpOpt.setCategory(JcutOptions);
+
+	// CommonOptionsParser constructor will parse arguments and create a
+	// CompilationDatabase.  In case of error it will terminate the program.
+	CommonOptionsParser OptionsParser(argc, argv);
+
+	// Initialize the JIT Engine only once
+	llvm::InitializeNativeTarget();
+
+	if(TestFileOpt.size())
+		return batchMode(OptionsParser);
+	else
+		return interpreterMode(OptionsParser);
+}
+
+static int batchMode(CommonOptionsParser& OptionsParser) {
 	// Use OptionsParser.getCompilations() and OptionsParser.getSourcePathList()
 	// to retrieve CompilationDatabase and the list of input file paths.
 
@@ -195,10 +220,9 @@ int batchMode(CommonOptionsParser& OptionsParser) {
 
 	return TotalTestsFailed;
 }
-//////////////////
-// Interpreter specific functions
-void completionCallBack(const char * line, linenoiseCompletions *lc) {
 
+static void completionCallBack(const char * line, linenoiseCompletions *lc)
+{
 	if (line[0] == 'b') {
 		linenoiseAddCompletion(lc,"before");
 		linenoiseAddCompletion(lc,"before_all");
@@ -222,7 +246,7 @@ void completionCallBack(const char * line, linenoiseCompletions *lc) {
 
 }
 
-int interpreterMode(CommonOptionsParser& OptionsParser) {
+static int interpreterMode(CommonOptionsParser& OptionsParser) {
 	cout << "Interpreter mode!" << endl;
 	char *c_line = nullptr;
 	string history_name = "jcut-history.txt";
@@ -236,18 +260,12 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 
 	while((c_line = linenoise(prompt.c_str())) != nullptr) {
 		line = string(c_line);
-		// Process interpreter specific commands first
 		if(line == "exit") {
 			free(c_line);
 			break;
 		}
-		if (line == "/historylen") {
-			/* The "/historylen" command will change the history len. */
-			int len = atoi(c_line+11);
-			linenoiseHistorySetMaxLen(len);
-		} else if (line.size() && line[0] == '/') {
-			cout << "Unreconized command: "<< line << endl;;
-		}
+		processCommand(line,OptionsParser);
+
 
 		if(linenoiseCtrlJPressed()) {
 			prompt = prompt_more;
@@ -263,8 +281,6 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 			JCUTAction::mInterpreterInput.clear();
 		}
 
-		/* Do something with the string. */
-
 		// Save it to the history
 		if(line.size()) {
 			linenoiseHistoryAdd(line.c_str());
@@ -277,20 +293,10 @@ int interpreterMode(CommonOptionsParser& OptionsParser) {
 	return 0;
 }
 
-int main(int argc, const char **argv, char * const *envp)
+static void processCommand(const string& cmd, CommonOptionsParser& OptionsParser)
 {
-	TestFileOpt.setCategory(JcutOptions);
-	DumpOpt.setCategory(JcutOptions);
-
-	// CommonOptionsParser constructor will parse arguments and create a
-	// CompilationDatabase.  In case of error it will terminate the program.
-	CommonOptionsParser OptionsParser(argc, argv);
-
-	// Initialize the JIT Engine only once
-	llvm::InitializeNativeTarget();
-
-	if(TestFileOpt.size())
-		return batchMode(OptionsParser);
-	else
-		return interpreterMode(OptionsParser);
+	if (cmd.size() && cmd[0] == '/') {
+		cout << "Unreconized command: "<< cmd << endl;;
+	}
 }
+
