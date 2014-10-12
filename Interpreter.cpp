@@ -74,7 +74,7 @@ void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc
 
 int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 	cout << "Interpreter mode!" << endl;
-	char *c_line = nullptr;
+	char * c_line = nullptr;
 	string history_name = "jcut-history.txt";
 	linenoiseHistoryLoad(history_name.c_str()); /* Load the history at startup */
 	string line;
@@ -85,15 +85,15 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 			reinterpret_cast<linenoiseCompletionCallback*>(
 					Interpreter::completionCallBack));
 	jcut::JCUTAction::mUseInterpreterInput = true;
+	string executed = "";
 
-	while((c_line = linenoise(prompt.c_str())) != nullptr) {
+	while((c_line = linenoise(prompt.c_str())) != nullptr && executed!="/exit") {
+		unique_ptr<char> guard(c_line);// free memory a la C++ :)
 		line = string(c_line);
-		if(line == "exit") {
-			free(c_line);
-			break;
-		}
-		processCommand(line,OptionsParser);
 
+		executed = executeCommand(line,OptionsParser);
+		if(!executed.empty())
+			continue;
 
 		if(linenoiseCtrlJPressed()) {
 			prompt = prompt_more;
@@ -114,23 +114,38 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 			linenoiseHistoryAdd(line.c_str());
 			linenoiseHistorySave(history_name.c_str());
 		}
-
-		free(c_line);
 		// Repeat
 	}
 	return 0;
 }
 
-void Interpreter::processCommand(const string& cmd, CommonOptionsParser& OptionsParser)
+// Returns a string containing the command executed. Empty string when no command was executed
+string Interpreter::executeCommand(const string& cmd_str, CommonOptionsParser& OptionsParser)
 {
-	if (cmd.size() && cmd[0] == '/') {
-		cout << "Unreconized command: "<< cmd << endl;;
+	if (cmd_str[0] == '/' && cmd_str.size()) {
+		string str = cmd_str.substr(1, cmd_str.size()-1);
+		unique_ptr<Command> cmd = unique_ptr<Command>(CommandFactory::create(str));
+		if(!cmd) {
+			cerr << "Unrecognized command: " << cmd_str
+			<<". Try typing /help for a list of available commands." << endl;
+		}else if(!cmd->execute())
+			cerr << "Failed to execute command: " << cmd->str() << endl;
+		return cmd_str;
 	}
+	return "";
 }
 
 
 Interpreter::Interpreter() {
 
+}
+
+
+Interpreter::Command*
+Interpreter::CommandFactory::create(const string& cmd){
+	if(cmd == "help")
+		return new Help;
+	return nullptr;
 }
 
 } /* namespace jcut */
