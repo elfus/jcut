@@ -47,10 +47,9 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 	}
 
 	llvm::Function *currentFunction = mModule->getFunction(mCurrentFuncCall);
-	if( currentFunction == nullptr) {
-		cout << "Function not found!: " << mCurrentFuncCall << endl;
-	}
-	assert(currentFunction != nullptr && "Function not found!");
+	if( currentFunction == nullptr)
+		throw JCUTException("VisitFunctionArgument: Function "+mCurrentFuncCall+"() was not found in the C source code");
+
 	llvm::Function::arg_iterator arg_it = currentFunction->arg_begin();
 
 	unsigned i = 0;
@@ -186,10 +185,8 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 	else
 		funcToBeCalled = mModule->getFunction(func_name);
 
-	if( funcToBeCalled == nullptr) {
-		cout << "Function not found!: " << func_name << endl;
-	}
-	assert(funcToBeCalled != nullptr && "Function not found!");
+	if( funcToBeCalled == nullptr)
+		throw JCUTException("VisitFunctionCall: Function "+mCurrentFuncCall+"() was not found in the C source code");
 
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 
