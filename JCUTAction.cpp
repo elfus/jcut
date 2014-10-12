@@ -76,7 +76,7 @@ void JCUTAction::EndSourceFileAction() {
 		try {
 			TestDriver driver;
 			if(mUseInterpreterInput) {
-				JCUTException::mExceptionSource = "jcut interpreter";
+				JCUTException::mExceptionSource = "jcut";
 				driver.tokenize(mInterpreterInput.c_str());
 			}
 			else {

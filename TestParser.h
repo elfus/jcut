@@ -43,7 +43,7 @@ public:
     virtual const char* what() const throw () {
     	stringstream ss;
     	if(!mExceptionSource.empty())
-    		ss << mExceptionSource << ": ";
+    		ss << mExceptionSource << ":";
     	ss << mMsg;
         return ss.str().c_str();
     }

@@ -44,9 +44,10 @@ int main(int argc, const char **argv, char * const *envp)
 	// Initialize the JIT Engine only once
 	llvm::InitializeNativeTarget();
 
+	jcut::Interpreter interpreter;
 	if(TestFileOpt.size())
-		return jcut::batchMode(OptionsParser);
+		return interpreter.batchMode(OptionsParser);
 	else
-		return jcut::interpreterMode(OptionsParser);
+		return interpreter.mainLoop(OptionsParser);
 }
 

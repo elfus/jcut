@@ -32,7 +32,7 @@ UnexpectedToken::UnexpectedToken(tp::Token token, string expected)
 const char* UnexpectedToken::what() const throw () {
 	stringstream ss;
 	if(!mExceptionSource.empty())
-		ss << mExceptionSource <<": ";
+		ss << mExceptionSource <<":";
 	ss << mToken.mLine << ":" << mToken.mColumn <<": UnexpectedToken: ";
 	ss << mToken.mLexeme << ". ";
 	if(!mExpected.empty())
