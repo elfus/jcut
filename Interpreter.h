@@ -41,9 +41,12 @@ class Command {
 private:
 	std::string name;
 	std::string desc;
+protected:
+	CommonOptionsParser& mOpp;
 public:
 	Command(const Command&) = delete;
-	Command(const std::string& n, const std::string& d) : name(n), desc(d) {}
+	Command(const std::string& n, const std::string& d,
+			CommonOptionsParser& opp) : name(n), desc(d), mOpp(opp) {}
 	virtual ~Command(){}
 
 	virtual bool execute() {return true;}
@@ -52,57 +55,58 @@ public:
 
 class Help : public Command{
 public:
-	Help() : Command("/help",
-			"Lists all the available options for the jcut interpreter.") {}
+	Help(CommonOptionsParser& opp) : Command("/help",
+			"Lists all the available options for the jcut interpreter.", opp) {}
 	bool execute();
 };
 
 class Exit : public Command{
 public:
-	Exit() : Command("/exit", "Exits the jcut interpreter.") {}
+	Exit(CommonOptionsParser& opp) : Command("/exit", "Exits the jcut interpreter.", opp) {}
 };
 
 class Pwd : public Command{
 public:
-	Pwd() : Command("/pwd", "Prints the working directory where jcut is being run.") {}
+	Pwd(CommonOptionsParser& opp) : Command("/pwd", "Prints the working directory where jcut is being run.", opp) {}
 	bool execute();
 };
 
 class Load : public Command{
 public:
-	Load() : Command("/load", "Loads all the specified source files separated by a space.") {}
+	Load(CommonOptionsParser& opp) : Command("/load", "Loads all the specified source files separated by a space.", opp) {}
 	bool execute() { return false;}
 };
 
 class Unload : public Command{
 public:
-	Unload() : Command("/unload", "Removes the specified C source files from jcut memory.") {}
+	Unload(CommonOptionsParser& opp) : Command("/unload", "Removes the specified C source files from jcut memory.", opp) {}
 	bool execute() { return false;}
 };
 
 class Ls : public Command{
 public:
-	Ls() : Command("/ls", "Lists all the functions for all the loaded C source files.") {}
+	Ls(CommonOptionsParser& opp) : Command("/ls", "Lists all the functions for all the loaded C source files.", opp) {}
 	bool execute();
 };
 
 class CommandFactory {
 	friend class Help;
 private:
-	CommandFactory() {
+	CommandFactory(CommonOptionsParser& opp) : mOpp(opp) {
 		// Every time a new command is added make sure you add an entry here.
-		registered_cmds["/help"] = unique_ptr<Command>(new Help);
-		registered_cmds["/exit"] = unique_ptr<Command>(new Exit);
-		registered_cmds["/pwd"] = unique_ptr<Command>(new Pwd);
-		registered_cmds["/ls"] = unique_ptr<Command>(new Ls);
-		registered_cmds["/load"] = unique_ptr<Command>(new Load);
-		registered_cmds["/unload"] = unique_ptr<Command>(new Unload);
+		registered_cmds["/help"] = unique_ptr<Command>(new Help(mOpp));
+		registered_cmds["/exit"] = unique_ptr<Command>(new Exit(mOpp));
+		registered_cmds["/pwd"] = unique_ptr<Command>(new Pwd(mOpp));
+		registered_cmds["/ls"] = unique_ptr<Command>(new Ls(mOpp));
+		registered_cmds["/load"] = unique_ptr<Command>(new Load(mOpp));
+		registered_cmds["/unload"] = unique_ptr<Command>(new Unload(mOpp));
 	}
 
 	std::map<std::string,unique_ptr<Command>> registered_cmds;
 	static unique_ptr<CommandFactory> factory;
+	CommonOptionsParser& mOpp;
 public:
-	static CommandFactory& instance();
+	static CommandFactory& instance(CommonOptionsParser& OptionsParser);
 	Command* create(const string& cmd);
 };
 

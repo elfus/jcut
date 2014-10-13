@@ -125,7 +125,7 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 string Interpreter::executeCommand(const string& cmd_str, CommonOptionsParser& OptionsParser)
 {
 	if (cmd_str[0] == '/' && cmd_str.size()) {
-		Command* cmd = CommandFactory::instance().create(cmd_str);
+		Command* cmd = CommandFactory::instance(OptionsParser).create(cmd_str);
 		if(!cmd) {
 			cerr << "Unrecognized command: " << cmd_str
 			<<". Try typing /help for a list of available commands." << endl;
@@ -139,7 +139,7 @@ string Interpreter::executeCommand(const string& cmd_str, CommonOptionsParser& O
 bool Help::execute() {
 	cout << "jcut interpreter available commands:" << endl << endl;
 
-	CommandFactory& f = CommandFactory::instance();
+	CommandFactory& f = CommandFactory::instance(mOpp);
 	for(auto it = f.registered_cmds.begin(); it != f.registered_cmds.end(); ++it) {
 		const unique_ptr<Command>& p = (*it).second;
 		cout << "\t" << p->name << " - " << p->desc << endl;
@@ -163,11 +163,11 @@ bool Ls::execute() {
 
 unique_ptr<CommandFactory> CommandFactory::factory(nullptr);
 
-CommandFactory& CommandFactory::instance()
+CommandFactory& CommandFactory::instance(CommonOptionsParser& OptionsParser)
 {
 	if(factory)
 		return *(factory.get());
-	factory = unique_ptr<CommandFactory>(new CommandFactory);
+	factory = unique_ptr<CommandFactory>(new CommandFactory(OptionsParser));
 	return *(factory.get());
 }
 
