@@ -16,6 +16,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <memory>
 #include "clang/CodeGen/CodeGenAction.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTConsumer.h"
@@ -56,42 +57,52 @@ public:
 
 /////////
 class LsFunctionsVisitor : public RecursiveASTVisitor<LsFunctionsVisitor> {
+private:
+	std::string mCurrentFile;
 public:
-	LsFunctionsVisitor() {}
+	LsFunctionsVisitor(const std::string str) : mCurrentFile(str) {}
 	virtual ~LsFunctionsVisitor() {}
 	virtual bool VisitFunctionDecl(FunctionDecl* D){
-		std::stringstream ss;
-		ss << "\t" << D->getCallResultType().getAsString() << " ";
-		ss << "\t" << D->getQualifiedNameAsString() << "(";
-		FunctionDecl::param_iterator i = nullptr;
-		for( i = D->param_begin(); i !=D->param_end(); ++i) {
-			ss << (*i)->getType().getAsString() << " ";
-			ss << (*i)->getFirstDecl()->getNameAsString() << ", ";
+		SourceLocation sl = D->getLocation();
+		SourceManager& m = D->getASTContext().getSourceManager();
+		std::string source_location = m.getFilename(sl).str();
+		if(mCurrentFile == source_location) {
+			std::stringstream ss;
+			ss << "\t" << D->getCallResultType().getAsString() << " ";
+			ss << "\t" << D->getQualifiedNameAsString() << "(";
+			FunctionDecl::param_iterator i = nullptr;
+			for( i = D->param_begin(); i !=D->param_end(); ++i) {
+				ss << (*i)->getType().getAsString() << " ";
+				ss << (*i)->getFirstDecl()->getNameAsString() << ", ";
+			}
+			std::string str = ss.str();
+			str = str.substr(0,str.find_last_of(","));
+			str += ");";
+			std::cout << str << std::endl;
 		}
-		std::string str = ss.str();
-		str = str.substr(0,str.find_last_of(","));
-		str += ")";
-		std::cout << str << std::endl;
 		return true;
 	}
 };
 
 class LsFunctionsConsumer : public ASTConsumer {
 public:
-	LsFunctionsConsumer() {}
+	LsFunctionsConsumer(const std::string s) {
+		visitor = std::unique_ptr<LsFunctionsVisitor>(new LsFunctionsVisitor(s));
+	}
 	virtual ~LsFunctionsConsumer() {}
 	virtual void HandleTranslationUnit(ASTContext& C) {
-		visitor.TraverseTranslationUnitDecl(C.getTranslationUnitDecl());
+		visitor->TraverseTranslationUnitDecl(C.getTranslationUnitDecl());
+		std::cout << std::endl;
 	}
 private:
-	LsFunctionsVisitor visitor;
+	std::unique_ptr<LsFunctionsVisitor> visitor;
 };
 
 class LsFunctionsAction : public ASTFrontendAction {
 	virtual ASTConsumer* CreateASTConsumer(
 			clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
 		std::cout << InFile.str() << ":" << std::endl;
-		return new LsFunctionsConsumer;
+		return new LsFunctionsConsumer(InFile.str());
 	}
 };
 ////////
