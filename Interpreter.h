@@ -26,7 +26,8 @@ namespace jcut {
 
 class Interpreter {
 private:
-	string executeCommand(const std::string& cmd, CommonOptionsParser& OptionsParser);
+	bool executeCommand(const std::string& cmd,
+			CommonOptionsParser& OptionsParser, std::string& final_cmd);
 	static void completionCallBack(const char * line, linenoiseCompletions *lc);
 
 public:
@@ -38,17 +39,18 @@ public:
 
 class Command {
 	friend class Help;
-private:
-	std::string name;
-	std::string desc;
 protected:
 	CommonOptionsParser& mOpp;
+	std::vector<std::string> mArgs;
 public:
+	std::string name;
+	std::string desc;
 	Command(const Command&) = delete;
 	Command(const std::string& n, const std::string& d,
-			CommonOptionsParser& opp) : name(n), desc(d), mOpp(opp) {}
+			CommonOptionsParser& opp) : mOpp(opp), name(n), desc(d) {}
 	virtual ~Command(){}
 
+	void setArguments(const std::vector<std::string>& args) { mArgs = args; }
 	virtual bool execute() {return true;}
 	std::string str() const { return name;}
 };
@@ -80,7 +82,7 @@ public:
 class Unload : public Command{
 public:
 	Unload(CommonOptionsParser& opp) : Command("/unload", "Removes the specified C source files from jcut memory.", opp) {}
-	bool execute() { return false;}
+	bool execute();
 };
 
 class Ls : public Command{
@@ -102,6 +104,7 @@ private:
 		registered_cmds["/unload"] = unique_ptr<Command>(new Unload(mOpp));
 	}
 
+	std::vector<std::string> parseArguments(const std::string&);
 	std::map<std::string,unique_ptr<Command>> registered_cmds;
 	static unique_ptr<CommandFactory> factory;
 	CommonOptionsParser& mOpp;

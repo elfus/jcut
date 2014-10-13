@@ -15,6 +15,8 @@
 
 #include "Interpreter.h"
 #include "JCUTAction.h"
+// used for accesing the exceptions, @todo move Exception classes to their own sourc file
+#include "TestParser.h"
 
 using namespace std;
 using namespace clang;
@@ -89,6 +91,7 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 					Interpreter::completionCallBack));
 	jcut::JCUTAction::mUseInterpreterInput = true;
 	string executed = "";
+	bool success = false;
 
 	while(executed!="/exit" && (c_line = linenoise(prompt.c_str())) != nullptr) {
 		unique_ptr<char> guard(c_line);// free memory a la C++ :)
@@ -100,8 +103,8 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 			linenoiseHistorySave(history_name.c_str());
 		}
 
-		executed = executeCommand(line,OptionsParser);
-		if(!executed.empty())
+		success = executeCommand(line,OptionsParser, executed);
+		if(success)
 			continue;
 
 		if(linenoiseCtrlJPressed()) {
@@ -121,19 +124,32 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 	return 0;
 }
 
-// Returns a string containing the command executed. Empty string when no command was executed
-string Interpreter::executeCommand(const string& cmd_str, CommonOptionsParser& OptionsParser)
+/**
+ *
+ * @param[in] final_cmd Will contain the command executed
+ *
+ * @return true when cmd_str is a Command. The Command may or may not succeed.
+ */
+bool Interpreter::executeCommand(const string& cmd_str,
+		CommonOptionsParser& OptionsParser, std::string& final_cmd)
 {
+	final_cmd = "";
+
 	if (cmd_str[0] == '/' && cmd_str.size()) {
 		Command* cmd = CommandFactory::instance(OptionsParser).create(cmd_str);
+
 		if(!cmd) {
 			cerr << "Unrecognized command: " << cmd_str
 			<<". Try typing /help for a list of available commands." << endl;
-		}else if(!cmd->execute())
-			cerr << "Failed to execute command: " << cmd->str() << endl;
-		return cmd_str;
+			return false;
+		}else {
+			if(!cmd->execute())
+				cerr << "Failed to execute command: " << cmd->str() << endl;
+			final_cmd = cmd->name;
+			return true;
+		}
 	}
-	return "";
+	return false;
 }
 
 bool Help::execute() {
@@ -157,6 +173,17 @@ bool Pwd::execute() {
 	return true;
 }
 
+bool Unload::execute() {
+
+	if(mArgs.empty())
+		return false;
+	cout << "Files to unload:" << endl;
+	for(const string& str : mArgs) {
+		cout << "\t" << str << endl;
+	}
+	return true;
+}
+
 bool Ls::execute() {
 	CompilationDatabase& CD = mOpp.getCompilations();
 	std::vector<std::string> Sources = mOpp.getSourcePathList();
@@ -170,6 +197,26 @@ bool Ls::execute() {
 
 unique_ptr<CommandFactory> CommandFactory::factory(nullptr);
 
+vector<string> CommandFactory::parseArguments(const string& str) {
+	vector<string> args;
+	int quoted = 0;
+	string tmp;
+	unsigned i = str.find_first_of(" ");
+	for(++i; i < str.size(); ++i) {
+		if(str[i] == '"')
+			++quoted;
+		if(quoted == 2)
+			quoted = 0;
+		tmp += str[i];
+		if((str[i] == ' ' || i == str.size()-1) && !quoted) {
+			args.push_back(tmp);
+			tmp.clear();
+		}
+	}
+	if(quoted)
+		throw JCUTException("Missing quotes for argument: "+tmp);
+	return args;
+}
 CommandFactory& CommandFactory::instance(CommonOptionsParser& OptionsParser)
 {
 	if(factory)
@@ -180,9 +227,21 @@ CommandFactory& CommandFactory::instance(CommonOptionsParser& OptionsParser)
 
 Command* CommandFactory::create(const string& cmd)
 {
-	auto it = registered_cmds.find(cmd);
-	if(it != registered_cmds.end())
-		return registered_cmds[cmd].get();
+	// Some commands take arguments, i.e. load or unload, others don't
+	const string c_ndx = cmd.substr(0, cmd.find_first_of(" "));
+	auto it = registered_cmds.find(c_ndx);
+	if(it != registered_cmds.end()) {
+		Command* c = registered_cmds[c_ndx].get();
+		vector<string> args;
+		try {
+			args = parseArguments(cmd);
+		}catch(const JCUTException& e) {
+			cerr << e.what() << endl;
+			args.clear();
+		}
+		c->setArguments(args);
+		return c;
+	}
 	return nullptr;
 }
 
