@@ -100,7 +100,7 @@ private:
 	}
 
 	std::map<std::string,unique_ptr<Command>> registered_cmds;
-	static CommandFactory factory;
+	static unique_ptr<CommandFactory> factory;
 public:
 	static CommandFactory& instance();
 	Command* create(const string& cmd);

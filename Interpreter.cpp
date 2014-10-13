@@ -161,11 +161,14 @@ bool Ls::execute() {
 	return false;
 }
 
-CommandFactory CommandFactory::factory;
+unique_ptr<CommandFactory> CommandFactory::factory(nullptr);
 
 CommandFactory& CommandFactory::instance()
 {
-	return factory;
+	if(factory)
+		return *(factory.get());
+	factory = unique_ptr<CommandFactory>(new CommandFactory);
+	return *(factory.get());
 }
 
 Command* CommandFactory::create(const string& cmd)
