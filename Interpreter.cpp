@@ -209,6 +209,7 @@ vector<string> CommandFactory::parseArguments(const string& str) {
 			quoted = 0;
 		tmp += str[i];
 		if((str[i] == ' ' || i == str.size()-1) && !quoted) {
+			tmp = tmp.substr(0, tmp.size()-1);
 			args.push_back(tmp);
 			tmp.clear();
 		}
