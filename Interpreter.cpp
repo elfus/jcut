@@ -199,6 +199,13 @@ int Interpreter::mainLoop() {
 		jcut::JCUTAction::mInterpreterInput += line;
 		if(prompt == prompt_input) {
 			int argc = getArgc();
+			// 2 = the binary and --
+			if(argc == 2) {
+				cout << "There are no loaded files. Try using the /load command." << endl;
+				jcut::JCUTAction::mInterpreterInput.clear();
+				continue;
+			}
+
 			const char** argv = cloneArgv();
 			runAction<JCUTAction>(argc, argv);
 			freeArgv(getArgc(), argv);
