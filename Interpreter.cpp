@@ -158,7 +158,14 @@ bool Pwd::execute() {
 }
 
 bool Ls::execute() {
-	return false;
+	CompilationDatabase& CD = mOpp.getCompilations();
+	std::vector<std::string> Sources = mOpp.getSourcePathList();
+	ClangTool Tool(CD, Sources);
+	FrontendActionFactory* ls_functions = newFrontendActionFactory<LsFunctionsAction>();
+	int failed = Tool.run(ls_functions);
+	if(failed)
+		return false;
+	return true;
 }
 
 unique_ptr<CommandFactory> CommandFactory::factory(nullptr);

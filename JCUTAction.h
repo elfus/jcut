@@ -13,8 +13,13 @@
 #ifndef JCUTACTION_H_
 #define JCUTACTION_H_
 
+#include <iostream>
 #include <string>
+#include <sstream>
 #include "clang/CodeGen/CodeGenAction.h"
+#include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTConsumer.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 
 namespace clang {
 	class CompilerInstance;
@@ -23,7 +28,7 @@ namespace llvm {
 	class StringRef;
 }
 
-using clang::CompilerInstance;
+using namespace clang;
 using llvm::StringRef;
 
 namespace jcut {
@@ -48,6 +53,48 @@ public:
 	bool BeginSourceFileAction(CompilerInstance &CI, StringRef Filename);
 	void EndSourceFileAction();
 };
+
+/////////
+class LsFunctionsVisitor : public RecursiveASTVisitor<LsFunctionsVisitor> {
+public:
+	LsFunctionsVisitor() {}
+	virtual ~LsFunctionsVisitor() {}
+	virtual bool VisitFunctionDecl(FunctionDecl* D){
+		std::stringstream ss;
+		ss << "\t" << D->getCallResultType().getAsString() << " ";
+		ss << "\t" << D->getQualifiedNameAsString() << "(";
+		FunctionDecl::param_iterator i = nullptr;
+		for( i = D->param_begin(); i !=D->param_end(); ++i) {
+			ss << (*i)->getType().getAsString() << " ";
+			ss << (*i)->getFirstDecl()->getNameAsString() << ", ";
+		}
+		std::string str = ss.str();
+		str = str.substr(0,str.find_last_of(","));
+		str += ")";
+		std::cout << str << std::endl;
+		return true;
+	}
+};
+
+class LsFunctionsConsumer : public ASTConsumer {
+public:
+	LsFunctionsConsumer() {}
+	virtual ~LsFunctionsConsumer() {}
+	virtual void HandleTranslationUnit(ASTContext& C) {
+		visitor.TraverseTranslationUnitDecl(C.getTranslationUnitDecl());
+	}
+private:
+	LsFunctionsVisitor visitor;
+};
+
+class LsFunctionsAction : public ASTFrontendAction {
+	virtual ASTConsumer* CreateASTConsumer(
+			clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
+		std::cout << InFile.str() << ":" << std::endl;
+		return new LsFunctionsConsumer;
+	}
+};
+////////
 
 } /* namespace jcut */
 
