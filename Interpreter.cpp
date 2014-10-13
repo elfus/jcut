@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <set>
 
 #include "llvm/Support/FileSystem.h"
 
@@ -36,6 +37,27 @@ int Interpreter::batchMode(int argc, const char **argv) {
 	// A clang tool can run over a number of sources in the same process...
 	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
 
+	// Remove duplicates to correct a strange behavior:
+	// The CommonOptionsParser uses a positional argument to dect the source files
+	// and then builds a list with those files. The problem is that we run
+	// this method many times and that list is not cleared, meaning that the
+	// same source file is added over and over again. Thus executing the same
+	// actions on the same file several times because it was repeated.
+	// The workaround for this is just removing the duplicate source files.
+	sort(Sources.begin(), Sources.end());
+	Sources.erase(unique(Sources.begin(), Sources.end(), [&](const string& a, const string& b) {
+		if(a.find(b) != string::npos)
+			return true;
+		if(b.find(a) != string::npos)
+			return true;
+		return false;
+	}
+	), Sources.end());
+	cout << "SOURCES: ";
+	for(auto str : Sources)
+		cout << str << " ";
+	cout << endl;
+
 	// We hand the CompilationDatabase we created and the sources to run over into
 	// the tool constructor.
 	ClangTool Tool(CD, Sources);
@@ -55,7 +77,7 @@ int Interpreter::batchMode(int argc, const char **argv) {
 	return jcut::TotalTestsFailed;
 }
 
-int Interpreter::cloneArgc() const
+int Interpreter::getArgc() const
 {
 	return mArgc;
 }
@@ -68,6 +90,7 @@ void printArgv(int argc, const char** argv) {
 	}
 	cout << endl;
 }
+
 const char** Interpreter::cloneArgv() const
 {
 	const char ** argv = new const char*[mArgc];
@@ -76,12 +99,15 @@ const char** Interpreter::cloneArgv() const
 		argv[i] = new char[tmp.size()+1];
 		memcpy(const_cast<char*>(argv[i]), tmp.c_str(), tmp.size()+1);
 	}
+	cout << endl;
 	return argv;
 }
 
 void Interpreter::freeArgv(int argc, const char** argv)
 {
 	for(int i=0; i<argc; ++i) {
+		int size = strlen(argv[i]);
+		memset(const_cast<char*>(argv[i]),0, size);
 		delete [] argv[i];
 		argv[i] = nullptr;
 	}
@@ -154,10 +180,10 @@ int Interpreter::mainLoop() {
 
 		jcut::JCUTAction::mInterpreterInput += line;
 		if(prompt == prompt_input) {
-			int argc = cloneArgc();
+			int argc = getArgc();
 			const char** argv = cloneArgv();
 			batchMode(argc, argv);
-			freeArgv(argc, argv);
+			freeArgv(getArgc(), argv);
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
 	}
@@ -225,15 +251,24 @@ bool Unload::execute() {
 }
 
 bool Ls::execute() {
-	int argc = mInt.cloneArgc();
+	int argc = mInt.getArgc();
 	const char ** argv = mInt.cloneArgv();
 	CommonOptionsParser OptionsParser(argc, argv);
 	CompilationDatabase& CD = OptionsParser.getCompilations();
 	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
+	sort(Sources.begin(), Sources.end());
+		Sources.erase(unique(Sources.begin(), Sources.end(), [&](const string& a, const string& b) {
+			if(a.find(b) != string::npos)
+				return true;
+			if(b.find(a) != string::npos)
+				return true;
+			return false;
+		}
+		), Sources.end());
 	ClangTool Tool(CD, Sources);
 	FrontendActionFactory* ls_functions = newFrontendActionFactory<LsFunctionsAction>();
 	int failed = Tool.run(ls_functions);
-	mInt.freeArgv(argc, argv);
+	mInt.freeArgv(mInt.getArgc(), argv);
 	if(failed)
 		return false;
 	return true;

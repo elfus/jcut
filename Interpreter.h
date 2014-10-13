@@ -38,7 +38,7 @@ public:
 
 	int batchMode(int argc, const char **argv);
 	int mainLoop();
-	int cloneArgc() const;
+	int getArgc() const;
 	const char** cloneArgv() const;
 	void freeArgv(int argc, const char** argv);
 };
