@@ -6,6 +6,7 @@
  */
 
 #include <iostream>
+#include <cstring>
 
 #include "llvm/Support/FileSystem.h"
 
@@ -24,7 +25,7 @@ using namespace clang::tooling;
 
 namespace jcut {
 
-int Interpreter::batchMode(int &argc, const char **argv) {
+int Interpreter::batchMode(int argc, const char **argv) {
 	// CommonOptionsParser constructor will parse arguments and create a
 	// CompilationDatabase.  In case of error it will terminate the program.
 	CommonOptionsParser OptionsParser(argc, argv);
@@ -54,19 +55,37 @@ int Interpreter::batchMode(int &argc, const char **argv) {
 	return jcut::TotalTestsFailed;
 }
 
-int Interpreter::cloneArgc()
+int Interpreter::cloneArgc() const
 {
 	return mArgc;
 }
-const char** Interpreter::cloneArgv()
+
+void printArgv(int argc, const char** argv) {
+	cout << "COPY: ";
+	for(int i=0; i<argc; ++i) {
+		string tmp(argv[i]);
+		cout << tmp << " ";
+	}
+	cout << endl;
+}
+const char** Interpreter::cloneArgv() const
 {
 	const char ** argv = new const char*[mArgc];
 	for(int i=0; i<mArgc; ++i) {
 		string tmp(mArgv[i]);
 		argv[i] = new char[tmp.size()+1];
+		memcpy(const_cast<char*>(argv[i]), tmp.c_str(), tmp.size()+1);
 	}
-
 	return argv;
+}
+
+void Interpreter::freeArgv(int argc, const char** argv)
+{
+	for(int i=0; i<argc; ++i) {
+		delete [] argv[i];
+		argv[i] = nullptr;
+	}
+	delete [] argv;
 }
 
 void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc)
@@ -94,7 +113,7 @@ void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc
 
 }
 
-int Interpreter::mainLoop(int &argc, const char **argv) {
+int Interpreter::mainLoop() {
 	cout << "jcut interpreter!" << endl;
 	cout << "For a complete list of available commands type /help" << endl << endl;
 	char * c_line = nullptr;
@@ -121,7 +140,7 @@ int Interpreter::mainLoop(int &argc, const char **argv) {
 			linenoiseHistorySave(history_name.c_str());
 		}
 
-		success = executeCommand(line,argc, argv, executed);
+		success = executeCommand(line, *this, executed);
 		if(success)
 			continue;
 
@@ -135,7 +154,10 @@ int Interpreter::mainLoop(int &argc, const char **argv) {
 
 		jcut::JCUTAction::mInterpreterInput += line;
 		if(prompt == prompt_input) {
+			int argc = cloneArgc();
+			const char** argv = cloneArgv();
 			batchMode(argc, argv);
+			freeArgv(argc, argv);
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
 	}
@@ -149,12 +171,12 @@ int Interpreter::mainLoop(int &argc, const char **argv) {
  * @return true when cmd_str is a Command. The Command may or may not succeed.
  */
 bool Interpreter::executeCommand(const string& cmd_str,
-		int argc, const char **argv, std::string& final_cmd)
+		Interpreter& i, std::string& final_cmd)
 {
 	final_cmd = "";
 
 	if (cmd_str[0] == '/' && cmd_str.size()) {
-		Command* cmd = CommandFactory::instance(argc, argv).create(cmd_str);
+		Command* cmd = CommandFactory::instance(i).create(cmd_str);
 
 		if(!cmd) {
 			cerr << "Unrecognized command: " << cmd_str
@@ -173,7 +195,7 @@ bool Interpreter::executeCommand(const string& cmd_str,
 bool Help::execute() {
 	cout << "jcut interpreter available commands:" << endl << endl;
 
-	CommandFactory& f = CommandFactory::instance(mArgc, mArgv);
+	CommandFactory& f = CommandFactory::instance(mInt);
 	for(auto it = f.registered_cmds.begin(); it != f.registered_cmds.end(); ++it) {
 		const unique_ptr<Command>& p = (*it).second;
 		cout << "\t" << p->name << " - " << p->desc << endl;
@@ -203,12 +225,15 @@ bool Unload::execute() {
 }
 
 bool Ls::execute() {
-	CommonOptionsParser OptionsParser(mArgc, mArgv);
+	int argc = mInt.cloneArgc();
+	const char ** argv = mInt.cloneArgv();
+	CommonOptionsParser OptionsParser(argc, argv);
 	CompilationDatabase& CD = OptionsParser.getCompilations();
 	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
 	ClangTool Tool(CD, Sources);
 	FrontendActionFactory* ls_functions = newFrontendActionFactory<LsFunctionsAction>();
 	int failed = Tool.run(ls_functions);
+	mInt.freeArgv(argc, argv);
 	if(failed)
 		return false;
 	return true;
@@ -237,11 +262,11 @@ vector<string> CommandFactory::parseArguments(const string& str) {
 		throw JCUTException("Missing quotes for argument: "+tmp);
 	return args;
 }
-CommandFactory& CommandFactory::instance(int &argc, const char **argv)
+CommandFactory& CommandFactory::instance(Interpreter& i)
 {
 	if(factory)
 		return *(factory.get());
-	factory = unique_ptr<CommandFactory>(new CommandFactory(argc, argv));
+	factory = unique_ptr<CommandFactory>(new CommandFactory(i));
 	return *(factory.get());
 }
 

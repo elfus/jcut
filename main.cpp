@@ -56,6 +56,6 @@ int main(int argc, const char **argv, char * const *envp)
 	if(isTestFileProvided(argc, argv))
 		return interpreter.batchMode(argc, argv);
 	else
-		return interpreter.mainLoop(argc, argv);
+		return interpreter.mainLoop();
 }
 

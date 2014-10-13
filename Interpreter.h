@@ -30,30 +30,30 @@ private:
 	const int mArgc;
 	const char ** mArgv;
 	bool executeCommand(const std::string& cmd,
-			const int argc, const char **argv, std::string& final_cmd);
+			Interpreter& i, std::string& final_cmd);
 	static void completionCallBack(const char * line, linenoiseCompletions *lc);
 
 public:
 	Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv(argv) {}
 
-	int batchMode(int &argc, const char **argv);
-	int mainLoop(int &argc, const char **argv);
-	int cloneArgc();
-	const char** cloneArgv();
+	int batchMode(int argc, const char **argv);
+	int mainLoop();
+	int cloneArgc() const;
+	const char** cloneArgv() const;
+	void freeArgv(int argc, const char** argv);
 };
 
 class Command {
 	friend class Help;
 protected:
-	int mArgc;
-	const char ** mArgv;
+	Interpreter& mInt;
 	std::vector<std::string> mArgs;
 public:
 	std::string name;
 	std::string desc;
 	Command(const Command&) = delete;
 	Command(const std::string& n, const std::string& d,
-			const int &argc, const char **argv) : mArgc(argc), mArgv(argv), name(n), desc(d) {}
+			Interpreter& i) : mInt(i), name(n), desc(d) {}
 	virtual ~Command(){}
 
 	void setArguments(const std::vector<std::string>& args) { mArgs = args; }
@@ -63,60 +63,59 @@ public:
 
 class Help : public Command{
 public:
-	Help(int &argc, const char **argv) : Command("/help",
-			"Lists all the available options for the jcut interpreter.", argc, argv) {}
+	Help(Interpreter& i) : Command("/help",
+			"Lists all the available options for the jcut interpreter.", i) {}
 	bool execute();
 };
 
 class Exit : public Command{
 public:
-	Exit(int &argc, const char **argv) : Command("/exit", "Exits the jcut interpreter.", argc, argv) {}
+	Exit(Interpreter& i) : Command("/exit", "Exits the jcut interpreter.", i) {}
 };
 
 class Pwd : public Command{
 public:
-	Pwd(int &argc, const char **argv) : Command("/pwd", "Prints the working directory where jcut is being run.", argc, argv) {}
+	Pwd(Interpreter& i) : Command("/pwd", "Prints the working directory where jcut is being run.", i) {}
 	bool execute();
 };
 
 class Load : public Command{
 public:
-	Load(int &argc, const char **argv) : Command("/load", "Loads all the specified source files separated by a space.", argc, argv) {}
+	Load(Interpreter& i) : Command("/load", "Loads all the specified source files separated by a space.",i) {}
 	bool execute() { return false;}
 };
 
 class Unload : public Command{
 public:
-	Unload(int &argc, const char **argv) : Command("/unload", "Removes the specified C source files from jcut memory.", argc, argv) {}
+	Unload(Interpreter& i) : Command("/unload", "Removes the specified C source files from jcut memory.", i) {}
 	bool execute();
 };
 
 class Ls : public Command{
 public:
-	Ls(int &argc, const char **argv) : Command("/ls", "Lists all the functions for all the loaded C source files.", argc, argv) {}
+	Ls(Interpreter& i) : Command("/ls", "Lists all the functions for all the loaded C source files.", i) {}
 	bool execute();
 };
 
 class CommandFactory {
 	friend class Help;
 private:
-	CommandFactory(int &argc, const char **argv) : mArgc(argc), mArgv(argv) {
+	CommandFactory(Interpreter& i) : mInterpreter(i) {
 		// Every time a new command is added make sure you add an entry here.
-		registered_cmds["/help"] = unique_ptr<Command>(new Help(mArgc, mArgv));
-		registered_cmds["/exit"] = unique_ptr<Command>(new Exit(mArgc, mArgv));
-		registered_cmds["/pwd"] = unique_ptr<Command>(new Pwd(mArgc, mArgv));
-		registered_cmds["/ls"] = unique_ptr<Command>(new Ls(mArgc, mArgv));
-		registered_cmds["/load"] = unique_ptr<Command>(new Load(mArgc, mArgv));
-		registered_cmds["/unload"] = unique_ptr<Command>(new Unload(mArgc, mArgv));
+		registered_cmds["/help"] = unique_ptr<Command>(new Help(i));
+		registered_cmds["/exit"] = unique_ptr<Command>(new Exit(i));
+		registered_cmds["/pwd"] = unique_ptr<Command>(new Pwd(i));
+		registered_cmds["/ls"] = unique_ptr<Command>(new Ls(i));
+		registered_cmds["/load"] = unique_ptr<Command>(new Load(i));
+		registered_cmds["/unload"] = unique_ptr<Command>(new Unload(i));
 	}
 
 	std::vector<std::string> parseArguments(const std::string&);
 	std::map<std::string,unique_ptr<Command>> registered_cmds;
 	static unique_ptr<CommandFactory> factory;
-	int mArgc;
-	const char ** mArgv;
+	Interpreter& mInterpreter;
 public:
-	static CommandFactory& instance(int &argc, const char **argv);
+	static CommandFactory& instance(Interpreter& i);
 	Command* create(const string& cmd);
 };
 
