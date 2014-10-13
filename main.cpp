@@ -18,6 +18,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "Interpreter.h"
+#include "JCUTAction.h"
 
 using namespace std;
 using namespace clang::tooling;
@@ -54,7 +55,7 @@ int main(int argc, const char **argv, char * const *envp)
 
 	jcut::Interpreter interpreter(argc, argv);
 	if(isTestFileProvided(argc, argv))
-		return interpreter.batchMode(argc, argv);
+		return interpreter.runAction<jcut::JCUTAction>(argc, argv);
 	else
 		return interpreter.mainLoop();
 }

@@ -26,7 +26,8 @@ using namespace clang::tooling;
 
 namespace jcut {
 
-int Interpreter::batchMode(int argc, const char **argv) {
+template <class T>
+int Interpreter::runAction(int argc, const char **argv) {
 	// CommonOptionsParser constructor will parse arguments and create a
 	// CompilationDatabase.  In case of error it will terminate the program.
 	CommonOptionsParser OptionsParser(argc, argv);
@@ -46,6 +47,7 @@ int Interpreter::batchMode(int argc, const char **argv) {
 	// The workaround for this is just removing the duplicate source files.
 	sort(Sources.begin(), Sources.end());
 	Sources.erase(unique(Sources.begin(), Sources.end(), [&](const string& a, const string& b) {
+		// @note we may want to get the absolute path for a file which only has its name
 		if(a.find(b) != string::npos)
 			return true;
 		if(b.find(a) != string::npos)
@@ -53,10 +55,6 @@ int Interpreter::batchMode(int argc, const char **argv) {
 		return false;
 	}
 	), Sources.end());
-	cout << "SOURCES: ";
-	for(auto str : Sources)
-		cout << str << " ";
-	cout << endl;
 
 	// We hand the CompilationDatabase we created and the sources to run over into
 	// the tool constructor.
@@ -71,10 +69,9 @@ int Interpreter::batchMode(int argc, const char **argv) {
 	if(failed)
 		return -1;
 
-	FrontendActionFactory* jcut_action = newFrontendActionFactory<JCUTAction>();
-	failed = Tool.run(jcut_action);
-
-	return jcut::TotalTestsFailed;
+	FrontendActionFactory* generic_action = newFrontendActionFactory<T>();
+	failed = Tool.run(generic_action);
+	return failed;
 }
 
 int Interpreter::getArgc() const
@@ -182,7 +179,7 @@ int Interpreter::mainLoop() {
 		if(prompt == prompt_input) {
 			int argc = getArgc();
 			const char** argv = cloneArgv();
-			batchMode(argc, argv);
+			runAction<JCUTAction>(argc, argv);
 			freeArgv(getArgc(), argv);
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
@@ -253,21 +250,7 @@ bool Unload::execute() {
 bool Ls::execute() {
 	int argc = mInt.getArgc();
 	const char ** argv = mInt.cloneArgv();
-	CommonOptionsParser OptionsParser(argc, argv);
-	CompilationDatabase& CD = OptionsParser.getCompilations();
-	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
-	sort(Sources.begin(), Sources.end());
-		Sources.erase(unique(Sources.begin(), Sources.end(), [&](const string& a, const string& b) {
-			if(a.find(b) != string::npos)
-				return true;
-			if(b.find(a) != string::npos)
-				return true;
-			return false;
-		}
-		), Sources.end());
-	ClangTool Tool(CD, Sources);
-	FrontendActionFactory* ls_functions = newFrontendActionFactory<LsFunctionsAction>();
-	int failed = Tool.run(ls_functions);
+	int failed = mInt.runAction<LsFunctionsAction>(argc, argv);
 	mInt.freeArgv(mInt.getArgc(), argv);
 	if(failed)
 		return false;

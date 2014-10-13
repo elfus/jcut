@@ -36,7 +36,9 @@ private:
 public:
 	Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv(argv) {}
 
-	int batchMode(int argc, const char **argv);
+	// Runs the SyntaxOnlyAction followed by the Action defined by T.
+	template<class T>
+	int runAction(int argc, const char **argv);
 	int mainLoop();
 	int getArgc() const;
 	const char** cloneArgv() const;
