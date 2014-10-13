@@ -24,10 +24,13 @@ using namespace clang::tooling;
 
 namespace jcut {
 
-int Interpreter::batchMode(CommonOptionsParser& OptionsParser) {
+int Interpreter::batchMode(int &argc, const char **argv) {
+	// CommonOptionsParser constructor will parse arguments and create a
+	// CompilationDatabase.  In case of error it will terminate the program.
+	CommonOptionsParser OptionsParser(argc, argv);
+
 	// Use OptionsParser.getCompilations() and OptionsParser.getSourcePathList()
 	// to retrieve CompilationDatabase and the list of input file paths.
-
 	CompilationDatabase& CD = OptionsParser.getCompilations();
 	// A clang tool can run over a number of sources in the same process...
 	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
@@ -49,6 +52,21 @@ int Interpreter::batchMode(CommonOptionsParser& OptionsParser) {
 	failed = Tool.run(jcut_action);
 
 	return jcut::TotalTestsFailed;
+}
+
+int Interpreter::cloneArgc()
+{
+	return mArgc;
+}
+const char** Interpreter::cloneArgv()
+{
+	const char ** argv = new const char*[mArgc];
+	for(int i=0; i<mArgc; ++i) {
+		string tmp(mArgv[i]);
+		argv[i] = new char[tmp.size()+1];
+	}
+
+	return argv;
 }
 
 void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc)
@@ -76,7 +94,7 @@ void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc
 
 }
 
-int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
+int Interpreter::mainLoop(int &argc, const char **argv) {
 	cout << "jcut interpreter!" << endl;
 	cout << "For a complete list of available commands type /help" << endl << endl;
 	char * c_line = nullptr;
@@ -103,7 +121,7 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 			linenoiseHistorySave(history_name.c_str());
 		}
 
-		success = executeCommand(line,OptionsParser, executed);
+		success = executeCommand(line,argc, argv, executed);
 		if(success)
 			continue;
 
@@ -117,7 +135,7 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
 
 		jcut::JCUTAction::mInterpreterInput += line;
 		if(prompt == prompt_input) {
-			batchMode(OptionsParser);
+			batchMode(argc, argv);
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
 	}
@@ -131,12 +149,12 @@ int Interpreter::mainLoop(CommonOptionsParser& OptionsParser) {
  * @return true when cmd_str is a Command. The Command may or may not succeed.
  */
 bool Interpreter::executeCommand(const string& cmd_str,
-		CommonOptionsParser& OptionsParser, std::string& final_cmd)
+		int argc, const char **argv, std::string& final_cmd)
 {
 	final_cmd = "";
 
 	if (cmd_str[0] == '/' && cmd_str.size()) {
-		Command* cmd = CommandFactory::instance(OptionsParser).create(cmd_str);
+		Command* cmd = CommandFactory::instance(argc, argv).create(cmd_str);
 
 		if(!cmd) {
 			cerr << "Unrecognized command: " << cmd_str
@@ -155,7 +173,7 @@ bool Interpreter::executeCommand(const string& cmd_str,
 bool Help::execute() {
 	cout << "jcut interpreter available commands:" << endl << endl;
 
-	CommandFactory& f = CommandFactory::instance(mOpp);
+	CommandFactory& f = CommandFactory::instance(mArgc, mArgv);
 	for(auto it = f.registered_cmds.begin(); it != f.registered_cmds.end(); ++it) {
 		const unique_ptr<Command>& p = (*it).second;
 		cout << "\t" << p->name << " - " << p->desc << endl;
@@ -185,8 +203,9 @@ bool Unload::execute() {
 }
 
 bool Ls::execute() {
-	CompilationDatabase& CD = mOpp.getCompilations();
-	std::vector<std::string> Sources = mOpp.getSourcePathList();
+	CommonOptionsParser OptionsParser(mArgc, mArgv);
+	CompilationDatabase& CD = OptionsParser.getCompilations();
+	std::vector<std::string> Sources = OptionsParser.getSourcePathList();
 	ClangTool Tool(CD, Sources);
 	FrontendActionFactory* ls_functions = newFrontendActionFactory<LsFunctionsAction>();
 	int failed = Tool.run(ls_functions);
@@ -218,11 +237,11 @@ vector<string> CommandFactory::parseArguments(const string& str) {
 		throw JCUTException("Missing quotes for argument: "+tmp);
 	return args;
 }
-CommandFactory& CommandFactory::instance(CommonOptionsParser& OptionsParser)
+CommandFactory& CommandFactory::instance(int &argc, const char **argv)
 {
 	if(factory)
 		return *(factory.get());
-	factory = unique_ptr<CommandFactory>(new CommandFactory(OptionsParser));
+	factory = unique_ptr<CommandFactory>(new CommandFactory(argc, argv));
 	return *(factory.get());
 }
 

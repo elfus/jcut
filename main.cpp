@@ -32,22 +32,30 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 cl::opt<string> TestFileOpt("t", cl::Optional,  cl::ValueRequired, cl::desc("Input test file"), cl::value_desc("filename"));
 cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
 
+bool isTestFileProvided(int argc, const char **argv) {
+	bool provided = false;
+	for(int i=0; i<argc; ++i) {
+		string tmp(argv[i]);
+		if(tmp == "-t") {
+			provided = true;
+			break;
+		}
+	}
+	return provided;
+}
+
 int main(int argc, const char **argv, char * const *envp)
 {
 	TestFileOpt.setCategory(JcutOptions);
 	DumpOpt.setCategory(JcutOptions);
 
-	// CommonOptionsParser constructor will parse arguments and create a
-	// CompilationDatabase.  In case of error it will terminate the program.
-	CommonOptionsParser OptionsParser(argc, argv);
-
 	// Initialize the JIT Engine only once
 	llvm::InitializeNativeTarget();
 
-	jcut::Interpreter interpreter;
-	if(TestFileOpt.size())
-		return interpreter.batchMode(OptionsParser);
+	jcut::Interpreter interpreter(argc, argv);
+	if(isTestFileProvided(argc, argv))
+		return interpreter.batchMode(argc, argv);
 	else
-		return interpreter.mainLoop(OptionsParser);
+		return interpreter.mainLoop(argc, argv);
 }
 
