@@ -27,7 +27,7 @@ namespace jcut {
 // @todo Keep a copy of the original command line!, argc and argv
 class Interpreter {
 private:
-	const int mArgc;
+	int mArgc;
 	const char ** mArgv;
 	bool executeCommand(const std::string& cmd,
 			Interpreter& i, std::string& final_cmd);
@@ -43,6 +43,7 @@ public:
 	int getArgc() const;
 	const char** cloneArgv() const;
 	void freeArgv(int argc, const char** argv);
+	bool removeFileFromArgv(const string& str);
 };
 
 class Command {

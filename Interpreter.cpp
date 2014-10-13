@@ -47,7 +47,6 @@ int Interpreter::runAction(int argc, const char **argv) {
 	// The workaround for this is just removing the duplicate source files.
 	sort(Sources.begin(), Sources.end());
 	Sources.erase(unique(Sources.begin(), Sources.end(), [&](const string& a, const string& b) {
-		// @note we may want to get the absolute path for a file which only has its name
 		if(a.find(b) != string::npos)
 			return true;
 		if(b.find(a) != string::npos)
@@ -94,6 +93,7 @@ const char** Interpreter::cloneArgv() const
 	for(int i=0; i<mArgc; ++i) {
 		string tmp(mArgv[i]);
 		argv[i] = new char[tmp.size()+1];
+		memset(const_cast<char*>(argv[i]), 0, tmp.size()+1);
 		memcpy(const_cast<char*>(argv[i]), tmp.c_str(), tmp.size()+1);
 	}
 	cout << endl;
@@ -103,12 +103,33 @@ const char** Interpreter::cloneArgv() const
 void Interpreter::freeArgv(int argc, const char** argv)
 {
 	for(int i=0; i<argc; ++i) {
-		int size = strlen(argv[i]);
+		int size = sizeof(argv[i]);
 		memset(const_cast<char*>(argv[i]),0, size);
 		delete [] argv[i];
 		argv[i] = nullptr;
 	}
 	delete [] argv;
+}
+
+bool Interpreter::removeFileFromArgv(const string& str)
+{
+	for(int i=0; i<mArgc; ++i) {
+		string tmp(mArgv[i]);
+		if(tmp.find(str) != string::npos) {
+			cout << "File " << mArgv[i] << " has been UNLOADED." << endl;
+			memset(const_cast<char*>(mArgv[i]),0, sizeof(mArgv[i]));
+			while(i < mArgc) {
+				if(i+1 == mArgc)
+					break;
+				memcpy(const_cast<char*>(mArgv[i]),
+						mArgv[i+1], strlen(mArgv[i+1])+1);
+				++i;
+			}
+			--mArgc;
+			return true;
+		}
+	}
+	return false;
 }
 
 void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc)
@@ -237,17 +258,26 @@ bool Pwd::execute() {
 }
 
 bool Unload::execute() {
-
-	if(mArgs.empty())
+	if(mArgs.empty()) {
+		cout << "No files were provided to unload" << endl;
 		return false;
-	cout << "Files to unload:" << endl;
+	}
+
 	for(const string& str : mArgs) {
 		cout << "\t" << str << endl;
+		if(!mInt.removeFileFromArgv(str))
+			cerr << "File " << str << " not loaded!" << endl;
 	}
 	return true;
 }
 
 bool Ls::execute() {
+	// 2 means, the binary name and the mythical --
+	if(mInt.getArgc() <= 2) {
+		cout << "There are no files loaded!" << endl;
+		return true;
+	}
+
 	int argc = mInt.getArgc();
 	const char ** argv = mInt.cloneArgv();
 	int failed = mInt.runAction<LsFunctionsAction>(argc, argv);
@@ -271,7 +301,8 @@ vector<string> CommandFactory::parseArguments(const string& str) {
 			quoted = 0;
 		tmp += str[i];
 		if((str[i] == ' ' || i == str.size()-1) && !quoted) {
-			tmp = tmp.substr(0, tmp.size()-1);
+			if(str[i] == ' ')
+				tmp = tmp.substr(0, tmp.size()-1);
 			args.push_back(tmp);
 			tmp.clear();
 		}
@@ -297,7 +328,8 @@ Command* CommandFactory::create(const string& cmd)
 		Command* c = registered_cmds[c_ndx].get();
 		vector<string> args;
 		try {
-			args = parseArguments(cmd);
+			if(cmd.size() > c->name.size())
+				args = parseArguments(cmd);
 		}catch(const JCUTException& e) {
 			cerr << e.what() << endl;
 			args.clear();
