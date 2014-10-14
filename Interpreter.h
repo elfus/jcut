@@ -51,6 +51,9 @@ public:
 	const char** cloneArgv(int argc, const char** argv) const;
 	void freeArgv(int argc, const char** argv);
 	bool removeFileFromArgv(const string& str);
+
+	// 2 means the binary name and the mythical --
+	bool hasLoadedFiles() { return mArgc > 2; }
 };
 
 class Command {

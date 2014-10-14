@@ -243,14 +243,13 @@ int Interpreter::mainLoop() {
 
 		jcut::JCUTAction::mInterpreterInput += line;
 		if(prompt == prompt_input) {
-			int argc = getArgc();
-			// 2 = the binary and --
-			if(argc == 2) {
+			if(!hasLoadedFiles()) {
 				cout << "There are no loaded files. Try using the /load command." << endl;
 				jcut::JCUTAction::mInterpreterInput.clear();
 				continue;
 			}
 
+			int argc = getArgc();
 			const char** argv = cloneArgv();
 			runAction<JCUTAction>(argc, argv);
 			freeArgv(getArgc(), argv);
@@ -330,7 +329,7 @@ bool Unload::execute() {
 
 bool Ls::execute() {
 	// 2 means, the binary name and the mythical --
-	if(mInt.getArgc() <= 2) {
+	if(!mInt.hasLoadedFiles()) {
 		cout << "There are no files loaded!" << endl;
 		return true;
 	}
