@@ -50,6 +50,7 @@ public:
 	const char** cloneArgv() const;
 	const char** cloneArgv(int argc, const char** argv) const;
 	void freeArgv(int argc, const char** argv);
+	bool addFileToArgv(const string& str);
 	bool removeFileFromArgv(const string& str);
 
 	// 2 means the binary name and the mythical --
@@ -95,7 +96,7 @@ public:
 class Load : public Command{
 public:
 	Load(Interpreter& i) : Command("/load", "Loads all the specified source files separated by a space.",i) {}
-	bool execute() { return false;}
+	bool execute();
 };
 
 class Unload : public Command{

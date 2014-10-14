@@ -147,6 +147,33 @@ void Interpreter::freeArgv(int argc, const char** argv)
 	delete [] argv;
 }
 
+bool Interpreter::addFileToArgv(const string& str)
+{
+	vector<string> backup;
+	for(int i=0; i<mArgc; ++i)
+		backup.push_back(mArgv[i]);
+	auto it = backup.end();
+	backup.insert(--it, str);
+
+	auto found = find(unloadedFiles.begin(), unloadedFiles.end(), str);
+	if(found != unloadedFiles.end())
+		unloadedFiles.erase(found);
+
+	freeArgv(mArgc, mArgv);
+
+	unsigned new_size = backup.size();
+	const char ** out = new const char*[new_size];
+	for(unsigned i=0; i<new_size; ++i) {
+		out[i] = new char[backup[i].size()+1];
+		memset(const_cast<char*>(out[i]), 0, backup[i].size()+1);
+		memcpy(const_cast<char*>(out[i]), backup[i].c_str(), backup[i].size()+1);
+	}
+
+	mArgc = new_size;
+	mArgv = out;
+	return true;
+}
+
 bool Interpreter::removeFileFromArgv(const string& str)
 {
 	vector<string> backup;
@@ -305,6 +332,27 @@ bool Pwd::execute() {
 	for(auto c : pwd)
 		cout << c;
 	cout << endl;
+	return true;
+}
+
+bool Load::execute() {
+	if(mArgs.empty()) {
+		cout << "You need to provide at least 1 file to load." << endl;
+		return false;
+	}
+
+	for(const string& str : mArgs) {
+		if(!llvm::sys::fs::is_regular_file(str)) {
+			cerr << "Invalid file " << str << endl;
+			continue;
+		}
+		// Make sure we convert it to its absolute path
+		SmallString<16> ss(str);
+		llvm::sys::fs::make_absolute(ss);
+		string absolute = ss.str().str();
+		if(!mInt.addFileToArgv(absolute))
+			cerr << "Could not load file " << str << endl;
+	}
 	return true;
 }
 
