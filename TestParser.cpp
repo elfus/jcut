@@ -27,9 +27,7 @@ extern "C" int yylex();
 
 
 UnexpectedToken::UnexpectedToken(tp::Token token, string expected)
-: mToken(token), mExpected(expected) { }
-
-const char* UnexpectedToken::what() const throw () {
+: mToken(token), mExpected(expected) {
 	stringstream ss;
 	if(!mExceptionSource.empty())
 		ss << mExceptionSource <<":";
@@ -40,7 +38,12 @@ const char* UnexpectedToken::what() const throw () {
 		ss << mToken.mLexeme << ". ";
 	if(!mExpected.empty())
 		ss << "Expecting a valid " << mExpected << ".";
-	return ss.str().c_str();
+	mMsg = ss.str();
+}
+
+const char* UnexpectedToken::what() const throw () {
+
+	return mMsg.c_str();
 }
 
 
@@ -303,7 +306,6 @@ FunctionCall* TestDriver::ParseFunctionCall()
 	Identifier* functionName = ParseFunctionName();
 
 	if (mCurrentToken != '(') {
-            string extra = functionName->toString()+mCurrentToken.mLexeme;
             delete functionName;
             throw UnexpectedToken(mCurrentToken, "left parenthesis '(' for function call");
         }

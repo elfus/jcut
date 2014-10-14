@@ -38,14 +38,16 @@ public:
     JCUTException() {}
 
     /// Used for general purpose messages
-    JCUTException(const string& msg) : mMsg(msg){ }
+    JCUTException(const string& msg) : mMsg(msg){
+    	stringstream ss;
+		if(!mExceptionSource.empty())
+			ss << mExceptionSource << ":";
+		ss << mMsg;
+		mMsg = ss.str();
+    }
 
     virtual const char* what() const throw () {
-    	stringstream ss;
-    	if(!mExceptionSource.empty())
-    		ss << mExceptionSource << ":";
-    	ss << mMsg;
-        return ss.str().c_str();
+        return mMsg.c_str();
     }
 
     static string mExceptionSource;
@@ -109,6 +111,8 @@ public:
     Token() : mType(TOK_ERR), mLine(0), mColumn(0), mLexeme("") {}
     Token(char* lex, int size, int type, unsigned line, unsigned column) :
     mType(static_cast<TokenType>(type)), mLine(line), mColumn(column), mLexeme(lex,size) {}
+    Token(const Token& that) : mType(that.mType), mLine(that.mLine),
+    		mColumn(that.mColumn), mLexeme(that.mLexeme) {}
 
     bool operator ==(const string& s) {
 		return mLexeme == s;
