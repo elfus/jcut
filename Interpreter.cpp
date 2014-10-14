@@ -51,6 +51,65 @@ void Interpreter::convertToAbsolutePaths(int argc, const char **argv) {
 	}
 }
 
+
+int Interpreter::mainLoop() {
+	cout << "jcut interpreter!" << endl;
+	cout << "For a complete list of available commands type /help" << endl << endl;
+	char * c_line = nullptr;
+	string history_name = "jcut-history.txt";
+	linenoiseHistoryLoad(history_name.c_str()); /* Load the history at startup */
+	string line;
+	const string prompt_input = "jcut $> ";
+	const string prompt_more = "jcut ?> ";
+	string prompt = prompt_input;
+	linenoiseSetCompletionCallback(
+			reinterpret_cast<linenoiseCompletionCallback*>(
+					Interpreter::completionCallBack));
+	jcut::JCUTAction::mUseInterpreterInput = true;
+	string executed = "";
+	bool attempted = false;
+
+	while(executed!="/exit" && (c_line = linenoise(prompt.c_str())) != nullptr) {
+		unique_ptr<char> guard(c_line);// free memory a la C++ :)
+		line = string(c_line);
+
+		// Save it to the history
+		if(line.size()) {
+			linenoiseHistoryAdd(line.c_str());
+			linenoiseHistorySave(history_name.c_str());
+		}
+
+		attempted = executeCommand(line, *this, executed);
+		if(attempted)
+			continue;
+
+		if(linenoiseCtrlJPressed()) {
+			prompt = prompt_more;
+			if(line.empty()) {
+				prompt = prompt_input;
+				linenoiseCtrlJClear();
+			}
+		}
+
+		jcut::JCUTAction::mInterpreterInput += line;
+		if(prompt == prompt_input) {
+			if(!hasLoadedFiles()) {
+				cout << "There are no loaded files. Try using the /load command." << endl;
+				jcut::JCUTAction::mInterpreterInput.clear();
+				continue;
+			}
+
+			int argc = getArgc();
+			const char** argv = cloneArgv();
+			runAction<JCUTAction>(argc, argv);
+			freeArgv(getArgc(), argv);
+			jcut::JCUTAction::mInterpreterInput.clear();
+		}
+	}
+	return 0;
+}
+
+
 template <class T>
 int Interpreter::runAction(int argc, const char **argv) {
 	// CommonOptionsParser constructor will parse arguments and create a
@@ -229,68 +288,11 @@ void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc
 
 }
 
-int Interpreter::mainLoop() {
-	cout << "jcut interpreter!" << endl;
-	cout << "For a complete list of available commands type /help" << endl << endl;
-	char * c_line = nullptr;
-	string history_name = "jcut-history.txt";
-	linenoiseHistoryLoad(history_name.c_str()); /* Load the history at startup */
-	string line;
-	const string prompt_input = "jcut $> ";
-	const string prompt_more = "jcut ?> ";
-	string prompt = prompt_input;
-	linenoiseSetCompletionCallback(
-			reinterpret_cast<linenoiseCompletionCallback*>(
-					Interpreter::completionCallBack));
-	jcut::JCUTAction::mUseInterpreterInput = true;
-	string executed = "";
-	bool success = false;
-
-	while(executed!="/exit" && (c_line = linenoise(prompt.c_str())) != nullptr) {
-		unique_ptr<char> guard(c_line);// free memory a la C++ :)
-		line = string(c_line);
-
-		// Save it to the history
-		if(line.size()) {
-			linenoiseHistoryAdd(line.c_str());
-			linenoiseHistorySave(history_name.c_str());
-		}
-
-		success = executeCommand(line, *this, executed);
-		if(success)
-			continue;
-
-		if(linenoiseCtrlJPressed()) {
-			prompt = prompt_more;
-			if(line.empty()) {
-				prompt = prompt_input;
-				linenoiseCtrlJClear();
-			}
-		}
-
-		jcut::JCUTAction::mInterpreterInput += line;
-		if(prompt == prompt_input) {
-			if(!hasLoadedFiles()) {
-				cout << "There are no loaded files. Try using the /load command." << endl;
-				jcut::JCUTAction::mInterpreterInput.clear();
-				continue;
-			}
-
-			int argc = getArgc();
-			const char** argv = cloneArgv();
-			runAction<JCUTAction>(argc, argv);
-			freeArgv(getArgc(), argv);
-			jcut::JCUTAction::mInterpreterInput.clear();
-		}
-	}
-	return 0;
-}
-
 /**
  *
  * @param[in] final_cmd Will contain the command executed
  *
- * @return true when cmd_str is a Command. The Command may or may not succeed.
+ * @return true when attempted to execute a Command. The Command may or may not succeed.
  */
 bool Interpreter::executeCommand(const string& cmd_str,
 		Interpreter& i, std::string& final_cmd)
@@ -303,7 +305,7 @@ bool Interpreter::executeCommand(const string& cmd_str,
 		if(!cmd) {
 			cerr << "Unrecognized command: " << cmd_str
 			<<". Try typing /help for a list of available commands." << endl;
-			return false;
+			return true;
 		}else {
 			if(!cmd->execute())
 				cerr << "Failed to execute command: " << cmd->str() << endl;
