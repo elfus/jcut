@@ -130,9 +130,9 @@ public:
     void VisitTestDefinitionFirst(TestDefinition *TD) {
         // Print the columns in the given order, then print a new line and
 		// optionally print more information about the current test.
-		mCurrentTestPassed = TD->testPassed();
 		++mTestCount;
 		const map<ColumnName,string>& results = TD->getTestResults();
+		mCurrentTestPassed = (results.at(RESULT) == "PASSED")? true : false;
         if(mCurrentTestPassed && (mFmt & (LOG_ALL | LOG_PASSING)) ){
         	++mTestsPassed;
             for(auto column : mOrder)

@@ -22,6 +22,11 @@
 #include "llvm/Support/raw_ostream.h"
 #include "OSRedirect.h"
 
+// Headers needed to fork!
+#include <unistd.h>
+#include <sys/wait.h>
+///////
+
 using namespace tp;
 
 class TestRunnerVisitor : public Visitor {
@@ -142,72 +147,85 @@ public:
     void VisitTestDefinition(TestDefinition *TD) {
     	TestResults results(mOrder);
     	results.mColumnNames = mColumnNames;
-    	results.mTmpFileName = TestResults::getColumnString(TEST_NAME, TD) + "-tmp.txt";
+    	string test_name = TestResults::getColumnString(TEST_NAME, TD);
+    	results.mTmpFileName = test_name + "-tmp.txt";
+    	pid_t pid;
 
-    	if(TD->hasTestMockup()) {
-    		vector<MockupFunction*> mockups=
-    			TD->getTestMockup()->getMockupFixture()->getMockupFunctions();
+    	pid = fork();
+    	if(pid == -1)
+    		throw JCUTException("Could not fork process for test"+test_name);
 
-			for(MockupFunction* m : mockups) {
-				llvm::Function* change_to_mockup = m->getMockupFunction();
-				mEE->runFunction(change_to_mockup,mArgs);
+    	if(pid == 0) { // Child process will execute the test
+    		if(TD->hasTestMockup()) {
+				vector<MockupFunction*> mockups=
+					TD->getTestMockup()->getMockupFixture()->getMockupFunctions();
+
+				for(MockupFunction* m : mockups) {
+					llvm::Function* change_to_mockup = m->getMockupFunction();
+					mEE->runFunction(change_to_mockup,mArgs);
+				}
 			}
+
+			runFunction(TD);
+
+			const llvm::GlobalVariable* g = TD->getGlobalVariable();
+			if(g) {
+				unsigned char* pass = static_cast<unsigned char*>(
+						mEE->getPointerToGlobal((const llvm::GlobalValue *)g));
+				if(pass) {
+					TD->setPassingValue(static_cast<bool>(*pass));
+				} else
+					assert(false && "Test result Global variable not found!");
+			} else
+				assert(false && "Invalid global variable for result!");
+
+			std::vector<ExpectedExpression*> failing;
+			for(ExpectedExpression* ptr : mExpExpr) {
+				llvm::GlobalVariable* v = ptr->getGlobalVariable();
+				if(v) {
+					unsigned char* pass = static_cast<unsigned char*>(
+							mEE->getPointerToGlobal((const llvm::GlobalValue *)v));
+					if(pass) {
+						bool passed = static_cast<bool>(*pass);
+						TD->setPassingValue(passed);
+						if(!passed)
+							failing.push_back(ptr);
+					} else
+						assert(false && "ExpectedExpression Global variable not found!");
+				} else {
+					assert(false &&  "Invalid global variable for expected expression");
+				}
+			}
+			mExpExpr.clear();
+
+			// Do the opposite steps for the Mockups
+			if(TD->hasTestMockup()) {
+				vector<MockupFunction*> mockups =
+					TD->getTestMockup()->getMockupFixture()->getMockupFunctions();
+				for(MockupFunction* m : mockups) {
+					llvm::Function* change_to_original = m->getOriginalFunction();
+					mEE->runFunction(change_to_original,mArgs);
+				}
+
+				////////////////////////////////////////////////
+				// Point to the mockup functions for the current group
+				executeMockupFunctionsOnTopOfStack();
+			}
+
+			// Include failing ExpectedExpressions from before and after statements.
+			if(failing.size()) {
+				TD->setFailedExpectedExpressions(failing);
+			}
+			results.collectTestResults(TD);
+			results.saveToDisk();
+			exit(EXIT_SUCCESS);
+    	} // end of child process
+    	else { // Continue parent process
+    		int status = 0;
+    		waitpid(pid, &status, 0);
+    		cout << "Child ended with status "<< status << endl;
     	}
 
-        runFunction(TD);
-
-        const llvm::GlobalVariable* g = TD->getGlobalVariable();
-		if(g) {
-			unsigned char* pass = static_cast<unsigned char*>(
-					mEE->getPointerToGlobal((const llvm::GlobalValue *)g));
-			if(pass) {
-				TD->setPassingValue(static_cast<bool>(*pass));
-			} else
-				assert(false && "Test result Global variable not found!");
-		} else
-			assert(false && "Invalid global variable for result!");
-
-		std::vector<ExpectedExpression*> failing;
-		for(ExpectedExpression* ptr : mExpExpr) {
-			llvm::GlobalVariable* v = ptr->getGlobalVariable();
-			if(v) {
-				unsigned char* pass = static_cast<unsigned char*>(
-						mEE->getPointerToGlobal((const llvm::GlobalValue *)v));
-				if(pass) {
-					bool passed = static_cast<bool>(*pass);
-					TD->setPassingValue(passed);
-					if(!passed)
-						failing.push_back(ptr);
-				} else
-					assert(false && "ExpectedExpression Global variable not found!");
-			} else {
-				assert(false &&  "Invalid global variable for expected expression");
-			}
-		}
-		mExpExpr.clear();
-
-		// Do the opposite steps for the Mockups
-		if(TD->hasTestMockup()) {
-			vector<MockupFunction*> mockups =
-				TD->getTestMockup()->getMockupFixture()->getMockupFunctions();
-			for(MockupFunction* m : mockups) {
-				llvm::Function* change_to_original = m->getOriginalFunction();
-				mEE->runFunction(change_to_original,mArgs);
-			}
-
-			////////////////////////////////////////////////
-			// Point to the mockup functions for the current group
-			executeMockupFunctionsOnTopOfStack();
-		}
-
-        // Include failing ExpectedExpressions from before and after statements.
-        if(failing.size()) {
-        	TD->setFailedExpectedExpressions(failing);
-		}
-
-        results.collectTestResults(TD);
-        results.saveToDisk();
-        results.mResults.clear();
         results.mResults = results.readFromDisk();
         TD->setTestResults(results.mResults);
     }
