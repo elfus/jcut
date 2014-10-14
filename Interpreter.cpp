@@ -1,9 +1,17 @@
-/*
- * Interpreter.cpp
- *
- *  Created on: Oct 12, 2014
- *      Author: aortegag
- */
+//===-- jcut/Interpreter.cpp ------------------------------------*- C++ -*-===//
+//
+// Copyright (c) 2014 Adrián Ortega García
+// All rights reserved.
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #include <iostream>
 #include <cstring>

@@ -6,7 +6,8 @@
 #line 2 "jcut-scanner.l"
 //===-- jcut/JCUTScanner.h - Flex generated scanner ---------------*- C -*-===//
 //
-//                     The LLVM Compiler Infrastructure
+// Copyright (c) 2014 Adrián Ortega García
+// All rights reserved.
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
@@ -51,7 +52,7 @@ enum TokenType {
 
 
 
-#line 55 "JCUTScanner.h"
+#line 56 "JCUTScanner.h"
 
 #define  YY_INT_ALIGNED short int
 
@@ -374,9 +375,9 @@ extern int yylex (void);
 #undef YY_DECL
 #endif
 
-#line 143 "jcut-scanner.l"
+#line 144 "jcut-scanner.l"
 
 
-#line 381 "JCUTScanner.h"
+#line 382 "JCUTScanner.h"
 #undef yyIN_HEADER
 #endif /* yyHEADER_H */

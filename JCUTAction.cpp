@@ -1,5 +1,8 @@
 //===-- jcut/JCUTAction.cpp - A ClangTool ACtion ----------------*- C++ -*-===//
 //
+// Copyright (c) 2014 Adrián Ortega García
+// All rights reserved.
+//
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 //

@@ -1,7 +1,8 @@
 %top {
 //===-- jcut/JCUTScanner.h - Flex generated scanner ---------------*- C -*-===//
 //
-//                     The LLVM Compiler Infrastructure
+// Copyright (c) 2014 Adrián Ortega García
+// All rights reserved.
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.

@@ -1,9 +1,17 @@
-/*
- * Interpreter.h
- *
- *  Created on: Oct 12, 2014
- *      Author: aortegag
- */
+//===-- jcut/Interpreter.h --------------------------------------*- C++ -*-===//
+//
+// Copyright (c) 2014 Adrián Ortega García
+// All rights reserved.
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// \brief
+///
+//===----------------------------------------------------------------------===//
 
 #ifndef INTERPRETER_H_
 #define INTERPRETER_H_

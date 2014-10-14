@@ -1,6 +1,7 @@
-//===-- jcut/Te.h - OSRedirect class definition -----------------*- C++ -*-===//
+//===-- jcut/TestGeneratorVisitor.h - Generate LLVM IR Code -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
+// Copyright (c) 2014 Adrián Ortega García
+// All rights reserved.
 //
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
