@@ -134,11 +134,11 @@ BufferAlloc* TestDriver::ParseBufferAlloc()
 		if (mCurrentToken == '{') { // indicates a StructInitializer
 			StructInitializer* struct_init = ParseStructInitializer();
 			ba = new BufferAlloc(buff_size, struct_init);
-		} else if(mCurrentToken == TOK_INT) {
+		} else if(mCurrentToken == TOK_INT || mCurrentToken == TOK_FLOAT) {
 			NumericConstant* default_val = ParseNumericConstant();
 			ba = new BufferAlloc(buff_size, default_val);
 		} else
-			throw UnexpectedToken(mCurrentToken);
+			throw UnexpectedToken(mCurrentToken, " int, float or struct initializer.");
 
 		mCurrentToken = mTokenizer.nextToken(); // eat up the ']'
 		return ba;
