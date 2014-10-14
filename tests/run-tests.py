@@ -21,6 +21,7 @@ def main():
 
     JCUT = [sys.argv[1], "test_group.c", "-t", "test-file.txt", "--"]
     test_report = []
+    test_report_2 = []
     STDOUT_FILE = "stdout.txt"
     STDERR_FILE = "stderr.txt"
     for group in sorted([dir for dir in os.listdir(os.getcwd()) if "group" in dir]):
@@ -29,10 +30,12 @@ def main():
             with open(STDERR_FILE, 'w') as stderr:
                 ret = subprocess.call(JCUT, stdout=stdout, stderr=stderr)
         test_report.append((ret, group))
-        if os.stat(STDOUT_FILE).st_size == 0:
+        if os.stat(STDOUT_FILE).st_size <= 2:
             os.remove(STDOUT_FILE)
-        if os.stat(STDERR_FILE).st_size == 0:
+        if os.stat(STDERR_FILE).st_size <= 2:
             os.remove(STDERR_FILE)
+        else:
+            test_report_2.append(group)
         os.chdir("..")
 
     # Print test summary
@@ -48,6 +51,22 @@ def main():
                 print("\tDirectory", group, "has", ret, "failed test(s)")
             elif ret < 0 or ret >= 255:
                 print("\tJCUT is having problems! debug those issues!")
+
+    # groupH is used to test the error reporting mecchanism, that means
+    # the test file is plagued with errors.
+    if "groupH" in test_report_2:
+        test_report_2.remove("groupH")
+
+    if len(test_report_2) > 0:
+        print("Tests are failing in", len(test_report_2),"groups.")
+        print("---------------------------------------------")
+        for group in test_report_2:
+            print("Group", group, "has the following errors:")
+            os.chdir(group)
+            with open(STDERR_FILE, 'r') as stderr:
+                print(stderr.read())
+            os.chdir("..")
+            print("---------------------------------------------")
     else:
         print("SUCCESS!")
 
