@@ -51,8 +51,13 @@ enum ColumnName {
 struct TestResults {
 	vector<ColumnName> mOrder;
 	map<ColumnName, string> mResults;
+	map<ColumnName, string> mColumnNames;
+	string mTmpFileName;
 	TestResults(const vector<ColumnName>& o) : mOrder(o){}
 	void collectTestResults(tp::TestDefinition* TD);
+	void saveToDisk();
+	map<ColumnName, string> readFromDisk();
+	ColumnName getColumnFromStr(const string& str);
 	static string getColumnString(ColumnName name, tp::TestDefinition *TD);
 	static string getActualResultString(tp::TestDefinition *TD);
 	static string getExpectedResultString(tp::TestDefinition *TD);

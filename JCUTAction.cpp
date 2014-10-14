@@ -99,6 +99,7 @@ void JCUTAction::EndSourceFileAction() {
 			TestLoggerVisitor results_logger;
 			results_logger.setLogFormat(TestLoggerVisitor::LOG_ALL);
 			runner.setColumnOrder(results_logger.getColumnOrder());
+			runner.setColumnNames(results_logger.getColumnNames());
 
 			tests->accept(&runner);
 

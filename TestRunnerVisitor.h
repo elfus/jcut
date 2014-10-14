@@ -39,6 +39,7 @@ private:
     std::stack<llvm::Function*> mMockupRevert;
     // The order in which we will store the results.
     vector<ColumnName> mOrder;
+    map<ColumnName,string> mColumnNames;
 
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
@@ -84,6 +85,7 @@ public:
 
     bool isValidExecutionEngine() const { return mEE != nullptr; }
     void setColumnOrder(const vector<ColumnName>& order) { mOrder = order;}
+    void setColumnNames(const map<ColumnName,string>& names) { mColumnNames = names;}
     void VisitGroupMockup(GlobalMockup *GM) {
     	vector<MockupFunction*> mockups =
     			GM->getMockupFixture()->getMockupFunctions();
@@ -138,6 +140,9 @@ public:
 
     // The test definition
     void VisitTestDefinition(TestDefinition *TD) {
+    	TestResults results(mOrder);
+    	results.mColumnNames = mColumnNames;
+    	results.mTmpFileName = TestResults::getColumnString(TEST_NAME, TD) + "-tmp.txt";
 
     	if(TD->hasTestMockup()) {
     		vector<MockupFunction*> mockups=
@@ -200,8 +205,10 @@ public:
         	TD->setFailedExpectedExpressions(failing);
 		}
 
-        TestResults results(mOrder);
         results.collectTestResults(TD);
+        results.saveToDisk();
+        results.mResults.clear();
+        results.mResults = results.readFromDisk();
         TD->setTestResults(results.mResults);
     }
 

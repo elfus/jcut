@@ -16,6 +16,7 @@
 #include "TestParser.h"
 #include <iostream>
 #include <exception>
+#include "llvm/Support/FileSystem.h"
 
 using namespace std;
 using namespace tp;
@@ -978,6 +979,64 @@ ExpectedConstant* CSVDriver::getExpectedConstantAt(unsigned i, unsigned j)
 }
 
 ///////////////////
+void TestResults::saveToDisk() {
+	if(mTmpFileName.empty())
+		throw JCUTException("Invalid temporary file name for test results!");
+	ofstream rf(mTmpFileName);
+	for(auto it = mResults.begin(); it != mResults.end(); ++it) {
+		rf << "[" << mColumnNames[it->first] << "]" << endl;
+		rf << it->second << endl;
+	}
+}
+
+ColumnName TestResults::getColumnFromStr(const string& str)
+{
+	ColumnName col = MAX_COLUMN;
+	for(auto it = mColumnNames.begin(); it != mColumnNames.end(); ++it) {
+		if(str == it->second) {
+			col = it->first;
+			break;
+		}
+	}
+	return col;
+}
+
+map<ColumnName, string> TestResults::readFromDisk()
+{
+	if(mTmpFileName.empty())
+		throw JCUTException("Invalid temporary file name for test results!");
+	map<ColumnName, string> results;
+	ifstream rf;
+	rf.open(mTmpFileName);
+	string line;
+	if(rf.is_open()) {
+		ColumnName current;
+		while(!rf.eof()) {
+			std::getline(rf, line);
+
+			if(line.empty())
+				continue;
+
+			if(line[0] == '[') {
+				string column_name = line.substr(1,line.size()-2);
+				current = getColumnFromStr(column_name);
+				results[current] = "";
+				continue;
+			}
+
+			if(current == WARNING or current == FUD_OUTPUT or current == FAILED_EE)
+				results[current] += "\n"+line;
+			else
+				results[current] += line;
+		}
+	} else{
+		throw JCUTException("Could not read test results!");
+	}
+	rf.close();
+	if(llvm::sys::fs::remove(mTmpFileName) != llvm::errc::success)
+		cerr << "Could not delete temporary results file: " << mTmpFileName << endl;
+	return results;
+}
 
 void TestResults::collectTestResults(tp::TestDefinition* TD)
 {

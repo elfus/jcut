@@ -68,6 +68,9 @@ public:
         mColumnName[RESULT] = "RESULT";
         mColumnName[ACTUAL_RESULT] = "ACTUAL RESULT";
         mColumnName[EXPECTED_RES] = "EXPECTED RESULT";
+        mColumnName[WARNING] = "WARNING";
+        mColumnName[FUD_OUTPUT] = "FUNCTION OUTPUT";
+        mColumnName[FAILED_EE] = "FAILED EXPECTED EXPRESSIONS";
         /////////////////////////////////////////
 
         for(auto& it : mColumnName)
@@ -187,6 +190,7 @@ public:
 
     const vector<ColumnName>& getColumnOrder() { return mOrder; }
     const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }
+    const map<ColumnName,string>& getColumnNames() { return mColumnName; }
 
     unsigned getTestsFailed() const { return mTestsFailed; }
 
