@@ -79,6 +79,13 @@ int Interpreter::runAction(int argc, const char **argv) {
 		return false;
 	}
 	), Sources.end());
+	// This is needed because the files we have removed are still contained in the
+	// CommonOptionsParser variables.
+	for(auto unloaded : unloadedFiles) {
+		auto it = find(Sources.begin(), Sources.end(), unloaded);
+		if(it != Sources.end())
+			Sources.erase(it);
+	}
 
 	// We hand the CompilationDatabase we created and the sources to run over into
 	// the tool constructor.
@@ -104,7 +111,7 @@ int Interpreter::getArgc() const
 }
 
 void printArgv(int argc, const char** argv) {
-	cout << "COPY: ";
+	cout << "ARGUMENTS: ";
 	for(int i=0; i<argc; ++i) {
 		string tmp(argv[i]);
 		cout << tmp << " ";
@@ -142,23 +149,32 @@ void Interpreter::freeArgv(int argc, const char** argv)
 
 bool Interpreter::removeFileFromArgv(const string& str)
 {
+	vector<string> backup;
 	for(int i=0; i<mArgc; ++i) {
-		string tmp(mArgv[i]);
-		if(tmp.find(str) != string::npos) {
-			cout << "File " << mArgv[i] << " has been UNLOADED." << endl;
-			memset(const_cast<char*>(mArgv[i]),0, sizeof(mArgv[i]));
-			while(i < mArgc) {
-				if(i+1 == mArgc)
-					break;
-				memcpy(const_cast<char*>(mArgv[i]),
-						mArgv[i+1], strlen(mArgv[i+1])+1);
-				++i;
-			}
-			--mArgc;
-			return true;
-		}
+		string arg(mArgv[i]);
+		if(arg.find(str) == string::npos)
+			backup.push_back(mArgv[i]);
+		else
+			unloadedFiles.push_back(mArgv[i]);
 	}
-	return false;
+	if(static_cast<unsigned>(mArgc) == backup.size())
+		return false;
+
+	cout << "File " << unloadedFiles.back() << " unloaded!" << endl;
+	unsigned new_size = backup.size();
+
+	freeArgv(mArgc, mArgv);
+
+	const char ** out = new const char*[new_size];
+	for(unsigned i=0; i<new_size; ++i) {
+		out[i] = new char[backup[i].size()+1];
+		memset(const_cast<char*>(out[i]), 0, backup[i].size()+1);
+		memcpy(const_cast<char*>(out[i]), backup[i].c_str(), backup[i].size()+1);
+	}
+
+	mArgv = out;
+	mArgc = new_size;
+	return true;
 }
 
 void Interpreter::completionCallBack(const char * line, linenoiseCompletions *lc)
@@ -300,12 +316,14 @@ bool Unload::execute() {
 	}
 
 	for(const string& str : mArgs) {
-		if(str == "--") {
-			cerr << "Invalid file name " << str << endl;
+		if(!llvm::sys::fs::is_regular_file(str)) {
+			cerr << "Invalid file " << str << endl;
 			continue;
 		}
-		if(!mInt.removeFileFromArgv(str))
-			cerr << "File " << str << " not loaded!" << endl;
+		if(!mInt.removeFileFromArgv(str)) {
+			cerr << "File " << str << " is NOT loaded. Try the /load command." << endl;
+			cerr << "Type /help for more options." << endl;
+		}
 	}
 	return true;
 }

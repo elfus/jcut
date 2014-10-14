@@ -30,6 +30,7 @@ private:
 	int mArgc;
 	const char ** mArgv;
 	vector<const char*> toBeFreed;
+	vector<string> unloadedFiles;
 
 	void convertToAbsolutePaths(int argc, const char **argv);
 	bool executeCommand(const std::string& cmd,
