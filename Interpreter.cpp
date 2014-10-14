@@ -103,12 +103,12 @@ int Interpreter::mainLoop() {
 		if(line.size()) {
 			linenoiseHistoryAdd(line.c_str());
 			linenoiseHistorySave(history_name.c_str());
-		} else
-			continue;
+		}
 
 		attempted = executeCommand(line, *this, executed);
 		if(attempted)
 			continue;
+
 
 		if(linenoiseCtrlJPressed()) {
 			prompt = prompt_more;
@@ -118,8 +118,9 @@ int Interpreter::mainLoop() {
 			}
 		}
 
+
 		jcut::JCUTAction::mInterpreterInput += line;
-		if(prompt == prompt_input) {
+		if(prompt == prompt_input && !JCUTAction::mInterpreterInput.empty()) {
 			if(!hasLoadedFiles()) {
 				cout << "There are no loaded files. Try using the /load command." << endl;
 				jcut::JCUTAction::mInterpreterInput.clear();
