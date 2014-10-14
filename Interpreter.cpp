@@ -30,6 +30,24 @@ Interpreter::Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv
 {
 	mArgv = cloneArgv(argc, argv);
 	convertToAbsolutePaths(mArgc, mArgv);
+	string tmp(mArgv[mArgc-1]);
+	if(tmp != "--") {
+		cout << "Double dash not provided!" << endl;
+		vector<string> backup;
+		for(int i=0; i<mArgc; ++i)
+			backup.push_back(mArgv[i]);
+		backup.push_back("--");
+		freeArgv(mArgc, mArgv);
+		unsigned new_size = backup.size();
+		const char ** out = new const char*[new_size];
+		for(unsigned i=0; i<new_size; ++i) {
+			out[i] = new char[backup[i].size()+1];
+			memset(const_cast<char*>(out[i]), 0, backup[i].size()+1);
+			memcpy(const_cast<char*>(out[i]), backup[i].c_str(), backup[i].size()+1);
+		}
+		mArgc = new_size;
+		mArgv = out;
+	}
 }
 
 Interpreter::~Interpreter() {
