@@ -48,7 +48,9 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 
 	llvm::Function *currentFunction = mModule->getFunction(mCurrentFuncCall);
 	if( currentFunction == nullptr)
-		throw JCUTException("VisitFunctionArgument: Function "+mCurrentFuncCall+"() was not found in the C source code");
+		throw JCUTException("VisitFunctionArgument: Function "+mCurrentFuncCall+
+				"() was not found in the C source file: "+
+				mModule->getModuleIdentifier());
 
 	llvm::Function::arg_iterator arg_it = currentFunction->arg_begin();
 
