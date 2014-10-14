@@ -29,19 +29,25 @@ class Interpreter {
 private:
 	int mArgc;
 	const char ** mArgv;
+	vector<const char*> toBeFreed;
+
+	void convertToAbsolutePaths(int argc, const char **argv);
 	bool executeCommand(const std::string& cmd,
 			Interpreter& i, std::string& final_cmd);
 	static void completionCallBack(const char * line, linenoiseCompletions *lc);
 
 public:
-	Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv(argv) {}
+	Interpreter(const int argc, const char **argv);
+	~Interpreter();
 
 	// Runs the SyntaxOnlyAction followed by the Action defined by T.
 	template<class T>
 	int runAction(int argc, const char **argv);
 	int mainLoop();
 	int getArgc() const;
+	// For every call to the cloneArgv() methods there has to be 1 call to freeArgv
 	const char** cloneArgv() const;
+	const char** cloneArgv(int argc, const char** argv) const;
 	void freeArgv(int argc, const char** argv);
 	bool removeFileFromArgv(const string& str);
 };

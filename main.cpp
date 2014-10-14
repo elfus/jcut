@@ -45,23 +45,6 @@ bool isTestFileProvided(int argc, const char **argv) {
 	return provided;
 }
 
-static vector<const char*> toBeFreed;
-
-static void convertToAbsolutePaths(int argc, const char **argv) {
-	for(int i=0; i<argc; ++i) {
-		if(llvm::sys::fs::is_regular_file(argv[i])) {
-			SmallString<16> ss(StringRef(argv[i]));
-			llvm::sys::fs::make_absolute(ss);
-			string absolute = ss.str().str();
-			argv[i] = new char[absolute.size()+1];
-			toBeFreed.push_back(argv[i]);
-			memset(const_cast<char*>(argv[i]), 0, absolute.size()+1);
-			memcpy(const_cast<char*>(argv[i]),absolute.c_str(), absolute.size());
-			const_cast<char*>(argv[i])[absolute.size()] = '\0';
-		}
-	}
-}
-
 int main(int argc, const char **argv, char * const *envp)
 {
 	TestFileOpt.setCategory(JcutOptions);
@@ -70,8 +53,6 @@ int main(int argc, const char **argv, char * const *envp)
 	// Initialize the JIT Engine only once
 	llvm::InitializeNativeTarget();
 
-	convertToAbsolutePaths(argc, argv);
-
 	jcut::Interpreter interpreter(argc, argv);
 	int return_code = 0;
 	if(isTestFileProvided(argc, argv))
@@ -79,10 +60,7 @@ int main(int argc, const char **argv, char * const *envp)
 	else
 		return_code = interpreter.mainLoop();
 
-	for_each(toBeFreed.begin(), toBeFreed.end(), [&](const char*& c){
-		delete [] c;
-		c = nullptr;
-	});
+
 	return return_code;
 }
 

@@ -26,6 +26,31 @@ using namespace clang::tooling;
 
 namespace jcut {
 
+Interpreter::Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv(nullptr)
+{
+	mArgv = cloneArgv(argc, argv);
+	convertToAbsolutePaths(mArgc, mArgv);
+}
+
+Interpreter::~Interpreter() {
+	freeArgv(mArgc, mArgv);
+}
+
+void Interpreter::convertToAbsolutePaths(int argc, const char **argv) {
+	for(int i=0; i<argc; ++i) {
+		if(llvm::sys::fs::is_regular_file(argv[i])) {
+			SmallString<16> ss(StringRef(argv[i]));
+			llvm::sys::fs::make_absolute(ss);
+			string absolute = ss.str().str();
+			delete [] argv[i];
+			argv[i] = new char[absolute.size()+1];
+			memset(const_cast<char*>(argv[i]), 0, absolute.size()+1);
+			memcpy(const_cast<char*>(argv[i]),absolute.c_str(), absolute.size());
+			const_cast<char*>(argv[i])[absolute.size()] = '\0';
+		}
+	}
+}
+
 template <class T>
 int Interpreter::runAction(int argc, const char **argv) {
 	// CommonOptionsParser constructor will parse arguments and create a
@@ -87,17 +112,21 @@ void printArgv(int argc, const char** argv) {
 	cout << endl;
 }
 
+const char** Interpreter::cloneArgv(int argc, const char** argv) const
+{
+	const char ** out = new const char*[argc];
+	for(int i=0; i<argc; ++i) {
+		string tmp(argv[i]);
+		out[i] = new char[tmp.size()+1];
+		memset(const_cast<char*>(out[i]), 0, tmp.size()+1);
+		memcpy(const_cast<char*>(out[i]), tmp.c_str(), tmp.size()+1);
+	}
+	return out;
+}
+
 const char** Interpreter::cloneArgv() const
 {
-	const char ** argv = new const char*[mArgc];
-	for(int i=0; i<mArgc; ++i) {
-		string tmp(mArgv[i]);
-		argv[i] = new char[tmp.size()+1];
-		memset(const_cast<char*>(argv[i]), 0, tmp.size()+1);
-		memcpy(const_cast<char*>(argv[i]), tmp.c_str(), tmp.size()+1);
-	}
-	cout << endl;
-	return argv;
+	return cloneArgv(mArgc, mArgv);
 }
 
 void Interpreter::freeArgv(int argc, const char** argv)
@@ -271,7 +300,10 @@ bool Unload::execute() {
 	}
 
 	for(const string& str : mArgs) {
-		cout << "\t" << str << endl;
+		if(str == "--") {
+			cerr << "Invalid file name " << str << endl;
+			continue;
+		}
 		if(!mInt.removeFileFromArgv(str))
 			cerr << "File " << str << " not loaded!" << endl;
 	}
