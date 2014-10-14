@@ -539,9 +539,15 @@ MockupFunction* TestDriver::ParseMockupFunction()
 	}
 	mCurrentToken = mTokenizer.nextToken(); // eat the '='
 
-	Constant *expected_const = ParseConstant();
-
-	return new MockupFunction(func, expected_const);
+	if(mCurrentToken == "void") {
+		Identifier* id = ParseIdentifier();
+		return new MockupFunction(func, id);
+	}
+	else {
+		Constant *expected_const = ParseConstant();
+		return new MockupFunction(func, expected_const);
+	}
+	return nullptr;
 }
 
 MockupFixture* TestDriver::ParseMockupFixture()

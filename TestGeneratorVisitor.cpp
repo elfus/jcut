@@ -358,12 +358,12 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 		// If no declaration is found we need to figure out the return type somehow
 		assert(false && "TODO: Implement this!");
 	} else {
-		const tp::Constant* expected = MF->getArgument();
-		if(llvm_func->getReturnType() == mBuilder.getVoidTy() &&
-			expected->toString() != "void") {
+		if(llvm_func->getReturnType() == mBuilder.getVoidTy()
+				&& !MF->isReturningVoid()) {
 			throw JCUTException("The function "+func_name+"() has void as return value.\n"
 					"\tThe only valid syntax for a void function is: "+func_name+"() = void;");
 		}
+		const tp::Constant* expected = MF->getConstant();
 		///////////////////////////////////////////////////////
 		// Create the mockup function which will return whatever the user
 		// defined in the test file (mockup {} statement)

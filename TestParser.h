@@ -110,6 +110,9 @@ public:
     Token(char* lex, int size, int type, unsigned line, unsigned column) :
     mType(static_cast<TokenType>(type)), mLine(line), mColumn(column), mLexeme(lex,size) {}
 
+    bool operator ==(const string& s) {
+		return mLexeme == s;
+	}
     bool operator ==(char c) {
         string s(1,c);
         return mLexeme == s;
@@ -809,25 +812,35 @@ class MockupFunction : public TestExpr {
 private:
     unique_ptr<FunctionCall> mFunctionCall;
     unique_ptr<Constant> mConstant;
+    unique_ptr<Identifier> mVoidId;
     // owned by llvm, do not delete!
     llvm::Function *mOriginalFunction;
     llvm::Function *mMockupFunction;
 public:
+    explicit
     MockupFunction(FunctionCall *call, Constant *arg) :
-    mFunctionCall(call), mConstant(arg),
+    mFunctionCall(call), mConstant(arg), mVoidId(nullptr),
     mOriginalFunction(nullptr), mMockupFunction(nullptr) { }
 
+    explicit
+    MockupFunction(FunctionCall *call, Identifier *arg) :
+        mFunctionCall(call), mConstant(nullptr), mVoidId(arg),
+        mOriginalFunction(nullptr), mMockupFunction(nullptr) { }
+
     MockupFunction(const MockupFunction& that)
-    : TestExpr(that),  mFunctionCall(nullptr), mConstant(nullptr),
+    : TestExpr(that),  mFunctionCall(nullptr), mConstant(nullptr), mVoidId(nullptr),
      mOriginalFunction(nullptr), mMockupFunction(nullptr) {
     	mFunctionCall = unique_ptr<FunctionCall>(
     			new FunctionCall(*that.mFunctionCall));
     	mConstant = unique_ptr<Constant>(
     	    			new Constant(*that.mConstant));
+    	mVoidId = unique_ptr<Identifier>(
+    			new Identifier(*that.mVoidId));
     }
 
     const FunctionCall* getFunctionCall() const { return mFunctionCall.get(); }
-    const Constant* getArgument() const { return mConstant.get(); }
+    const Constant* getConstant() const { return mConstant.get(); }
+    bool isReturningVoid() { return mVoidId != nullptr; }
 
     void accept(Visitor *v) {
         v->VisitMockupFunction(this);
