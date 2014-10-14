@@ -95,7 +95,8 @@ int Interpreter::mainLoop() {
 		if(line.size()) {
 			linenoiseHistoryAdd(line.c_str());
 			linenoiseHistorySave(history_name.c_str());
-		}
+		} else
+			continue;
 
 		attempted = executeCommand(line, *this, executed);
 		if(attempted)

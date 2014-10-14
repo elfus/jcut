@@ -34,7 +34,10 @@ const char* UnexpectedToken::what() const throw () {
 	if(!mExceptionSource.empty())
 		ss << mExceptionSource <<":";
 	ss << mToken.mLine << ":" << mToken.mColumn <<": UnexpectedToken: ";
-	ss << mToken.mLexeme << ". ";
+	if(mToken.mType == TOK_EOF)
+		ss << "End of file. ";
+	else
+		ss << mToken.mLexeme << ". ";
 	if(!mExpected.empty())
 		ss << "Expecting a valid " << mExpected << ".";
 	return ss.str().c_str();
