@@ -34,6 +34,30 @@
 using namespace std;
 
 
+enum ColumnName {
+	GROUP_NAME = 0,
+	TEST_NAME,
+	FUD, // Function Under Test
+	RESULT,
+	ACTUAL_RESULT,
+	EXPECTED_RES,
+	WARNING,
+	FUD_OUTPUT,
+	FAILED_EE, // Failed Expected Expressions
+	MAX_COLUMN
+};
+
+
+struct TestResults {
+	vector<ColumnName> mOrder;
+	map<ColumnName, string> mResults;
+	TestResults(const vector<ColumnName>& o) : mOrder(o){}
+	void collectTestResults(tp::TestDefinition* TD);
+	static string getColumnString(ColumnName name, tp::TestDefinition *TD);
+	static string getActualResultString(tp::TestDefinition *TD);
+	static string getExpectedResultString(tp::TestDefinition *TD);
+};
+
 class JCUTException : public std::exception {
 public:
     JCUTException() {}
@@ -1069,6 +1093,7 @@ private:
     // Do not delete these pointers! They belong to someone else!
 	// We only store ExpectedExpressions that are known to have failed.
 	std::vector<ExpectedExpression*> mFailedEE;
+	std::map<ColumnName,string> mResults;
 public:
 
     TestDefinition(
@@ -1078,11 +1103,12 @@ public:
             TestTeardown *teardown = nullptr,
             TestMockup *mockup = nullptr) :
     mTestData(info), mTestFunction(function), mTestSetup(setup),
-    mTestTeardown(teardown), mTestMockup(mockup) { }
+    mTestTeardown(teardown), mTestMockup(mockup), mResults() { }
 
     TestDefinition(const TestDefinition& that)
     : TestExpr(that), mTestData(nullptr), mTestFunction(nullptr), mTestSetup(nullptr),
-      mTestTeardown(nullptr), mTestMockup(nullptr), mFailedEE(that.mFailedEE) {
+      mTestTeardown(nullptr), mTestMockup(nullptr), mFailedEE(that.mFailedEE),
+      mResults(that.mResults){
     	if(that.mTestData)
     		mTestData = unique_ptr<TestData>(new TestData(*that.mTestData));
     	if(that.mTestFunction)
@@ -1128,6 +1154,9 @@ public:
     		passed = false;
     	return passed;
     }
+
+    void setTestResults(const std::map<ColumnName,string>& r) { mResults = r; }
+    const std::map<ColumnName,string>& getTestResults() const { return mResults;}
 };
 
 class GlobalMockup : public TestExpr {
@@ -1382,5 +1411,8 @@ public:
 	UnexpectedToken(tp::Token token, string expected = "");
 	const char* what() const throw ();
 };
+
+/////
+
 
 #endif	/* TESTPARSER_H */

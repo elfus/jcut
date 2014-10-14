@@ -976,3 +976,153 @@ ExpectedConstant* CSVDriver::getExpectedConstantAt(unsigned i, unsigned j)
 			assert(false && "DataPlaceholders not supported in CVS file.");
 	return ParseExpectedConstant();
 }
+
+///////////////////
+
+void TestResults::collectTestResults(tp::TestDefinition* TD)
+{
+	for(auto column : mOrder) {
+		stringstream ss;
+		ss << getColumnString(column, TD);
+		mResults[column] = ss.str();
+	}
+	// Save warnings
+	const vector<Warning>& warnings = TD->getWarnings();
+	mResults[WARNING] = "";
+	if(warnings.size()) {
+		stringstream ss;
+		for(auto w : warnings) {
+			ss << endl << w.what() ;
+		}
+		mResults[WARNING] = ss.str();
+	}
+	// Save function under test output
+	mResults[FUD_OUTPUT] = "";
+	if(TD->getOutput().size()) {
+		stringstream ss;
+		ss << TD->getOutput();
+		mResults[FUD_OUTPUT] = ss.str();
+	}
+	// Save Failed expected expressions
+	mResults[FAILED_EE] = "";
+	if(TD->testPassed() == false) {
+		const vector<ExpectedExpression*>&
+		ee = TD->getFailedExpectedExpressions();
+		for(ExpectedExpression* e : ee) {
+			stringstream ss;
+			ss << JCUTException::mExceptionSource << ":" << e->getLine()
+				<< ":" << e->getColumn() << ": ";
+			ss << "Expected expression ["
+				 << e->toString() << "] is false" << endl;
+			mResults[FAILED_EE] = ss.str();
+		}
+	}
+}
+
+string TestResults::getColumnString(ColumnName name, tp::TestDefinition *TD)
+{
+	switch(name) {
+		case GROUP_NAME:
+			return TD->getGroupName();
+		case TEST_NAME:
+			return TD->getLLVMFunction()->getName();
+		case FUD:
+			return TD->getTestFunction()->getFunctionCall()->getFunctionCalledString();
+		case RESULT:
+		{
+			bool passed = TD->getPassingValue();
+			if(TD->getFailedExpectedExpressions().size())
+				passed = false;
+			return (passed?"PASSED" : "FAILED");
+		}
+		case ACTUAL_RESULT:
+			return getActualResultString(TD);
+		case EXPECTED_RES:
+			return getExpectedResultString(TD);
+		default:
+			return "Invalid column";
+	}
+	return "Invalid column2";
+}
+
+string TestResults::getActualResultString(TestDefinition *TD)
+{
+	llvm::GenericValue result(TD->getReturnValue());
+	stringstream ss;
+	llvm::Type *returnType = TD->getTestFunction()->getFunctionCall()->getReturnType();
+	llvm::Type::TypeID type = returnType->getTypeID();
+	switch(type) {
+		case llvm::Type::TypeID::DoubleTyID:
+			ss << result.DoubleVal;
+		break;
+		case llvm::Type::TypeID::FloatTyID:
+			ss << result.FloatVal;
+		break;
+		case llvm::Type::TypeID::HalfTyID:
+			ss << result.FloatVal;
+			break;
+		case llvm::Type::TypeID::IntegerTyID:
+		{
+			unsigned bit_width = result.IntVal.getBitWidth();
+			bool is_signed = result.IntVal.isSignedIntN(bit_width);
+			/// @note For the sake of simplicity just use 10, however we
+			/// we may want to use a different radix.
+			unsigned radix = 10;
+			ss << result.IntVal.toString(radix,is_signed);
+		}
+		break;
+		case llvm::Type::TypeID::PointerTyID:
+			ss << result.PointerVal;
+			break;
+		case llvm::Type::TypeID::StructTyID:
+			ss << "struct type";
+			break;
+		case llvm::Type::TypeID::VoidTyID:
+			ss << "void";
+			break;
+		default:
+			assert(false && "Unsupported return type");
+	}
+	return ss.str();
+}
+
+string  TestResults::getExpectedResultString(TestDefinition *TD)
+{
+	ExpectedResult* ER = TD->getTestFunction()->getExpectedResult();
+	if (ER) {
+		stringstream ss;
+		const Constant* C = ER->getExpectedConstant()->getConstant();
+		ss << ER->getComparisonOperator()->toString() << " ";
+		switch(C->getType()){
+			case Constant::Type::NUMERIC:
+			{
+				const NumericConstant* nc = C->getNumericConstant();
+				if(nc->isFloat())
+					ss << nc->getFloat();
+				if(nc->isInt())
+					ss << nc->getInt();
+			}
+				break;
+			case Constant::Type::STRING:
+			{
+				const string& s = C->getStringConstant()->getString();
+				stringstream tmp;
+				tmp << static_cast<const void*>(s.c_str());
+				unsigned long addr =  stoul(tmp.str(), nullptr, 16);
+				ss << "0x" << std::hex << addr << " (" << s << ")";
+			}
+				break;
+			case Constant::Type::CHAR:
+			{
+				unsigned u = C->getCharConstant()->getChar();
+				ss << u << " ('" << C->getCharConstant()->getChar() << "')";
+			}
+				break;
+			default:
+				ss<<"Invalid Constant!";
+				break;
+		}
+		return ss.str();
+	}
+	return "(none)";
+}

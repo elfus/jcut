@@ -31,17 +31,6 @@ using namespace tp;
  */
 class TestLoggerVisitor : public Visitor {
 public:
-    enum ColumnName {
-        GROUP_NAME = 0,
-        TEST_NAME,
-        FUD, // Function Under Test
-        RESULT,
-        ACTUAL_RESULT,
-        EXPECTED_RES,
-        WARNING,
-        MAX_COLUMN
-    };
-
     enum LogFormat {
         LOG_ALL = 1 << 0, // 1
         LOG_PASSING = 1 << 1, // 2
@@ -66,10 +55,7 @@ private:
     int mFmt = LOG_ALL;
     bool mCurrentTestPassed = false;
 
-    string getActualResultString(TestDefinition *TD);
-    string getExpectedResultString(TestDefinition *TD);
-    string getWarningString(TestDefinition *TD);
-    void logFunction(LLVMFunctionHolder *FH, const string& name);
+    void logFunctionOutput(LLVMFunctionHolder *FH, const string& name);
 public:
 
     TestLoggerVisitor() {
@@ -132,7 +118,7 @@ public:
     void VisitGroupSetup(GlobalSetup *GS) {
         if(mFmt & (LOG_GROUP_SETUP)) {
             cout << setw(WIDTH) << setfill('<') << '<' << setfill(' ') << endl;
-            logFunction(GS, GS->getLLVMFunction()->getName());
+            logFunctionOutput(GS, GS->getLLVMFunction()->getName());
             cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
             cout << setw(WIDTH) << setfill('<') << '<' << setfill(' ') << endl;
         }
@@ -143,40 +129,41 @@ public:
 		// optionally print more information about the current test.
 		mCurrentTestPassed = TD->testPassed();
 		++mTestCount;
+		const map<ColumnName,string>& results = TD->getTestResults();
         if(mCurrentTestPassed && (mFmt & (LOG_ALL | LOG_PASSING)) ){
         	++mTestsPassed;
             for(auto column : mOrder)
-            	cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
-            cout << endl;
+            	cout << setw(mColumnWidth[column]) << results.at(column) << mPadding;
         }
         else if(mCurrentTestPassed==false && (mFmt & (LOG_ALL | LOG_FAILING)) ) {
         	++mTestsFailed;
             for(auto column : mOrder)
-            	cout << setw(mColumnWidth[column]) << getColumnString(column, TD) << mPadding;
-            cout << endl;
+            	cout << setw(mColumnWidth[column]) << results.at(column) << mPadding;
         }
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
-		logFunction(TD, "test");
-        if(TD->testPassed() == false) {
-        	const vector<ExpectedExpression*>&
-        	ee = TD->getFailedExpectedExpressions();
-        	for(ExpectedExpression* e : ee) {
-        		stringstream ss;
-        		ss << JCUTException::mExceptionSource << ":" << e->getLine()
-        			<< ":" << e->getColumn() << ": ";
-        		cout << ss.str() << "Expected expression ["
-        			 << e->toString() << "] is false" << endl;
-        	}
-        }
+    	const map<ColumnName,string>& results = TD->getTestResults();
+    	cout << results.at(WARNING) << endl;
+    	string test_output = results.at(FUD_OUTPUT);
+    	if(test_output.size()) {
+    		string fud = TD->getTestFunction()->getFunctionCall()->getFunctionCalledString();
+			stringstream ss;
+			ss << "[" << fud << " output]";
+			cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
+			cout << setw(WIDTH) << right << ss.str() << left << endl;
+			cout << test_output << endl;
+		}
+    	string failed_ee = results.at(FAILED_EE);
+    	if(!failed_ee.empty())
+    		cout << failed_ee;
         cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
     void VisitGroupTeardown(GlobalTeardown *GT) {
         if(mFmt & LOG_GROUP_TEARDOWN) {
             cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
-            logFunction(GT, GT->getLLVMFunction()->getName());
+            logFunctionOutput(GT, GT->getLLVMFunction()->getName());
             cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
         }
     }
@@ -185,7 +172,7 @@ public:
     void VisitTestGroup(TestGroup *TG) {
         if((mFmt & LOG_GROUP_CLEANUP) && TG->getLLVMFunction()) {
             cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
-            logFunction(TG, TG->getLLVMFunction()->getName());
+            logFunctionOutput(TG, TG->getLLVMFunction()->getName());
             cout << setw(WIDTH) << setfill('>') << '>' << setfill(' ') << endl;
         }
     }
@@ -200,7 +187,6 @@ public:
 
     const vector<ColumnName>& getColumnOrder() { return mOrder; }
     const map<ColumnName,unsigned>& getColumnWidths() { return mColumnWidth; }
-    string getColumnString(ColumnName name, TestDefinition *TD);
 
     unsigned getTestsFailed() const { return mTestsFailed; }
 
@@ -208,8 +194,8 @@ public:
 
 class OutputFixerVisitor : public Visitor {
     TestLoggerVisitor& mLogger;
-    const vector<TestLoggerVisitor::ColumnName>& mOrder;
-    const map<TestLoggerVisitor::ColumnName,unsigned>& mColumnWidth;
+    const vector<ColumnName>& mOrder;
+    const map<ColumnName,unsigned>& mColumnWidth;
 public:
     OutputFixerVisitor() = delete;
     OutputFixerVisitor(const OutputFixerVisitor&) = delete;
@@ -221,7 +207,7 @@ public:
 
     void VisitTestDefinition(TestDefinition *TD) {
         for(auto column : mOrder) {
-            string str = mLogger.getColumnString(column, TD);
+            string str = TestResults::getColumnString(column, TD);
             if(str.size() > mColumnWidth.at(column))
                 mLogger.setColumnWidth(column, str.size());
         }

@@ -95,11 +95,14 @@ void JCUTAction::EndSourceFileAction() {
 				llvm::errs() << "unable to make execution engine: " << Error << "\n";
 				return;
 			}
-			tests->accept(&runner);
 
 			TestLoggerVisitor results_logger;
-			OutputFixerVisitor fixer(results_logger);
 			results_logger.setLogFormat(TestLoggerVisitor::LOG_ALL);
+			runner.setColumnOrder(results_logger.getColumnOrder());
+
+			tests->accept(&runner);
+
+			OutputFixerVisitor fixer(results_logger);
 			// @note The following two calls have to happen in this exact
 			// same order:
 			//  1st OutputFixerVisitor so we can get the right widths of all the output

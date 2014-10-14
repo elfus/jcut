@@ -37,6 +37,9 @@ private:
     /// in the stack. This used by individual tests and when returning to a
     /// different group.
     std::stack<llvm::Function*> mMockupRevert;
+    // The order in which we will store the results.
+    vector<ColumnName> mOrder;
+
     void runFunction(LLVMFunctionHolder* FW) {
         llvm::Function* f = FW->getLLVMFunction();
         if (f) {
@@ -71,6 +74,7 @@ private:
 			backup.pop();
 		}
     }
+
 public:
     TestRunnerVisitor() = delete;
     TestRunnerVisitor(const TestRunnerVisitor& orig) = delete;
@@ -79,7 +83,7 @@ public:
     virtual ~TestRunnerVisitor() { delete mEE; }
 
     bool isValidExecutionEngine() const { return mEE != nullptr; }
-
+    void setColumnOrder(const vector<ColumnName>& order) { mOrder = order;}
     void VisitGroupMockup(GlobalMockup *GM) {
     	vector<MockupFunction*> mockups =
     			GM->getMockupFixture()->getMockupFunctions();
@@ -145,7 +149,7 @@ public:
 			}
     	}
 
-        runFunction(TD); // do the cleanup
+        runFunction(TD);
 
         const llvm::GlobalVariable* g = TD->getGlobalVariable();
 		if(g) {
@@ -195,6 +199,10 @@ public:
         if(failing.size()) {
         	TD->setFailedExpectedExpressions(failing);
 		}
+
+        TestResults results(mOrder);
+        results.collectTestResults(TD);
+        TD->setTestResults(results.mResults);
     }
 
 };
