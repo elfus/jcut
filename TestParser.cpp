@@ -1005,6 +1005,8 @@ map<ColumnName, string> TestResults::readFromDisk()
 {
 	if(mTmpFileName.empty())
 		throw JCUTException("Invalid temporary file name for test results!");
+	if(!llvm::sys::fs::is_regular_file(mTmpFileName))
+		throw JCUTException("Could not read test results from child process!");
 	map<ColumnName, string> results;
 	ifstream rf;
 	rf.open(mTmpFileName);

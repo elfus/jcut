@@ -98,8 +98,10 @@ public:
 
 class LLVMFunctionHolder {
 private:
-    // Seems LLVM Is deleting this function. You may want to investigate.
+    // LLVM Is deleting this function.
     llvm::Function* mFunction;
+    // We created a function that  returns the value whether a test passed or not
+	llvm::Function* mResultFunction;
     llvm::GenericValue mReturnValue;
     /// Attribute used to know the group this LLVM Function belongs to
     string  mGroupName;
@@ -108,14 +110,19 @@ private:
     // Any warning we want to inform while generating this LLVM Function
     vector<Warning> mWarnings;
     bool mPassingValue;
-    llvm::GlobalVariable* mResultVariable;
+
 public:
-    LLVMFunctionHolder() : mFunction(nullptr), mReturnValue(), mGroupName(),
-    mOutput(), mWarnings(), mPassingValue(false), mResultVariable(nullptr) {}
+    LLVMFunctionHolder() : mFunction(nullptr), mResultFunction(nullptr),
+    mReturnValue(), mGroupName(),
+    mOutput(), mWarnings(), mPassingValue(false) {}
     virtual ~LLVMFunctionHolder() { }
 
     void setLLVMFunction(llvm::Function* f) { mFunction = f; }
     llvm::Function* getLLVMFunction() const { return mFunction; }
+
+    void setLLVMResultFunction(llvm::Function* f) { mResultFunction = f; }
+   llvm::Function* getLLVMResultFunction() const { return mResultFunction; }
+
     void setReturnValue(llvm::GenericValue GV) { mReturnValue = GV; }
     const llvm::GenericValue& getReturnValue () const { return mReturnValue; }
     string getGroupName() const { return mGroupName; }
@@ -129,8 +136,6 @@ public:
     const vector<Warning>& getWarnings() const { return mWarnings; }
     void setPassingValue(bool passed) { mPassingValue = passed; }
     bool getPassingValue() const { return mPassingValue; }
-    void setGlobalVariable(llvm::GlobalVariable* g) { mResultVariable = g; }
-    llvm::GlobalVariable* getGlobalVariable() const { return mResultVariable; }
     static unsigned warning_count;
 };
 

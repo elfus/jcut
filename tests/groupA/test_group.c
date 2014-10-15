@@ -71,3 +71,9 @@ unsigned long long t8(unsigned long long a, unsigned long long b) {
 	printf("%s: b: %llu\n",__func__,b);
 	return a + b;
 }
+
+void msg() {
+	char * a = 0;
+	*a = 'a';
+	printf("Hola mundo\n");
+}

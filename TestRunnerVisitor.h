@@ -21,7 +21,7 @@
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/Support/raw_ostream.h"
 #include "OSRedirect.h"
-
+#include <cstdlib>
 // Headers needed to fork!
 #include <unistd.h>
 #include <sys/wait.h>
@@ -168,33 +168,25 @@ public:
 
 			runFunction(TD);
 
-			const llvm::GlobalVariable* g = TD->getGlobalVariable();
-			if(g) {
-				unsigned char* pass = static_cast<unsigned char*>(
-						mEE->getPointerToGlobal((const llvm::GlobalValue *)g));
-				if(pass) {
-					TD->setPassingValue(static_cast<bool>(*pass));
-				} else
-					assert(false && "Test result Global variable not found!");
-			} else
-				assert(false && "Invalid global variable for result!");
+			llvm::Function* func = TD->getLLVMResultFunction();
+			if(!func)
+				assert(false && "Function test result not found!");
+			llvm::GenericValue ret = mEE->runFunction(func, mArgs);
+			TD->setPassingValue(ret.IntVal.getBoolValue());
 
 			std::vector<ExpectedExpression*> failing;
+			// @bug @todo Debug ExpectedExpressions: Try all possible combinations.
+			// When the test does not have an expected result and the expected expression
+			// should fail, it always passess.
 			for(ExpectedExpression* ptr : mExpExpr) {
-				llvm::GlobalVariable* v = ptr->getGlobalVariable();
-				if(v) {
-					unsigned char* pass = static_cast<unsigned char*>(
-							mEE->getPointerToGlobal((const llvm::GlobalValue *)v));
-					if(pass) {
-						bool passed = static_cast<bool>(*pass);
-						TD->setPassingValue(passed);
-						if(!passed)
-							failing.push_back(ptr);
-					} else
-						assert(false && "ExpectedExpression Global variable not found!");
-				} else {
-					assert(false &&  "Invalid global variable for expected expression");
-				}
+				llvm::Function* ee_func = TD->getLLVMResultFunction();
+				if(!ee_func)
+					assert(false && "Function expected result result not found!");
+				llvm::GenericValue ee_ret = mEE->runFunction(ee_func, mArgs);
+				bool passed = ee_ret.IntVal.getBoolValue();
+				if(passed == false)
+					failing.push_back(ptr);
+				TD->setPassingValue(passed);
 			}
 			mExpExpr.clear();
 
@@ -218,18 +210,26 @@ public:
 			}
 			results.collectTestResults(TD);
 			results.saveToDisk();
-			exit(EXIT_SUCCESS);
+			_Exit(EXIT_SUCCESS);
     	} // end of child process
     	else { // Continue parent process
     		int status = 0;
     		waitpid(pid, &status, 0);
-    		cout << "Child ended with status "<< status << endl;
+    		if(WIFEXITED(status)) {
+    			// Child process ended normally
+    		} else {
+    			if(WIFSIGNALED(status)) {
+    				cerr << "Child was terminated by signal: " << WTERMSIG(status) << endl;
+    				if(WCOREDUMP(status))
+    					cerr << "Child produced a core dump!" << endl;
+    			}
+    			cout << "Child ended with status "<< status << endl;
+    		}
     	}
 
         results.mResults = results.readFromDisk();
         TD->setTestResults(results.mResults);
     }
-
 };
 
 #endif	/* TESTRUNNERVISITOR_H */

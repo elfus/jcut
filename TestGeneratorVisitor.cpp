@@ -337,7 +337,17 @@ void TestGeneratorVisitor::VisitExpectedExpression(ExpectedExpression *EE)
 					"expected_expression_"+mCurrentFud); // Providing an initializer 'DEFINES' the variable
 	llvm::Instruction* res = cast<llvm::Instruction>(mBuilder.CreateStore(return_value, result));
 	mInstructions.push_back(res);
-	EE->setGlobalVariable(result);
+	/// Create the function that will return the value of the global variable result
+	Function* result_func = cast<Function>(mModule->getOrInsertFunction(
+				"get_"+result->getName().str(), result->getType()->getElementType(),
+				nullptr));
+	BasicBlock* MB = BasicBlock::Create(mModule->getContext(),"result_block",result_func);
+	// The expected value has to match the return value type from the llvm_func
+	LoadInst* load = mBuilder.CreateLoad(result);
+	ReturnInst* ret = mBuilder.CreateRet(load);
+	MB->getInstList().push_back(load);
+	MB->getInstList().push_back(ret);
+	EE->setLLVMResultFunction(result_func);
 }
 
 void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
@@ -635,7 +645,18 @@ void TestGeneratorVisitor::VisitTestDefinition(TestDefinition *TD)
 		mInstructions.push_back(st);
 		mTestResult = nullptr;
 	}
-	TD->setGlobalVariable(result);
+	/// Create function that returns the global variable result
+	Function* result_func = cast<Function>(mModule->getOrInsertFunction(
+			"get_"+result->getName().str(), result->getType()->getElementType(),
+			nullptr));
+	BasicBlock* MB = BasicBlock::Create(mModule->getContext(),"result_block",result_func);
+	// The expected value has to match the return value type from the llvm_func
+	LoadInst* load = mBuilder.CreateLoad(result);
+	ReturnInst* ret = mBuilder.CreateRet(load);
+	MB->getInstList().push_back(load);
+	MB->getInstList().push_back(ret);
+	TD->setLLVMResultFunction(result_func);
+	/////////////////////////////
 
     if(mBackupTest.size() )
         restoreGlobalVariables(mBackupTest);
