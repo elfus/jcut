@@ -382,6 +382,8 @@ bool Load::execute() {
 		string absolute = ss.str().str();
 		if(!mInt.addFileToArgv(absolute))
 			cerr << "Could not load file " << str << endl;
+		else
+			cout << "File " << absolute << " loaded succesfully." << endl;
 	}
 	return true;
 }
