@@ -1,8 +1,12 @@
 #include "TestRunnerVisitor.h"
 
 // Headers needed to fork!
+#ifdef __MINGW32__
+
+#else
 #include <unistd.h>
 #include <sys/wait.h>
+#endif
 ///////
 
 #include "llvm/Support/CommandLine.h"
@@ -90,7 +94,11 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 	pid_t pid;
 
 	if(NoForkOpt.getValue() == false) {
+#ifdef __MINGW32__
+		assert(false && "Implement this for windows!");
+#else
 		pid = fork();
+#endif
 		if(pid == -1)
 			throw JCUTException("Could not fork process for test"+test_name);
 	}
@@ -157,6 +165,9 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 			_Exit(EXIT_SUCCESS);
 	} // end of child process
 	else { // Continue parent process
+#ifdef __MINGW32__
+		assert(false && "Implement this for windows!");
+#else
 		int status = 0;
 		waitpid(pid, &status, 0);
 		if(WIFEXITED(status)) {
@@ -169,6 +180,7 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 			}
 			cout << "Child ended with status "<< status << endl;
 		}
+#endif
 	}
 
 	results.mResults = results.readFromDisk();
