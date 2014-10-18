@@ -5,6 +5,9 @@
 #include <sys/wait.h>
 ///////
 
+#include "llvm/Support/CommandLine.h"
+extern llvm::cl::opt<bool> NoForkOpt;
+
 void TestRunnerVisitor::runFunction(LLVMFunctionHolder* FW) {
 	llvm::Function* f = FW->getLLVMFunction();
 	if (f) {
@@ -86,9 +89,13 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 	results.mTmpFileName = test_name + "-tmp.txt";
 	pid_t pid;
 
-	pid = fork();
-	if(pid == -1)
-		throw JCUTException("Could not fork process for test"+test_name);
+	if(NoForkOpt.getValue() == false) {
+		pid = fork();
+		if(pid == -1)
+			throw JCUTException("Could not fork process for test"+test_name);
+	}
+	else
+		pid = 0;
 
 	if(pid == 0) { // Child process will execute the test
 		if(TD->hasTestMockup()) {
@@ -145,7 +152,9 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 		}
 		results.collectTestResults(TD);
 		results.saveToDisk();
-		_Exit(EXIT_SUCCESS);
+
+		if(NoForkOpt.getValue() == false)
+			_Exit(EXIT_SUCCESS);
 	} // end of child process
 	else { // Continue parent process
 		int status = 0;

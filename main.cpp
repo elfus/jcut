@@ -33,8 +33,9 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 cl::opt<string> TestFileOpt("t", cl::Optional,  cl::ValueRequired, cl::desc("Input test file"), cl::value_desc("filename"));
 cl::opt<bool> DumpOpt("dump", cl::init(false), cl::ZeroOrMore, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
+cl::opt<bool> NoForkOpt("no-fork", cl::init(false), cl::ZeroOrMore, cl::desc("Runs tests without fork()ing them"), cl::value_desc("filename"));
 
-bool isTestFileProvided(int argc, const char **argv) {
+static bool isTestFileProvided(int argc, const char **argv) {
 	bool provided = false;
 	for(int i=0; i<argc; ++i) {
 		string tmp(argv[i]);
