@@ -95,7 +95,8 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 
 	if(NoForkOpt.getValue() == false) {
 #ifdef __MINGW32__
-		assert(false && "Implement this for windows!");
+		cerr << "Warning: Running test in same address space as jcut" << endl;
+		pid = 0;
 #else
 		pid = fork();
 #endif
@@ -162,23 +163,33 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 		results.saveToDisk();
 
 		if(NoForkOpt.getValue() == false)
+#ifdef __MINGW32__
+			do {} while(0); // @todo implement fork in windows
+#else
 			_Exit(EXIT_SUCCESS);
+#endif
 	} // end of child process
 	else { // Continue parent process
 #ifdef __MINGW32__
-		assert(false && "Implement this for windows!");
+		do {} while(0); // @todo implement fork in windows
 #else
 		int status = 0;
 		waitpid(pid, &status, 0);
 		if(WIFEXITED(status)) {
 			// Child process ended normally
 		} else {
+			stringstream ss;
+			string function_called = TD->getTestFunction()->
+					getFunctionCall()->getFunctionCalledString();
+			ss << "The function " << function_called
+					<< " crashed during execution. More details:" << endl;
+			ss << "I ran that function in a different process but it crashed. Please debug that function" << endl;
 			if(WIFSIGNALED(status)) {
-				cerr << "Child was terminated by signal: " << WTERMSIG(status) << endl;
+				ss << "Child process was terminated by signal: " << strsignal(status) << endl;
 				if(WCOREDUMP(status))
-					cerr << "Child produced a core dump!" << endl;
+					ss << "Child process produced a core dump!" << endl;
 			}
-			cout << "Child ended with status "<< status << endl;
+			throw JCUTException(ss.str());
 		}
 #endif
 	}
