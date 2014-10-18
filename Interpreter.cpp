@@ -38,9 +38,18 @@ Interpreter::Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv
 {
 	mArgv = cloneArgv(argc, argv);
 	convertToAbsolutePaths(mArgc, mArgv);
-	string tmp(mArgv[mArgc-1]);
-	if(tmp != "--") {
-		cout << "Double dash not provided!" << endl;
+	bool double_dash = false;
+	for(int i = 0; i < mArgc; ++i) {
+		string tmp(mArgv[i]);
+		if(tmp == "-help" or tmp == "--help")
+			runAction<clang::SyntaxOnlyAction>(mArgc, mArgv);
+		if(tmp == "--")
+			double_dash = true;
+	}
+
+	if(!double_dash) {
+		cout << "Double dash not provided! Remember, if you want add your own compiler flags\n"
+				"for the clang API you need to add a double dash '--' followed by the compiler flags."<< endl << endl;
 		vector<string> backup;
 		for(int i=0; i<mArgc; ++i)
 			backup.push_back(mArgv[i]);
