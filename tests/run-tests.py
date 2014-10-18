@@ -3,10 +3,16 @@ import os
 import sys
 import subprocess
 import time
+import platform
 
 
 def main():
-    cur_folder = os.getcwd().split("/")[-1]
+    cur_folder = ""
+    if platform.system() == 'Linux':
+        cur_folder = os.getcwd().split("/")[-1]
+    else:
+        cur_folder = os.getcwd().split("\\")[-1]
+
     if not cur_folder == "tests":
         print("The script ", sys.argv[0], " hast to be executed under the 'tests' folder")
         exit(1)
@@ -17,9 +23,17 @@ def main():
         print("\t", sys.argv[0], " /path/to/jit-testing")
         exit(1)
 
-    start_time = time.clock()
+    start_time = time.time()
 
-    JCUT = [sys.argv[1], "test_group.c", "-t", "test-file.txt", "--"]
+    JCUT = [sys.argv[1], "test_group.c", "-t", "test-file.txt"]
+    if len(sys.argv) > 2:
+        i = 2
+        while (i < len(sys.argv)):
+            JCUT.append(sys.argv[i])
+            i += 1
+
+    print(JCUT)
+
     test_report = []
     test_report_2 = []
     STDOUT_FILE = "stdout.txt"
@@ -52,7 +66,7 @@ def main():
             elif ret < 0 or ret >= 255:
                 print("\tJCUT is having problems! debug those issues!")
 
-    # groupH is used to test the error reporting mecchanism, that means
+    # groupH is used to test the error reporting mechanism, that means
     # the test file is plagued with errors.
     if "groupH" in test_report_2:
         test_report_2.remove("groupH")
@@ -70,7 +84,9 @@ def main():
     else:
         print("SUCCESS!")
 
-    print('\nFinished in {:.3f} seconds'.format(time.clock() - start_time))
+    end_time = time.time()
+    duration = end_time - start_time
+    print('\nFinished in', duration, 'seconds')
 
 
 if __name__ == "__main__":

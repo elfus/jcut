@@ -95,7 +95,7 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 
 	if(NoForkOpt.getValue() == false) {
 #ifdef __MINGW32__
-		cerr << "Warning: Running test in same address space as jcut" << endl;
+		cout << "Warning: Running test in same address space as jcut" << endl;
 		pid = 0;
 #else
 		pid = fork();
