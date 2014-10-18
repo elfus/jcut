@@ -32,7 +32,7 @@ static cl::OptionCategory JcutOptions("JCUT Options");
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 cl::opt<string> TestFileOpt("t", cl::Optional,  cl::ValueRequired, cl::desc("Input test file"), cl::value_desc("filename"));
-cl::opt<bool> DumpOpt("dump", cl::init(false), cl::Optional, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
+cl::opt<bool> DumpOpt("dump", cl::init(false), cl::ZeroOrMore, cl::desc("Dump generated LLVM IR code"), cl::value_desc("filename"));
 
 bool isTestFileProvided(int argc, const char **argv) {
 	bool provided = false;
