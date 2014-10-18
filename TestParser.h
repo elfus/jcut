@@ -71,7 +71,7 @@ public:
     JCUTException(const string& msg) : mMsg(msg){
     	stringstream ss;
 		if(!mExceptionSource.empty())
-			ss << mExceptionSource << ":";
+			ss << mExceptionSource << ": ";
 		ss << mMsg;
 		mMsg = ss.str();
     }
@@ -88,7 +88,9 @@ protected:
 
 class Warning : JCUTException {
 public:
-	Warning(const Warning& that) : JCUTException(that.mMsg) {}
+	Warning(const Warning& that) : JCUTException() {
+		mMsg = that.mMsg;
+	}
 	Warning(const string& msg) : JCUTException(msg) {}
 	virtual const char* what() const throw () {
 		return JCUTException::what();
