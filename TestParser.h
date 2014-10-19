@@ -49,11 +49,17 @@ enum ColumnName {
 
 
 struct TestResults {
+	enum { PREAD = 0, PWRITE = 1};
 	vector<ColumnName> mOrder;
+	bool using_fork;
 	map<ColumnName, string> mResults;
 	map<ColumnName, string> mColumnNames;
 	string mTmpFileName;
-	TestResults(const vector<ColumnName>& o) : mOrder(o){}
+	int mPipe[2];
+	TestResults(const vector<ColumnName>& o) : mOrder(o), using_fork(false){
+		mPipe[PREAD] = 0;
+		mPipe[PWRITE] = 0;
+	}
 	void collectTestResults(tp::TestDefinition* TD);
 	void saveToDisk();
 	map<ColumnName, string> readFromDisk();

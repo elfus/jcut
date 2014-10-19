@@ -89,6 +89,7 @@ void TestRunnerVisitor::VisitTestGroup(TestGroup *TG) {
 void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 	TestResults results(mOrder);
 	results.mColumnNames = mColumnNames;
+	results.using_fork = !NoForkOpt.getValue();
 	string test_name = TestResults::getColumnString(TEST_NAME, TD);
 	results.mTmpFileName = test_name + "-tmp.txt";
 	pid_t pid;
@@ -98,10 +99,13 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 		cout << "Warning: Running test in same address space as jcut" << endl;
 		pid = 0;
 #else
+		if(pipe(results.mPipe) == -1)
+			throw JCUTException("Could not create pipes for communication with the test "+test_name);
+
 		pid = fork();
 #endif
 		if(pid == -1)
-			throw JCUTException("Could not fork process for test"+test_name);
+			throw JCUTException("Could not fork process for test "+test_name);
 	}
 	else
 		pid = 0;

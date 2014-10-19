@@ -980,13 +980,26 @@ ExpectedConstant* CSVDriver::getExpectedConstantAt(unsigned i, unsigned j)
 
 ///////////////////
 void TestResults::saveToDisk() {
-	if(mTmpFileName.empty())
-		throw JCUTException("Invalid temporary file name for test results!");
-	ofstream rf(mTmpFileName);
+	if(!using_fork)
+		return;
+
+	if(mPipe[PWRITE] == 0)
+		throw JCUTException("Invalid pipe for WRITING results!");
+	close(mPipe[PREAD]); // Child writes, never reads
+
+	stringstream ss;
 	for(auto it = mResults.begin(); it != mResults.end(); ++it) {
-		rf << "[" << mColumnNames[it->first] << "]" << endl;
-		rf << it->second << endl;
+		ss << "[" << mColumnNames[it->first] << "]" << endl;
+		ss << it->second << endl;
 	}
+
+	string data = ss.str();
+	int rc = write(mPipe[PWRITE], data.c_str(), static_cast<size_t>(data.size()));
+	if(rc == -1)
+		throw JCUTException("Error while sending data to the parent process");
+	if(rc == 0)
+		cout << "Warning: no data was sent to the parent process";
+	close(mPipe[PWRITE]); /* Reader will see EOF */
 }
 
 ColumnName TestResults::getColumnFromStr(const string& str)
@@ -1003,40 +1016,45 @@ ColumnName TestResults::getColumnFromStr(const string& str)
 
 map<ColumnName, string> TestResults::readFromDisk()
 {
-	if(mTmpFileName.empty())
-		throw JCUTException("Invalid temporary file name for test results!");
-	if(!llvm::sys::fs::is_regular_file(mTmpFileName))
-		throw JCUTException("Could not read test results from child process!");
+	if(!using_fork)
+		return mResults;
+
+	if(mPipe[PREAD] == 0)
+		throw JCUTException("Invalid pipe for READING results!");
+	close(mPipe[PWRITE]); // Parent reads, never writes
+
 	map<ColumnName, string> results;
-	ifstream rf;
-	rf.open(mTmpFileName);
 	string line;
-	if(rf.is_open()) {
-		ColumnName current;
-		while(!rf.eof()) {
-			std::getline(rf, line);
 
-			if(line.empty())
-				continue;
-
-			if(line[0] == '[') {
-				string column_name = line.substr(1,line.size()-2);
-				current = getColumnFromStr(column_name);
-				results[current] = "";
-				continue;
-			}
-
-			if(current == WARNING or current == FUD_OUTPUT or current == FAILED_EE)
-				results[current] += "\n"+line;
-			else
-				results[current] += line;
-		}
-	} else{
-		throw JCUTException("Could not read test results!");
+	ColumnName current;
+	const int SIZE = 1024;
+	char buf[SIZE];
+	int bytes_read = 0;
+	stringstream ss;
+	while((bytes_read = read(mPipe[PREAD],buf, SIZE)) > 0) {
+		ss << buf;
+		memset(buf, 0, SIZE);
 	}
-	rf.close();
-	if(llvm::sys::fs::remove(mTmpFileName) != llvm::errc::success)
-		cerr << "Could not delete temporary results file: " << mTmpFileName << endl;
+
+	while(!ss.eof()) {
+		std::getline(ss, line);
+		if(line.empty())
+			continue;
+
+		if(line[0] == '[') {
+			string column_name = line.substr(1,line.size()-2);
+			current = getColumnFromStr(column_name);
+			results[current] = "";
+			continue;
+		}
+
+		if(current == WARNING or current == FUD_OUTPUT or current == FAILED_EE)
+			results[current] += "\n"+line;
+		else
+			results[current] += line;
+	}
+
+	close(mPipe[PREAD]);
 	return results;
 }
 
@@ -1044,6 +1062,7 @@ void TestResults::collectTestResults(tp::TestDefinition* TD)
 {
 	for(auto column : mOrder) {
 		stringstream ss;
+		mResults[column] = "";
 		ss << getColumnString(column, TD);
 		mResults[column] = ss.str();
 	}
