@@ -239,8 +239,7 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 		const string& str = EC->getConstant()->getStringConstant()->getString();
 		stringstream tmp;
 		tmp << static_cast<const void*>(str.c_str());
-		unsigned long addr =  stoul(tmp.str(), nullptr, 16);
-		ss << addr;
+		ss << tmp.str();
 		assert(ss.str().size() && "Invalid string constant!");
 	}
 

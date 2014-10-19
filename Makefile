@@ -35,5 +35,5 @@ include $(CLANG_LEVEL)/Makefile
 # I had to remove the option  -frtti because I was getting a weird linker error.
 # This might and probably will cause trouble. Keep an eye close to the behavior
 # of the tool
-CXXFLAGS = -std=c++11 -ggdb3 -fexceptions
+CXXFLAGS = -std=gnu++11 -ggdb3 -fexceptions
 CFLAGS = -ggdb3

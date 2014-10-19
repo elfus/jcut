@@ -72,6 +72,8 @@ public:
 #endif
 #include <fcntl.h>
 #include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
 #include <mutex>
 
 class StdCapture
