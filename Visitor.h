@@ -1,9 +1,23 @@
-//===-- jcut/TestVisitor.h - Grammar Rules ----------------------*- C++ -*-===//
+//===-- jcut/TestVisitor.h --------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
+// This file is part of JCUT, A Just-n-time C Unit Testing framework.
 //
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Copyright (c) 2014 Adrián Ortega García <adrianog(dot)sw(at)gmail(dot)com>
+// All rights reserved.
+//
+// JCUT is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// JCUT is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with JCUT (See LICENSE.TXT for details).
+// If not, see <http://www.gnu.org/licenses/>.
 //
 //===----------------------------------------------------------------------===//
 ///

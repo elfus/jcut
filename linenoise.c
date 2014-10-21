@@ -40,6 +40,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ * Track of modifications:
+ * Adrian Ortega Garcia added the following functions:
+ *
+ * 		int linenoiseCtrlJPressed(void);
+ * 		void linenoiseCtrlJClear(void);
  * ------------------------------------------------------------------------
  *
  * References:
