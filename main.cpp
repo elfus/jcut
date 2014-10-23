@@ -63,6 +63,7 @@ int main(int argc, const char **argv, char * const *envp)
 {
 	TestFileOpt.setCategory(JcutOptions);
 	DumpOpt.setCategory(JcutOptions);
+	NoForkOpt.setCategory(JcutOptions);
 
 	// Initialize the JIT Engine only once
 	llvm::InitializeNativeTarget();
