@@ -66,10 +66,10 @@ public:
 	template<class T>
 	int runAction(int argc, const char **argv);
 	int mainLoop();
-	int getArgc() const;
+
 	// For every call to the cloneArgv() methods there has to be 1 call to freeArgv
-	const char** cloneArgv() const;
-	const char** cloneArgv(int argc, const char** argv) const;
+	const char** cloneArgv(int& new_argc) const;
+	const char** cloneArgv(int argc, const char** argv, int& new_argc) const;
 	void freeArgv(int argc, const char** argv);
 	bool addFileToArgv(const string& str);
 	bool removeFileFromArgv(const string& str);

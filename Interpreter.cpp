@@ -49,7 +49,7 @@ namespace jcut {
 
 Interpreter::Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv(nullptr)
 {
-	mArgv = cloneArgv(argc, argv);
+	mArgv = cloneArgv(argc, argv, mArgc);
 	convertToAbsolutePaths(mArgc, mArgv);
 	bool double_dash = false;
 	bool compilation_db = false;
@@ -165,10 +165,10 @@ int Interpreter::mainLoop() {
 				continue;
 			}
 
-			int argc = getArgc();
-			const char** argv = cloneArgv();
+			int argc = 0;
+			const char** argv = cloneArgv(argc);
 			runAction<JCUTAction>(argc, argv);
-			freeArgv(getArgc(), argv);
+			freeArgv(argc, argv);
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
 	}
@@ -230,11 +230,6 @@ int Interpreter::runAction(int argc, const char **argv) {
 	return failed;
 }
 
-int Interpreter::getArgc() const
-{
-	return mArgc;
-}
-
 void printArgv(int argc, const char** argv) {
 	cout << "ARGUMENTS: ";
 	for(int i=0; i<argc; ++i) {
@@ -244,21 +239,23 @@ void printArgv(int argc, const char** argv) {
 	cout << endl;
 }
 
-const char** Interpreter::cloneArgv(int argc, const char** argv) const
+const char** Interpreter::cloneArgv(int argc, const char** argv, int& new_argc) const
 {
 	const char ** out = new const char*[argc];
+	new_argc = 0;
 	for(int i=0; i<argc; ++i) {
 		string tmp(argv[i]);
 		out[i] = new char[tmp.size()+1];
 		memset(const_cast<char*>(out[i]), 0, tmp.size()+1);
 		memcpy(const_cast<char*>(out[i]), tmp.c_str(), tmp.size()+1);
+		++new_argc;
 	}
 	return out;
 }
 
-const char** Interpreter::cloneArgv() const
+const char** Interpreter::cloneArgv(int& new_argc) const
 {
-	return cloneArgv(mArgc, mArgv);
+	return cloneArgv(mArgc, mArgv, new_argc);
 }
 
 void Interpreter::freeArgv(int argc, const char** argv)
@@ -452,10 +449,10 @@ bool Ls::execute() {
 		return true;
 	}
 
-	int argc = mInt.getArgc();
-	const char ** argv = mInt.cloneArgv();
+	int argc = 0;
+	const char ** argv = mInt.cloneArgv(argc);
 	int failed = mInt.runAction<LsFunctionsAction>(argc, argv);
-	mInt.freeArgv(mInt.getArgc(), argv);
+	mInt.freeArgv(argc, argv);
 	if(failed)
 		return false;
 	return true;
