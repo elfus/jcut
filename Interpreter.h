@@ -52,6 +52,7 @@ private:
 	const char ** mArgv;
 	vector<const char*> toBeFreed;
 	vector<string> unloadedFiles;
+	vector<string> mLoadedFiles;
 	bool mOptionsParsed;
 
 	void convertToAbsolutePaths(int argc, const char **argv);
@@ -65,6 +66,9 @@ public:
 
 	// Runs the SyntaxOnlyAction followed by the Action defined by T.
 	template<class T>
+	int runAction();
+	// Runs the SyntaxOnlyAction followed by the Action defined by T.
+	template<class T>
 	int runAction(int argc, const char **argv);
 	int mainLoop();
 
@@ -76,7 +80,7 @@ public:
 	bool removeFileFromArgv(const string& str);
 
 	// 2 means the binary name and the mythical --
-	bool hasLoadedFiles() { return mArgc > 2; }
+	bool hasLoadedFiles() { return mLoadedFiles.size() > 0; }
 };
 
 class Command {

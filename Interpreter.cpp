@@ -166,10 +166,7 @@ int Interpreter::mainLoop() {
 				continue;
 			}
 
-			int argc = 0;
-			const char** argv = cloneArgv(argc);
-			runAction<JCUTAction>(argc, argv);
-			freeArgv(argc, argv);
+			runAction<JCUTAction>();
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
 	}
@@ -185,6 +182,14 @@ void printArgv(int argc, const char** argv) {
 	cout << endl;
 }
 
+template<class T>
+int Interpreter::runAction() {
+	int argc = 0;
+	const char ** argv = cloneArgv(argc);
+	int failed = runAction<T>(argc, argv);
+	freeArgv(argc, argv);
+	return failed;
+}
 
 template <class T>
 int Interpreter::runAction(int argc, const char **argv) {
@@ -222,6 +227,7 @@ int Interpreter::runAction(int argc, const char **argv) {
 		if(it != Sources.end())
 			Sources.erase(it);
 	}
+	mLoadedFiles = Sources;
 
 	// We hand the CompilationDatabase we created and the sources to run over into
 	// the tool constructor.
@@ -472,10 +478,7 @@ bool Ls::execute() {
 		return true;
 	}
 
-	int argc = 0;
-	const char ** argv = mInt.cloneArgv(argc);
-	int failed = mInt.runAction<LsFunctionsAction>(argc, argv);
-	mInt.freeArgv(argc, argv);
+	int failed = mInt.runAction<LsFunctionsAction>();
 	if(failed)
 		return false;
 	return true;
