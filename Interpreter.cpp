@@ -52,15 +52,23 @@ Interpreter::Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv
 	mArgv = cloneArgv(argc, argv);
 	convertToAbsolutePaths(mArgc, mArgv);
 	bool double_dash = false;
+	bool compilation_db = false;
 	for(int i = 0; i < mArgc; ++i) {
 		string tmp(mArgv[i]);
 		if(tmp == "-help" or tmp == "--help")
 			runAction<clang::SyntaxOnlyAction>(mArgc, mArgv);
 		if(tmp == "--")
 			double_dash = true;
+		if(tmp == "-p")
+			compilation_db = true;
 	}
 
-	if(!double_dash) {
+	if(double_dash and compilation_db) {
+		cerr << "Cannot process double dash and compilation data base. Provide only one." << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	if(!double_dash and !compilation_db) {
 		cout << "Double dash not provided! Remember, if you want add your own compiler flags\n"
 				"for the clang API you need to add a double dash '--' followed by the compiler flags."<< endl << endl;
 		vector<string> backup;
