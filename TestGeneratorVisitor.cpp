@@ -188,6 +188,23 @@ void TestGeneratorVisitor::VisitFunctionArgument(tp::FunctionArgument *arg)
 
 void TestGeneratorVisitor::VisitFunctionCallFirst(FunctionCall *FC) {
 	mCurrentFuncCall = FC->getIdentifier()->toString();
+	Function *funcToBeCalled = nullptr;
+
+	auto it = mFunctionsWrapped.find(mCurrentFuncCall);
+	if(it != mFunctionsWrapped.end())
+		funcToBeCalled = mFunctionsWrapped[mCurrentFuncCall];
+	else
+		funcToBeCalled = mModule->getFunction(mCurrentFuncCall);
+
+	if( funcToBeCalled == nullptr)
+		throw JCUTException("VisitFunctionCall: Function "+mCurrentFuncCall+"() was not found in the C source code");
+
+	if(funcToBeCalled->getArgumentList().size() != FC->getArgCount()) {
+		stringstream ss;
+		ss << "Invalid number of arguments for function: "<<FC->getFunctionCalledString() << endl;
+		ss << "\tTry typing /ls on the command line to see the function proptotype.";
+		throw JCUTException(ss.str());
+	}
 }
 
 void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
@@ -200,9 +217,6 @@ void TestGeneratorVisitor::VisitFunctionCall(FunctionCall *FC)
 		funcToBeCalled = mFunctionsWrapped[func_name];
 	else
 		funcToBeCalled = mModule->getFunction(func_name);
-
-	if( funcToBeCalled == nullptr)
-		throw JCUTException("VisitFunctionCall: Function "+mCurrentFuncCall+"() was not found in the C source code");
 
 	CallInst *call = mBuilder.CreateCall(funcToBeCalled, mArgs);
 

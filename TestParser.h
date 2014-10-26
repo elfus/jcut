@@ -646,6 +646,7 @@ public:
     vector<unsigned> getDataPlaceholdersPos() const;
 
     bool replaceDataPlaceholder(unsigned pos, FunctionArgument* new_arg);
+    unsigned getArgCount() const { return mFunctionArguments.size(); }
 };
 
 class ExpectedResult : public TestExpr {
