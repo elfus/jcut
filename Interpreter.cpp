@@ -47,7 +47,8 @@ using namespace clang::tooling;
 
 namespace jcut {
 
-Interpreter::Interpreter(const int argc, const char **argv) : mArgc(argc), mArgv(nullptr)
+Interpreter::Interpreter(const int argc, const char **argv)
+: mArgc(argc), mArgv(nullptr), mOptionsParsed(false)
 {
 	mArgv = cloneArgv(argc, argv, mArgc);
 	convertToAbsolutePaths(mArgc, mArgv);
@@ -175,12 +176,22 @@ int Interpreter::mainLoop() {
 	return 0;
 }
 
+void printArgv(int argc, const char** argv) {
+	cout << "ARGUMENTS: ";
+	for(int i=0; i<argc; ++i) {
+		string tmp(argv[i]);
+		cout << tmp << " ";
+	}
+	cout << endl;
+}
+
 
 template <class T>
 int Interpreter::runAction(int argc, const char **argv) {
 	// CommonOptionsParser constructor will parse arguments and create a
 	// CompilationDatabase.  In case of error it will terminate the program.
 	CommonOptionsParser OptionsParser(argc, argv);
+	mOptionsParsed = true;
 
 	// Use OptionsParser.getCompilations() and OptionsParser.getSourcePathList()
 	// to retrieve CompilationDatabase and the list of input file paths.
@@ -230,24 +241,36 @@ int Interpreter::runAction(int argc, const char **argv) {
 	return failed;
 }
 
-void printArgv(int argc, const char** argv) {
-	cout << "ARGUMENTS: ";
-	for(int i=0; i<argc; ++i) {
-		string tmp(argv[i]);
-		cout << tmp << " ";
-	}
-	cout << endl;
-}
-
 const char** Interpreter::cloneArgv(int argc, const char** argv, int& new_argc) const
 {
-	const char ** out = new const char*[argc];
+	vector<string> newCmdLine;
+	const char** DoubleDash = std::find(argv, argv + argc, StringRef("--"));
+	int middle_argc = DoubleDash - argv;
+	int end_argc = (argv + argc) - DoubleDash;
 	new_argc = 0;
-	for(int i=0; i<argc; ++i) {
+
+	for(int i=0; i<middle_argc; ++i) {
 		string tmp(argv[i]);
-		out[i] = new char[tmp.size()+1];
-		memset(const_cast<char*>(out[i]), 0, tmp.size()+1);
-		memcpy(const_cast<char*>(out[i]), tmp.c_str(), tmp.size()+1);
+		if(mOptionsParsed) {
+			if(tmp[0] == '-') {
+				if(tmp == "-p")
+					++i;
+				continue;
+			}
+		}
+		newCmdLine.push_back(tmp);
+	}
+
+	for(int i=0; i<end_argc; ++i)
+		newCmdLine.push_back(DoubleDash[i]);
+
+
+	const char ** out = new const char*[newCmdLine.size()];
+	unsigned size = newCmdLine.size();
+	for(unsigned i=0; i<size; ++i) {
+		out[i] = new char[newCmdLine[i].size()+1];
+		memset(const_cast<char*>(out[i]), 0, newCmdLine[i].size()+1);
+		memcpy(const_cast<char*>(out[i]), newCmdLine[i].c_str(), newCmdLine[i].size()+1);
 		++new_argc;
 	}
 	return out;
