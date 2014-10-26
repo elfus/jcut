@@ -86,6 +86,19 @@ Interpreter::Interpreter(const int argc, const char **argv)
 		}
 		mArgc = new_size;
 		mArgv = out;
+		double_dash = true;
+	}
+
+
+	if((compilation_db && mArgc > 3) || (double_dash && mArgc > 2)) {
+		// This needed to get the list of loaded files.
+		int new_c = 0;
+		const char** v = cloneArgv(new_c);
+		CommonOptionsParser OptionsParser(new_c, v);
+		mOptionsParsed = true;
+		// A clang tool can run over a number of sources in the same process...
+		mLoadedFiles = OptionsParser.getSourcePathList();
+		freeArgv(new_c, v);
 	}
 }
 
