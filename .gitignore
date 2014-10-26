@@ -6,3 +6,9 @@ stdout.txt
 *~
 *.exe
 .idea
+jcut-history.txt
+.cproject
+.project
+.settings
+*patch
+config.log

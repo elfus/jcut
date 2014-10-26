@@ -1043,11 +1043,16 @@ map<ColumnName, string> TestResults::readFromDisk()
 	const int SIZE = 1024;
 	char buf[SIZE];
 	int bytes_read = 0;
+	int total = 0;
 	stringstream ss;
 	while((bytes_read = read(mPipe[PREAD],buf, SIZE)) > 0) {
 		ss << buf;
 		memset(buf, 0, SIZE);
+		total += bytes_read;
 	}
+
+	if (total == 0)
+		throw JCUTException("The test crashed during execution!");
 
 	while(!ss.eof()) {
 		std::getline(ss, line);
