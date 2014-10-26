@@ -246,17 +246,8 @@ int Interpreter::runAction(int argc, const char **argv) {
 	// the tool constructor.
 	ClangTool Tool(CD, Sources);
 
-	FrontendActionFactory* syntax_action = newFrontendActionFactory<clang::SyntaxOnlyAction>();
-	// The ClangTool needs a new FrontendAction for each translation unit we run
-	// on.  Thus, it takes a FrontendActionFactory as parameter.  To create a
-	// FrontendActionFactory from a given FrontendAction type, we call
-	// newFrontendActionFactory<clang::SyntaxOnlyAction>().
-	int failed = Tool.run(syntax_action);
-	if(failed)
-		return -1;
-
 	FrontendActionFactory* generic_action = newFrontendActionFactory<T>();
-	failed = Tool.run(generic_action);
+	int failed = Tool.run(generic_action);
 	return failed;
 }
 
@@ -270,6 +261,10 @@ const char** Interpreter::cloneArgv(int argc, const char** argv, int& new_argc) 
 
 	for(int i=0; i<middle_argc; ++i) {
 		string tmp(argv[i]);
+		if(tmp == "-t") {
+			++i;
+			continue;
+		}
 		if(mOptionsParsed) {
 			if(tmp[0] == '-') {
 				if(tmp == "-p")
@@ -292,6 +287,7 @@ const char** Interpreter::cloneArgv(int argc, const char** argv, int& new_argc) 
 		memcpy(const_cast<char*>(out[i]), newCmdLine[i].c_str(), newCmdLine[i].size()+1);
 		++new_argc;
 	}
+
 	return out;
 }
 
@@ -322,6 +318,7 @@ bool Interpreter::addFileToArgv(const string& str)
 	auto found = find(unloadedFiles.begin(), unloadedFiles.end(), str);
 	if(found != unloadedFiles.end())
 		unloadedFiles.erase(found);
+	mLoadedFiles.push_back(str);
 
 	freeArgv(mArgc, mArgv);
 
@@ -345,8 +342,12 @@ bool Interpreter::removeFileFromArgv(const string& str)
 		string arg(mArgv[i]);
 		if(arg.find(str) == string::npos)
 			backup.push_back(mArgv[i]);
-		else
+		else {
+			auto it = find(mLoadedFiles.begin(), mLoadedFiles.end(), mArgv[i]);
+			if(it != mLoadedFiles.end())
+				mLoadedFiles.erase(it);
 			unloadedFiles.push_back(mArgv[i]);
+		}
 	}
 	if(static_cast<unsigned>(mArgc) == backup.size())
 		return false;
@@ -365,6 +366,7 @@ bool Interpreter::removeFileFromArgv(const string& str)
 
 	mArgv = out;
 	mArgc = new_size;
+
 	return true;
 }
 
@@ -481,6 +483,7 @@ bool Unload::execute() {
 			cerr << "Type /help for more options." << endl;
 		}
 	}
+
 	return true;
 }
 
