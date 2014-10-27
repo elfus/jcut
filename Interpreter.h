@@ -66,7 +66,13 @@ public:
 
 	// Runs the SyntaxOnlyAction followed by the Action defined by T.
 	template<class T>
-	int runAction();
+	int runAction() {
+		int argc = 0;
+		const char ** argv = cloneArgv(argc);
+		int failed = runAction<T>(argc, argv);
+		freeArgv(argc, argv);
+		return failed;
+	}
 	// Runs the SyntaxOnlyAction followed by the Action defined by T.
 	template<class T>
 	int runAction(int argc, const char **argv);

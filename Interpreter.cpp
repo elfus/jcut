@@ -195,14 +195,6 @@ void printArgv(int argc, const char** argv) {
 	cout << endl;
 }
 
-template<class T>
-int Interpreter::runAction() {
-	int argc = 0;
-	const char ** argv = cloneArgv(argc);
-	int failed = runAction<T>(argc, argv);
-	freeArgv(argc, argv);
-	return failed;
-}
 
 template <class T>
 int Interpreter::runAction(int argc, const char **argv) {
@@ -261,13 +253,10 @@ const char** Interpreter::cloneArgv(int argc, const char** argv, int& new_argc) 
 
 	for(int i=0; i<middle_argc; ++i) {
 		string tmp(argv[i]);
-		if(tmp == "-t") {
-			++i;
-			continue;
-		}
+
 		if(mOptionsParsed) {
 			if(tmp[0] == '-') {
-				if(tmp == "-p")
+				if(tmp == "-p" || tmp == "-t")
 					++i;
 				continue;
 			}

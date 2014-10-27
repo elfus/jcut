@@ -71,7 +71,7 @@ int main(int argc, const char **argv, char * const *envp)
 	jcut::Interpreter interpreter(argc, argv);
 	int return_code = 0;
 	if(isTestFileProvided(argc, argv))
-		return_code = interpreter.runAction<jcut::JCUTAction>(argc, argv);
+		return_code = interpreter.runAction<jcut::JCUTAction>();
 	else
 		return_code = interpreter.mainLoop();
 
