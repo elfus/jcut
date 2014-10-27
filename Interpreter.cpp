@@ -179,7 +179,8 @@ int Interpreter::mainLoop() {
 				continue;
 			}
 
-			runAction<JCUTAction>();
+			if(runAction<SyntaxOnlyAction>() == 0)
+				runAction<JCUTAction>();
 			jcut::JCUTAction::mInterpreterInput.clear();
 		}
 	}

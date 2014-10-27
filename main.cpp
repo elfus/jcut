@@ -30,6 +30,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/CommandLine.h"
 #include "clang/Tooling/CommonOptionsParser.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "Interpreter.h"
 #include "JCUTAction.h"
 
@@ -70,8 +71,11 @@ int main(int argc, const char **argv, char * const *envp)
 
 	jcut::Interpreter interpreter(argc, argv);
 	int return_code = 0;
-	if(isTestFileProvided(argc, argv))
+	if(isTestFileProvided(argc, argv)) {
+		return_code = interpreter.runAction<clang::SyntaxOnlyAction>();
+		if (return_code) return return_code;
 		return_code = interpreter.runAction<jcut::JCUTAction>();
+	}
 	else
 		return_code = interpreter.mainLoop();
 
