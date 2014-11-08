@@ -189,6 +189,7 @@ private:
 
     llvm::Value* createIntComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
     llvm::Value* createFloatComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
+    llvm::Value* createPtrComparison(ComparisonOperator::Type,llvm::Value* LHS, llvm::Value* RHS);
 
     /**
      * Allocates and initializes a buffer of type ptrType->elementType using BufferAlloc information.

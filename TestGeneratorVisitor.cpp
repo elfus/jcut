@@ -274,14 +274,20 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 
 	string InstName = "ComparisonInstruction";
     Value* i = nullptr;
+    auto comparison_type = ER->getComparisonOperator()->getType();
+
 	if (returnedType->getTypeID() == Type::IntegerTyID) {
-		i = createIntComparison(ER->getComparisonOperator()->getType(), call, c);
+		i = createIntComparison(comparison_type, call, c);
 	}
 	else if (returnedType->getTypeID() == Type::FloatTyID or
 			returnedType->getTypeID() == Type::DoubleTyID) {
-		i = createFloatComparison(ER->getComparisonOperator()->getType(), call, c);
+		i = createFloatComparison(comparison_type, call, c);
 	}
-	else
+	else if(returnedType->getTypeID() == Type::PointerTyID) {
+		c = createValue(mBuilder.getInt64Ty(), ss.str());
+		llvm::Value* c_ptr = mBuilder.CreateIntToPtr(c, returnedType);
+		i = createPtrComparison(comparison_type, call, c_ptr);
+	}else
 		assert(false && "Unsupported type for comparison operator!");
 
 	assert(i && "Invalid comparison instruction");
@@ -1008,6 +1014,17 @@ Value* TestGeneratorVisitor::createFloatComparison(ComparisonOperator::Type type
 			return nullptr;
     }
 	return nullptr;
+}
+
+llvm::Value* TestGeneratorVisitor::createPtrComparison(
+		ComparisonOperator::Type type, llvm::Value* LHS, llvm::Value* RHS)
+{
+	string InstName = "PtrComparison";
+	llvm::Value* LHS_int = mBuilder.CreatePtrToInt(LHS, mBuilder.getInt64Ty());
+	llvm::Value* RHS_int = mBuilder.CreatePtrToInt(RHS, mBuilder.getInt64Ty());
+	mInstructions.push_back((llvm::Instruction*)LHS_int);
+	llvm::Value* comparison_val = createIntComparison(type, LHS_int, RHS_int);
+	return comparison_val;
 }
 
 llvm::AllocaInst* TestGeneratorVisitor::bufferAllocInitialization(llvm::Type* ptrType, const tp::BufferAlloc *ba,
