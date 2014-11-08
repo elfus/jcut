@@ -1007,6 +1007,7 @@ void TestResults::saveToDisk() {
 	}
 
 	string data = ss.str();
+	data += '\0';
 	int rc = write(mPipe[PWRITE], data.c_str(), static_cast<size_t>(data.size()));
 	if(rc == -1)
 		throw JCUTException("Error while sending data to the parent process");
@@ -1086,23 +1087,19 @@ void TestResults::collectTestResults(tp::TestDefinition* TD)
 	}
 	// Save warnings
 	const vector<Warning>& warnings = TD->getWarnings();
-	mResults[WARNING] = "";
 	if(warnings.size()) {
 		stringstream ss;
-		for(auto w : warnings) {
-			ss << endl << w.what() ;
-		}
+		for(auto w : warnings)
+			ss <<  w.what() << endl;
 		mResults[WARNING] = ss.str();
 	}
 	// Save function under test output
-	mResults[FUD_OUTPUT] = "";
 	if(TD->getOutput().size()) {
 		stringstream ss;
 		ss << TD->getOutput();
 		mResults[FUD_OUTPUT] = ss.str();
 	}
 	// Save Failed expected expressions
-	mResults[FAILED_EE] = "";
 	if(TD->testPassed() == false) {
 		const vector<ExpectedExpression*>&
 		ee = TD->getFailedExpectedExpressions();

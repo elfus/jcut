@@ -156,24 +156,31 @@ public:
             for(auto column : mOrder)
             	cout << setw(mColumnWidth[column]) << results.at(column) << mPadding;
         }
+        cout << endl;
     }
 
     void VisitTestDefinition(TestDefinition *TD) {
     	const map<ColumnName,string>& results = TD->getTestResults();
-    	cout << results.at(WARNING) << endl;
-    	string test_output = results.at(FUD_OUTPUT);
-    	if(test_output.size()) {
-    		string fud = TD->getTestFunction()->getFunctionCall()->getFunctionCalledString();
-			stringstream ss;
-			ss << "[" << fud << " output]";
-			cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
-			cout << setw(WIDTH) << right << ss.str() << left << endl;
-			cout << test_output << endl;
+
+    	if(results.find(WARNING) != results.end())
+			cout << results.at(WARNING) << endl;
+
+		if(results.find(FUD_OUTPUT) != results.end()) {
+			string test_output = results.at(FUD_OUTPUT);
+			if(!test_output.empty()) {
+				string fud = TD->getTestFunction()->getFunctionCall()->getFunctionCalledString();
+				stringstream ss;
+				ss << "[" << fud << " output]";
+				cout << setw(WIDTH) << setfill('.') << '.' << setfill(' ') << endl;
+				cout << setw(WIDTH) << right << ss.str() << left << endl;
+				cout << test_output << endl;
+			}
 		}
-    	string failed_ee = results.at(FAILED_EE);
-    	if(!failed_ee.empty())
-    		cout << failed_ee;
-        cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
+
+		if(results.find(FAILED_EE) != results.end())
+			cout << results.at(FAILED_EE) << endl;
+
+		cout << setw(WIDTH) << setfill('-') << '-' << setfill(' ') << endl;
     }
 
     void VisitGroupTeardown(GlobalTeardown *GT) {
