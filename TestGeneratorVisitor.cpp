@@ -284,9 +284,7 @@ void TestGeneratorVisitor::VisitExpectedResult(ExpectedResult *ER)
 		i = createFloatComparison(comparison_type, call, c);
 	}
 	else if(returnedType->getTypeID() == Type::PointerTyID) {
-		c = createValue(mBuilder.getInt64Ty(), ss.str());
-		llvm::Value* c_ptr = mBuilder.CreateIntToPtr(c, returnedType);
-		i = createPtrComparison(comparison_type, call, c_ptr);
+		i = createPtrComparison(comparison_type, call, c);
 	}else
 		assert(false && "Unsupported type for comparison operator!");
 
@@ -797,12 +795,13 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 	}
 		break;
 	case Type::TypeID::PointerTyID:
+	{
 		mWarnings.push_back(
-				Warning("Trying to create pointer from value "+real_value+
-				", I will return a pointer to NULL instead."));
-		if (PointerType * ptrType = dyn_cast<PointerType>(type)) {
-			return ConstantPointerNull::get(ptrType);
-		}
+				Warning("Casting value "+real_value+" to a pointer type."));
+		llvm::Value* int_value = createValue(mBuilder.getInt64Ty(), real_value);
+		llvm::Value* c_ptr = mBuilder.CreateIntToPtr(int_value, type);
+		return c_ptr;
+	}
 		break;
 	case Type::TypeID::VoidTyID:
 		assert(false && "Cannot create a void value!");
