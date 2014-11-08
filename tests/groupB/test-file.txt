@@ -1,3 +1,10 @@
+get_char_ptr() == 0;
+
+before{ g_ptr = [1]; }
+get_char_ptr() != 0;
+
+get_ptr() != 0;
+
 print_gvar();
 
 before { gchar = 255; }

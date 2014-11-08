@@ -10,7 +10,7 @@ long int glint;
 unsigned long int gulint;
 float gfloat;
 double gdouble;
-
+char * g_ptr = 0;
 void print_gvar()
 {
 	printf("------------------------------------------------------------\n");
@@ -36,3 +36,15 @@ long int getglint() { return glint; }
 unsigned long int getgulint() { return gulint; }
 float getgfloat() {	return gfloat; }
 double getgdouble() { return gdouble; }
+
+char* get_char_ptr() {
+	if(g_ptr)
+		return g_ptr;
+	return 0;
+}
+
+ char* get_ptr(){
+	char *temp;
+	temp = "hello world";
+	return temp;
+}
