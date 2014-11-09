@@ -1109,7 +1109,7 @@ void TestResults::collectTestResults(tp::TestDefinition* TD)
 				<< ":" << e->getColumn() << ": ";
 			ss << "Expected expression ["
 				 << e->toString() << "] is false" << endl;
-			mResults[FAILED_EE] = ss.str();
+			mResults[FAILED_EE] += ss.str();
 		}
 	}
 }

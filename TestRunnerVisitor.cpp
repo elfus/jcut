@@ -161,7 +161,7 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 		// When the test does not have an expected result and the expected expression
 		// should fail, it always passess.
 		for(ExpectedExpression* ptr : mExpExpr) {
-			llvm::Function* ee_func = TD->getLLVMResultFunction();
+			llvm::Function* ee_func = ptr->getLLVMResultFunction();
 			if(!ee_func)
 				assert(false && "Function expected result result not found!");
 			llvm::GenericValue ee_ret = mEE->runFunction(ee_func, mArgs);
@@ -187,9 +187,9 @@ void TestRunnerVisitor::VisitTestDefinition(TestDefinition *TD) {
 		}
 
 		// Include failing ExpectedExpressions from before and after statements.
-		if(failing.size()) {
+		if(!failing.empty())
 			TD->setFailedExpectedExpressions(failing);
-		}
+
 		results.collectTestResults(TD);
 		results.saveToDisk();
 
