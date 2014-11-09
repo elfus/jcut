@@ -422,11 +422,19 @@ void TestGeneratorVisitor::VisitMockupFunction(MockupFunction* MF)
 			llvm::Value* val = nullptr;
 			if(llvm_func->getReturnType()->getTypeID() == Type::PointerTyID) {
 				// Cast it to pointer type
-				const string& str =  expected->toString();
+				string str =  expected->toString();
 				if(str.find('.') != string::npos)
 					throw JCUTException("Floating point values are not valid for returning as pointer type!");
 				unsigned bitwidth = llvm_func->getReturnType()->getPointerElementType()->getIntegerBitWidth();
-				APInt int_value =  getAPIntTruncating(bitwidth, str, 10);
+				int radix = 10;
+				size_t pos = str.find('x');
+				if(pos != string::npos) {
+					radix = 16;
+					str = str.substr(pos+1,str.size()-pos+1);
+				} else if(str[0] == '0'){
+					radix = 8;
+				}
+				APInt int_value =  getAPIntTruncating(bitwidth, str, radix);
 				ConstantInt* int_constant = ConstantInt::get
 						(mModule->getContext(), int_value);
 				AllocaInst* ptr_val = mBuilder.CreateAlloca(llvm_func->getReturnType()->getPointerElementType());
@@ -765,6 +773,8 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 			if(pos != string::npos) {
 				radix = 16;
 				value = value.substr(pos+1,value.size()-pos+1);
+			} else if(value[0] == '0'){
+				radix = 8;
 			}
 			APInt int_value = getAPIntTruncating(bitwidth, value, radix);
 			return cast<Value>(mBuilder.getInt(int_value));
@@ -815,7 +825,6 @@ llvm::Value* TestGeneratorVisitor::createValue(llvm::Type* type,
 
 llvm::APInt TestGeneratorVisitor::getAPIntTruncating(unsigned bitwidth, const string& value, unsigned radix)
 {
-// Watch for the radix, right now we use radix 10 only
 	unsigned bits_needed = APInt::getBitsNeeded(StringRef(value), radix);
 	APInt int_value;
 	if(bits_needed > bitwidth) {
