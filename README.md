@@ -16,9 +16,11 @@ report can be sent to:
 
 	adrianog.sw@gmail.com
 
-You can download the source tarball here:
+You can download the source tarball and/or some windows binaries here:
 
 https://www.dropbox.com/sh/n9znjt4r21c0f30/AAAKt6H5BHDU2Lx0Q0KxJlXva?dl=0
+
+	- The windows binaries are inside the *.zip file.
 
 And the source code can be directly downloaded from:
 
